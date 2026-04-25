@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import {
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import type { Genere, TeamWithPlayers } from "@/types";
 
 type Player = {
@@ -24,6 +31,176 @@ type Player = {
   teamAsPlayer1?: { id: string; nome: string } | null;
   teamAsPlayer2?: { id: string; nome: string } | null;
 };
+
+function normalize(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
+}
+
+function PlayerCombobox({
+  id,
+  players,
+  value,
+  onChange,
+  placeholder,
+  excludeId,
+}: {
+  id: string;
+  players: Player[];
+  value: string;
+  onChange: (id: string) => void;
+  placeholder: string;
+  excludeId?: string;
+}) {
+  const selected = players.find((p) => p.id === value);
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const filtered = useMemo(() => {
+    const q = normalize(query.trim());
+    return players
+      .filter((p) => p.id !== excludeId)
+      .filter((p) =>
+        q === "" ? true : normalize(`${p.cognome} ${p.nome}`).includes(q)
+      )
+      .slice(0, 50);
+  }, [players, query, excludeId]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => {
+      if (!wrapperRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [open]);
+
+  useEffect(() => {
+    setActiveIdx(0);
+  }, [query, open]);
+
+  const display = selected ? `${selected.cognome} ${selected.nome}` : "";
+
+  const select = (p: Player) => {
+    onChange(p.id);
+    setQuery("");
+    setOpen(false);
+    inputRef.current?.blur();
+  };
+
+  const clear = () => {
+    onChange("");
+    setQuery("");
+    setOpen(true);
+    inputRef.current?.focus();
+  };
+
+  return (
+    <div className="relative" ref={wrapperRef}>
+      <div className="relative">
+        <input
+          ref={inputRef}
+          id={id}
+          type="text"
+          value={open ? query : display}
+          placeholder={placeholder}
+          autoComplete="off"
+          onFocus={() => {
+            setOpen(true);
+            setQuery("");
+          }}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            if (!open) setOpen(true);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              setOpen(true);
+              setActiveIdx((i) => Math.min(i + 1, filtered.length - 1));
+            } else if (e.key === "ArrowUp") {
+              e.preventDefault();
+              setActiveIdx((i) => Math.max(i - 1, 0));
+            } else if (e.key === "Enter") {
+              if (open && filtered[activeIdx]) {
+                e.preventDefault();
+                select(filtered[activeIdx]);
+              }
+            } else if (e.key === "Escape") {
+              setOpen(false);
+              inputRef.current?.blur();
+            }
+          }}
+          className="w-full bg-cream/5 border border-cream/15 rounded-sm px-3 py-2 pr-9 text-cream placeholder:text-cream/40 focus:outline-none focus:border-court-line"
+        />
+        {selected && !open && (
+          <button
+            type="button"
+            onClick={clear}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-cream/50 hover:text-cream"
+            aria-label="Cancella selezione"
+          >
+            ×
+          </button>
+        )}
+        {!selected && (
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-cream/40 pointer-events-none">
+            ▾
+          </span>
+        )}
+      </div>
+
+      {open && (
+        <div className="absolute z-50 mt-1 w-full max-h-72 overflow-y-auto rounded-sm border border-cream/20 bg-court shadow-lg">
+          {filtered.length === 0 ? (
+            <div className="px-3 py-2 text-sm text-cream/50">
+              Nessun giocatore trovato
+            </div>
+          ) : (
+            filtered.map((p, idx) => (
+              <button
+                key={p.id}
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  select(p);
+                }}
+                onMouseEnter={() => setActiveIdx(idx)}
+                className={cn(
+                  "w-full text-left px-3 py-2 flex items-center gap-3 text-sm transition-colors",
+                  idx === activeIdx
+                    ? "bg-court-line/15 text-cream"
+                    : "text-cream/85 hover:bg-cream/5"
+                )}
+              >
+                {p.fotoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={p.fotoUrl}
+                    alt=""
+                    className="h-6 w-6 rounded-full object-cover bg-cream/10 shrink-0"
+                  />
+                ) : (
+                  <span className="h-6 w-6 rounded-full bg-cream/10 flex items-center justify-center text-[10px] font-mono text-cream/70 shrink-0">
+                    {p.nome[0]}
+                    {p.cognome[0]}
+                  </span>
+                )}
+                <span className="font-semibold">{p.cognome}</span>
+                <span className="text-cream/60">{p.nome}</span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const emptyForm = {
   player1Id: "",
@@ -252,42 +429,26 @@ export default function SquadrePage() {
           <form onSubmit={submit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="p1">Giocatore 1 *</Label>
-              <select
+              <PlayerCombobox
                 id="p1"
+                players={playersAvailable}
                 value={form.player1Id}
-                onChange={(e) => setForm({ ...form, player1Id: e.target.value })}
-                required
-                className="w-full bg-cream/5 border border-cream/15 rounded-sm px-3 py-2 text-cream"
-              >
-                <option value="">— seleziona —</option>
-                {playersAvailable
-                  .filter((p) => p.id !== form.player2Id)
-                  .map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.cognome} {p.nome}
-                    </option>
-                  ))}
-              </select>
+                onChange={(id) => setForm({ ...form, player1Id: id })}
+                placeholder="Cerca per cognome o nome..."
+                excludeId={form.player2Id}
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="p2">Giocatore 2 *</Label>
-              <select
+              <PlayerCombobox
                 id="p2"
+                players={playersAvailable}
                 value={form.player2Id}
-                onChange={(e) => setForm({ ...form, player2Id: e.target.value })}
-                required
-                className="w-full bg-cream/5 border border-cream/15 rounded-sm px-3 py-2 text-cream"
-              >
-                <option value="">— seleziona —</option>
-                {playersAvailable
-                  .filter((p) => p.id !== form.player1Id)
-                  .map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.cognome} {p.nome}
-                    </option>
-                  ))}
-              </select>
+                onChange={(id) => setForm({ ...form, player2Id: id })}
+                placeholder="Cerca per cognome o nome..."
+                excludeId={form.player1Id}
+              />
             </div>
 
             <div className="rounded-sm bg-cream/5 px-4 py-3">

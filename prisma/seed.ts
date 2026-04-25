@@ -113,11 +113,11 @@ async function main() {
 
   const annoCorrente = new Date().getFullYear();
 
-  await prisma.tournament.create({
+  const torneoM = await prisma.tournament.create({
     data: {
       nome: `Torneo Chanteclair ${annoCorrente}`,
       genere: "MASCHILE",
-      stato: "BOZZA",
+      stato: "ATTIVO",
       anno: annoCorrente,
     },
   });
@@ -130,9 +130,59 @@ async function main() {
     },
   });
 
+  // Bracket M precompilato: semifinali concluse, finale Verdi/Neri vs Ferrari/Russo ancora da giocare
+  const byName = (nome: string) => teamsM.find((t) => t.nome === nome)!;
+  const verdiNeri = byName("Verdi / Neri");
+  const ferrariRusso = byName("Ferrari / Russo");
+  const rossiBianchi = byName("Rossi / Bianchi");
+  const mariniConti = byName("Marini / Conti");
+
+  const ora = Date.now();
+  const ore = (h: number) => new Date(ora - h * 3600 * 1000);
+
+  await prisma.match.create({
+    data: {
+      tournamentId: torneoM.id,
+      round: 2,
+      posizione: 0,
+      team1Id: verdiNeri.id,
+      team2Id: mariniConti.id,
+      winnerId: verdiNeri.id,
+      punteggio: "6-3, 6-2",
+      stato: "COMPLETATA",
+      iniziataAt: ore(4),
+      finitaAt: ore(3),
+    },
+  });
+  await prisma.match.create({
+    data: {
+      tournamentId: torneoM.id,
+      round: 2,
+      posizione: 1,
+      team1Id: ferrariRusso.id,
+      team2Id: rossiBianchi.id,
+      winnerId: ferrariRusso.id,
+      punteggio: "7-5, 6-4",
+      stato: "COMPLETATA",
+      iniziataAt: ore(3),
+      finitaAt: ore(2),
+    },
+  });
+  await prisma.match.create({
+    data: {
+      tournamentId: torneoM.id,
+      round: 1,
+      posizione: 0,
+      team1Id: verdiNeri.id,
+      team2Id: ferrariRusso.id,
+      stato: "ATTESA",
+    },
+  });
+
   console.log(`✅ Creati ${maschili.length} giocatori maschili + ${femminili.length} giocatrici femminili`);
   console.log(`✅ Create ${teamsM.length} squadre maschili + ${teamsF.length} squadre femminili`);
-  console.log(`✅ Creati 2 tornei in stato BOZZA (${annoCorrente})`);
+  console.log(`✅ Torneo MASCHILE ATTIVO: 2 semifinali COMPLETATE, finale ATTESA (Verdi/Neri vs Ferrari/Russo)`);
+  console.log(`✅ Torneo FEMMINILE in BOZZA (${annoCorrente})`);
   console.log("");
   console.log("📋 Credenziali admin:");
   console.log("   Email:    admin@chanteclair.it");
