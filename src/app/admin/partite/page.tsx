@@ -23,7 +23,7 @@ function getRoundLabel(round: number, maxRound: number): string {
 }
 
 function PlayerLabel({ player }: { player: PlayerWithMatches | null }) {
-  if (!player) return <span className="italic text-slate-500">BYE</span>;
+  if (!player) return <span className="italic text-cream/40">BYE</span>;
   return (
     <span className="flex items-center gap-2">
       {player.fotoUrl ? (
@@ -31,10 +31,10 @@ function PlayerLabel({ player }: { player: PlayerWithMatches | null }) {
         <img
           src={player.fotoUrl}
           alt=""
-          className="h-7 w-7 rounded-full object-cover bg-slate-700"
+          className="h-7 w-7 rounded-full object-cover bg-cream/10"
         />
       ) : (
-        <span className="h-7 w-7 rounded-full bg-slate-700 flex items-center justify-center text-sm">
+        <span className="h-7 w-7 rounded-full bg-cream/10 flex items-center justify-center text-sm">
           👤
         </span>
       )}
@@ -107,7 +107,7 @@ function PartitaCard({
   };
 
   return (
-    <div className="rounded-md border border-slate-800 bg-slate-900/40 p-4 space-y-3">
+    <div className="rounded-md border border-line bg-court-deep p-4 space-y-3">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <PlayerLabel player={match.player1} />
@@ -115,29 +115,29 @@ function PartitaCard({
         </div>
         <div className="text-right">
           {match.stato === "ATTESA" && (
-            <span className="text-xs uppercase tracking-widest text-slate-400">
+            <span className="text-xs uppercase tracking-widest text-cream/60">
               In attesa
             </span>
           )}
           {match.stato === "IN_CORSO" && (
-            <span className="flex items-center gap-1 text-xs uppercase tracking-widest text-green-400 font-semibold">
+            <span className="flex items-center gap-1 text-xs uppercase tracking-widest text-court-line font-semibold">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-court-line opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-court-line" />
               </span>
               Live
             </span>
           )}
           {match.stato === "COMPLETATA" && (
             <div className="text-right">
-              <span className="text-xs uppercase tracking-widest text-blue-400 font-semibold">
+              <span className="text-xs uppercase tracking-widest text-clay font-semibold">
                 Conclusa
               </span>
-              <p className="text-sm font-mono text-slate-200 mt-1">
+              <p className="text-sm font-mono text-cream/85 mt-1">
                 {match.punteggio}
               </p>
               {match.winner && (
-                <p className="text-xs text-yellow-400 font-semibold">
+                <p className="text-xs text-court-line font-semibold">
                   🏆 {match.winner.nome} {match.winner.cognome}
                 </p>
               )}
@@ -151,7 +151,7 @@ function PartitaCard({
           size="sm"
           onClick={inizia}
           disabled={!canStart || busy}
-          className="bg-green-600 hover:bg-green-500"
+          className="bg-court-line text-court hover:bg-[#e7ff75]"
         >
           ▶ Inizia Partita
         </Button>
@@ -161,21 +161,21 @@ function PartitaCard({
         <Button
           size="sm"
           onClick={() => setShowForm(true)}
-          className="bg-blue-600 hover:bg-blue-500"
+          className="bg-cream text-court hover:bg-cream/90"
         >
           ⏹ Inserisci Risultato
         </Button>
       )}
 
       {match.stato === "IN_CORSO" && showForm && (
-        <div className="space-y-3 p-3 rounded-md bg-slate-800/60">
+        <div className="space-y-3 p-3 rounded-md bg-court-deep/60">
           <div className="space-y-2">
             <Label className="text-xs">Punteggio</Label>
             <Input
               value={punteggio}
               onChange={(e) => setPunteggio(e.target.value)}
               placeholder="Es. 6-3, 7-5"
-              className="bg-slate-800 border-slate-700"
+              className="bg-court-deep border-cream/15"
             />
           </div>
           <div className="space-y-2">
@@ -189,8 +189,8 @@ function PartitaCard({
                   className={cn(
                     "flex items-center gap-2 p-2 rounded-md border-2 transition-colors text-left",
                     winnerId === player!.id
-                      ? "border-green-500 bg-green-950/40"
-                      : "border-slate-700 hover:border-slate-500 bg-slate-900"
+                      ? "border-court-line bg-court-line/10"
+                      : "border-cream/15 hover:border-cream/40 bg-court"
                   )}
                 >
                   <PlayerLabel player={player} />
@@ -203,7 +203,7 @@ function PartitaCard({
               size="sm"
               onClick={termina}
               disabled={busy || !winnerId || !punteggio.trim()}
-              className="bg-green-600 hover:bg-green-500 flex-1"
+              className="bg-court-line text-court hover:bg-[#e7ff75] flex-1"
             >
               {busy ? "Salvataggio..." : "✓ Conferma e Notifica"}
             </Button>
@@ -267,9 +267,22 @@ export default function PartitePage() {
   const maxRound = rounds[0] ?? 0;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Gestione Partite Live</h1>
+    <div className="mx-auto max-w-[1400px] px-6 md:px-12 py-12">
+      <div className="grid grid-cols-12 gap-6 items-end mb-12">
+        <div className="col-span-12 md:col-span-7">
+          <div className="text-eyebrow text-cream/50 mb-3">03 / Diretta</div>
+          <h1 className="text-display-jumbo text-cream text-[10vw] md:text-[6vw]">
+            Partite
+          </h1>
+        </div>
+        <div className="col-span-12 md:col-span-5 md:pl-8 md:border-l border-line">
+          <p className="text-cream/70 leading-relaxed">
+            Ogni azione qui invia un overlay sui tabelloni del club. Click su{" "}
+            <em className="font-display italic text-court-line">Inizia</em> per
+            partire, poi inserisci punteggio e vincitore quando il match si
+            chiude.
+          </p>
+        </div>
       </div>
 
       <Tabs
@@ -277,32 +290,32 @@ export default function PartitePage() {
         onValueChange={(v) => setGenereAttivo(v as Genere)}
         className="mb-6"
       >
-        <TabsList className="bg-slate-800">
+        <TabsList className="bg-court-deep">
           <TabsTrigger value="MASCHILE">Maschile</TabsTrigger>
           <TabsTrigger value="FEMMINILE">Femminile</TabsTrigger>
         </TabsList>
       </Tabs>
 
       {loading ? (
-        <p className="text-slate-400">Caricamento...</p>
+        <p className="text-cream/60">Caricamento...</p>
       ) : !torneo ? (
-        <p className="text-slate-400">
+        <p className="text-cream/60">
           Nessun torneo {genereAttivo.toLowerCase()} disponibile. Creane uno e
           sorteggia il bracket dalla pagina Tornei.
         </p>
       ) : !torneo.matches.length ? (
-        <p className="text-slate-400">
+        <p className="text-cream/60">
           Torneo &quot;{torneo.nome}&quot; senza partite. Esegui il sorteggio dalla pagina
           Tornei.
         </p>
       ) : (
         <div className="space-y-8">
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-cream/60">
             Torneo: <strong className="text-white">{torneo.nome}</strong> · {torneo.anno}
           </p>
           {rounds.map((round) => (
             <section key={round}>
-              <h2 className="text-lg font-semibold mb-3 uppercase tracking-widest text-slate-300">
+              <h2 className="text-lg font-semibold mb-3 uppercase tracking-widest text-cream/80">
                 {getRoundLabel(round, maxRound)}
               </h2>
               <div className="grid md:grid-cols-2 gap-3">
