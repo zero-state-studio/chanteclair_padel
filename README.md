@@ -5,7 +5,7 @@ Web app per la gestione di tornei di padel con tabelloni live, animazioni fullsc
 ## Stack Tecnologico
 
 - **Next.js 16** (App Router, Turbopack) — framework full-stack
-- **Prisma + SQLite** — database locale (da migrare a PostgreSQL/Supabase in produzione)
+- **Prisma + Postgres (Supabase)** — database hosted (eu-north-1)
 - **NextAuth v5** — autenticazione admin (credentials provider)
 - **Tailwind CSS v4 + shadcn/ui** — UI
 - **Framer Motion** — animazioni fullscreen live
@@ -23,19 +23,16 @@ npm install
 
 ### 2. Configura le variabili d'ambiente
 
-Il repo include già due file:
-
-- `.env` — usato da Prisma (solo `DATABASE_URL`)
-- `.env.local` — usato da Next.js (auth + admin)
-
-Valori di sviluppo (modificali se necessario):
+Il repo include `.env`, `.env.local` e `.env.example`. Devi compilare `[PASSWORD]` con il
+password DB del progetto Supabase (Dashboard → Project Settings → Database → Connection string).
 
 ```env
-# .env
-DATABASE_URL="file:./dev.db"
+# .env (Prisma)
+DATABASE_URL="postgresql://postgres.[REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
+DIRECT_URL="postgresql://postgres.[REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres"
 
-# .env.local
-DATABASE_URL="file:./dev.db"
+# .env.local (Next.js — duplica DATABASE_URL/DIRECT_URL + auth)
+NEXT_PUBLIC_SUPABASE_URL="https://[REF].supabase.co"
 NEXTAUTH_SECRET="chanteclair-padel-secret-key-2024"
 AUTH_SECRET="chanteclair-padel-secret-key-2024"
 AUTH_TRUST_HOST="true"
@@ -44,19 +41,27 @@ ADMIN_EMAIL="admin@chanteclair.it"
 ADMIN_PASSWORD="admin123"
 ```
 
-### 3. Crea il database e applica le migrazioni
+> Il progetto è attualmente puntato a Supabase project ref `qlhyvkymnoifepfeexbe`, region
+> `eu-north-1`. Lo schema iniziale è già applicato sul DB Supabase.
+
+### 3. Allinea Prisma con la migrazione già applicata su Supabase
+
+Lo schema è stato applicato dal Supabase MCP la prima volta. Marca la migrazione come
+applicata in Prisma per evitare conflitti:
 
 ```bash
-npx prisma migrate dev
+npx prisma migrate resolve --applied 20260425180000_init
+npx prisma generate
 ```
 
-### 4. Popola con dati demo
+### 4. Popola con dati demo (opzionale)
+
+I dati di esempio sono già stati seedati sul DB Supabase (8 M + 8 F + 2 tornei BOZZA).
+Per re-seedare azzerando tutto:
 
 ```bash
 npm run db:seed
 ```
-
-Crea 8 giocatori maschili + 8 femminili (4 teste di serie ciascuno) e 2 tornei in stato `BOZZA`.
 
 ### 5. Avvia il server di sviluppo
 
@@ -132,9 +137,12 @@ LiveMatchOverlay (Framer Motion fullscreen)
 npm run dev          # avvia dev server
 npm run build        # build di produzione
 npm run db:seed      # popola DB con dati demo
-npm run db:reset     # reset migrate + ri-seed
+npm run db:reset     # ATTENZIONE: drop + re-create + ri-seed (su Supabase!)
 npm run db:studio    # apre Prisma Studio
 ```
+
+> `db:reset` esegue una distruttiva `prisma migrate reset` contro il DB configurato.
+> Su Supabase elimina tutti i dati. Usa con cautela.
 
 ---
 

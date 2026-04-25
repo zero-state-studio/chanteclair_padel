@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { StatoTorneo } from "@/types";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 const STATI: StatoTorneo[] = ["BOZZA", "ATTIVO", "CONCLUSO"];
 
 type RouteContext = { params: Promise<{ id: string }> };
