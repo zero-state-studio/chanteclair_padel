@@ -151,14 +151,25 @@ export default function GiocatoriPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Gestione Giocatori</h1>
-        <Button onClick={openCreate} className="bg-green-600 hover:bg-green-500">
-          + Aggiungi Giocatore
-        </Button>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="bg-slate-900 border-slate-700 text-slate-100 max-h-[90vh] overflow-y-auto">
+    <div className="mx-auto max-w-[1400px] px-6 md:px-12 py-12">
+      <div className="grid grid-cols-12 gap-6 mb-12 items-end">
+        <div className="col-span-12 md:col-span-7">
+          <div className="text-eyebrow text-cream/50 mb-3">01 / Roster</div>
+          <h1 className="text-display-jumbo text-cream text-[10vw] md:text-[6vw]">
+            Giocatori
+          </h1>
+        </div>
+        <div className="col-span-12 md:col-span-5 flex md:justify-end">
+          <Button
+            onClick={openCreate}
+            className="bg-court-line text-court hover:bg-[#e7ff75] font-body font-semibold tracking-wider uppercase text-xs h-12 px-6 rounded-sm"
+          >
+            + Nuovo giocatore
+          </Button>
+        </div>
+      </div>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="bg-court-deep border-cream/15 text-cream max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editing ? "Modifica giocatore" : "Nuovo giocatore"}
@@ -172,7 +183,7 @@ export default function GiocatoriPage() {
                     id="nome"
                     value={form.nome}
                     onChange={(e) => setForm({ ...form, nome: e.target.value })}
-                    className="bg-slate-800 border-slate-700"
+                    className="bg-cream/5 border-cream/15 text-cream"
                     required
                   />
                 </div>
@@ -182,7 +193,7 @@ export default function GiocatoriPage() {
                     id="cognome"
                     value={form.cognome}
                     onChange={(e) => setForm({ ...form, cognome: e.target.value })}
-                    className="bg-slate-800 border-slate-700"
+                    className="bg-cream/5 border-cream/15 text-cream"
                     required
                   />
                 </div>
@@ -194,7 +205,7 @@ export default function GiocatoriPage() {
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="bg-slate-800 border-slate-700"
+                  className="bg-cream/5 border-cream/15 text-cream"
                 />
               </div>
               <div className="space-y-2">
@@ -204,7 +215,7 @@ export default function GiocatoriPage() {
                   type="tel"
                   value={form.telefono}
                   onChange={(e) => setForm({ ...form, telefono: e.target.value })}
-                  className="bg-slate-800 border-slate-700"
+                  className="bg-cream/5 border-cream/15 text-cream"
                 />
               </div>
               <div className="space-y-2">
@@ -222,7 +233,7 @@ export default function GiocatoriPage() {
                       livello: parseInt(e.target.value || "0", 10),
                     })
                   }
-                  className="bg-slate-800 border-slate-700"
+                  className="bg-cream/5 border-cream/15 text-cream"
                 />
               </div>
               <div className="space-y-2">
@@ -233,10 +244,10 @@ export default function GiocatoriPage() {
                     <img
                       src={fotoPreview}
                       alt="anteprima"
-                      className="h-16 w-16 rounded-full object-cover bg-slate-700"
+                      className="h-16 w-16 rounded-full object-cover bg-cream/10"
                     />
                   ) : (
-                    <div className="h-16 w-16 rounded-full bg-slate-700 flex items-center justify-center text-2xl">
+                    <div className="h-16 w-16 rounded-full bg-cream/10 flex items-center justify-center text-2xl">
                       👤
                     </div>
                   )}
@@ -246,7 +257,7 @@ export default function GiocatoriPage() {
                     type="file"
                     accept="image/*"
                     onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
-                    className="bg-slate-800 border-slate-700"
+                    className="bg-cream/5 border-cream/15 text-cream"
                   />
                 </div>
               </div>
@@ -262,7 +273,7 @@ export default function GiocatoriPage() {
                 <Button
                   type="submit"
                   disabled={submitting}
-                  className="bg-green-600 hover:bg-green-500"
+                  className="bg-court-line text-court hover:bg-[#e7ff75]"
                 >
                   {submitting ? "Salvataggio..." : editing ? "Salva" : "Crea"}
                 </Button>
@@ -270,23 +281,22 @@ export default function GiocatoriPage() {
             </form>
           </DialogContent>
         </Dialog>
-      </div>
 
       <Tabs
         value={genereAttivo}
         onValueChange={(v) => setGenereAttivo(v as Genere)}
         className="mb-4"
       >
-        <TabsList className="bg-slate-800">
+        <TabsList className="bg-court-deep">
           <TabsTrigger value="MASCHILE">Maschile</TabsTrigger>
           <TabsTrigger value="FEMMINILE">Femminile</TabsTrigger>
         </TabsList>
       </Tabs>
 
-      <div className="rounded-md border border-slate-800 bg-slate-900/40">
+      <div className="rounded-md border border-line bg-slate-900/40">
         <Table>
           <TableHeader>
-            <TableRow className="border-slate-800 hover:bg-transparent">
+            <TableRow className="border-line hover:bg-transparent">
               <TableHead className="w-16">Foto</TableHead>
               <TableHead>Nome</TableHead>
               <TableHead>Cognome</TableHead>
@@ -298,29 +308,29 @@ export default function GiocatoriPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-slate-400 py-8">
+                <TableCell colSpan={6} className="text-center text-cream/60 py-8">
                   Caricamento...
                 </TableCell>
               </TableRow>
             ) : players.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-slate-400 py-8">
+                <TableCell colSpan={6} className="text-center text-cream/60 py-8">
                   Nessun giocatore. Aggiungine uno con il pulsante a destra.
                 </TableCell>
               </TableRow>
             ) : (
               players.map((p) => (
-                <TableRow key={p.id} className="border-slate-800">
+                <TableRow key={p.id} className="border-line">
                   <TableCell>
                     {p.fotoUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={p.fotoUrl}
                         alt=""
-                        className="h-10 w-10 rounded-full object-cover bg-slate-700"
+                        className="h-10 w-10 rounded-full object-cover bg-cream/10"
                       />
                     ) : (
-                      <div className="h-10 w-10 rounded-full bg-slate-700 flex items-center justify-center">
+                      <div className="h-10 w-10 rounded-full bg-cream/10 flex items-center justify-center">
                         👤
                       </div>
                     )}
@@ -331,17 +341,17 @@ export default function GiocatoriPage() {
                     {p.livello > 0 ? (
                       <Badge className="bg-green-600">#{p.livello}</Badge>
                     ) : (
-                      <span className="text-slate-500">—</span>
+                      <span className="text-cream/40">—</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-slate-400">{p.email ?? "—"}</TableCell>
+                  <TableCell className="text-cream/60">{p.email ?? "—"}</TableCell>
                   <TableCell className="text-right">
                     <div className="inline-flex gap-2">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => openEdit(p)}
-                        className="bg-transparent border-slate-700 hover:bg-slate-800"
+                        className="bg-transparent border-slate-700 hover:bg-court-deep"
                       >
                         Modifica
                       </Button>

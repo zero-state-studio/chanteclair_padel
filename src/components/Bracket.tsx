@@ -1,12 +1,18 @@
 import { BracketMatch } from "@/components/BracketMatch";
 import type { MatchWithPlayers, TournamentWithMatches } from "@/types";
 
-function getRoundLabel(round: number, maxRound: number): string {
-  if (round === 1) return "🏆 Finale";
-  if (round === 2) return "Semifinali";
-  if (round === 3) return "Quarti di Finale";
-  if (round === 4) return "Ottavi di Finale";
-  return `Turno ${maxRound - round + 1}`;
+function getRoundLabel(round: number, maxRound: number): {
+  primary: string;
+  secondary: string;
+} {
+  if (round === 1) return { primary: "Finale", secondary: "Round 01" };
+  if (round === 2) return { primary: "Semifinali", secondary: "Round 02" };
+  if (round === 3) return { primary: "Quarti", secondary: "Round 03" };
+  if (round === 4) return { primary: "Ottavi", secondary: "Round 04" };
+  return {
+    primary: `Turno ${maxRound - round + 1}`,
+    secondary: `Round 0${maxRound - round + 1}`,
+  };
 }
 
 interface BracketProps {
@@ -16,8 +22,11 @@ interface BracketProps {
 export function Bracket({ torneo }: BracketProps) {
   if (!torneo.matches.length) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <p className="text-slate-400">Bracket non ancora generato.</p>
+      <div className="flex flex-col items-center justify-center py-20">
+        <p className="font-display italic text-3xl text-cream/50">
+          Bracket non ancora generato
+        </p>
+        <p className="text-eyebrow text-cream/40 mt-3">In attesa di sorteggio</p>
       </div>
     );
   }
@@ -38,30 +47,52 @@ export function Bracket({ torneo }: BracketProps) {
 
   return (
     <div className="overflow-x-auto">
-      <div className="inline-flex gap-10 px-6 py-8 min-w-full">
-        {rounds.map((round) => (
-          <div
-            key={round}
-            className="flex flex-col justify-around gap-4"
-            style={{ minWidth: 220 }}
-          >
-            <div className="text-center text-xs uppercase tracking-widest text-slate-400 mb-2">
-              {getRoundLabel(round, maxRound)}
-            </div>
+      <div className="inline-flex gap-12 px-6 md:px-12 py-12 min-w-full">
+        {rounds.map((round, roundIdx) => {
+          const label = getRoundLabel(round, maxRound);
+          const matches = matchesByRound[round].sort(
+            (a, b) => a.posizione - b.posizione
+          );
+
+          return (
             <div
+              key={round}
               className="flex flex-col"
-              style={{
-                gap: `${Math.pow(2, maxRound - round) * 0.75}rem`,
-              }}
+              style={{ minWidth: 252 }}
             >
-              {matchesByRound[round]
-                .sort((a, b) => a.posizione - b.posizione)
-                .map((match) => (
+              <div className="mb-8 flex items-baseline justify-between border-b border-cream/15 pb-3">
+                <div>
+                  <div className="text-eyebrow text-cream/40 mb-1">
+                    {label.secondary}
+                  </div>
+                  <div className="font-display text-2xl text-cream leading-none">
+                    {label.primary}
+                  </div>
+                </div>
+                <span className="text-stat text-xs text-cream/40">
+                  {matches.length}/
+                  <span className="text-cream/20">
+                    {Math.pow(2, maxRound - round)}
+                  </span>
+                </span>
+              </div>
+              <div
+                className="flex flex-col"
+                style={{
+                  gap: `${Math.pow(2, maxRound - round) * 1.1}rem`,
+                  paddingTop:
+                    roundIdx === 0
+                      ? 0
+                      : `${(Math.pow(2, maxRound - round) - 1) * 0.55}rem`,
+                }}
+              >
+                {matches.map((match) => (
                   <BracketMatch key={match.id} match={match} />
                 ))}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

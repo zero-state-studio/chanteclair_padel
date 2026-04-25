@@ -8,16 +8,18 @@ interface BracketMatchProps {
 function PlayerRow({
   player,
   isWinner,
-  punteggio,
+  isLoser,
+  scoreCell,
 }: {
   player: PlayerWithMatches | null;
   isWinner: boolean;
-  punteggio?: string;
+  isLoser: boolean;
+  scoreCell?: string;
 }) {
   if (!player) {
     return (
-      <div className="flex items-center justify-between gap-2 px-3 py-2 text-slate-500 italic">
-        <span className="text-sm">BYE</span>
+      <div className="flex items-center gap-3 px-4 py-2.5 text-cream/30">
+        <span className="font-mono text-[10px] tracking-widest uppercase">— bye</span>
       </div>
     );
   }
@@ -25,45 +27,51 @@ function PlayerRow({
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-2 px-3 py-2",
-        isWinner && "bg-green-950/40 border-l-2 border-green-500"
+        "flex items-center justify-between gap-3 px-4 py-2.5 transition-colors",
+        isLoser && "opacity-40"
       )}
     >
-      <div className="flex items-center gap-2 min-w-0">
+      <div className="flex items-center gap-3 min-w-0">
         {player.fotoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={player.fotoUrl}
-            alt={`${player.nome} ${player.cognome}`}
-            className="h-8 w-8 rounded-full object-cover bg-slate-700 shrink-0"
+            alt=""
+            className="h-7 w-7 rounded-full object-cover bg-cream/10 shrink-0 ring-1 ring-cream/15"
           />
         ) : (
-          <div className="h-8 w-8 rounded-full bg-slate-700 flex items-center justify-center text-sm shrink-0">
-            👤
+          <div className="h-7 w-7 rounded-full bg-cream/10 ring-1 ring-cream/15 flex items-center justify-center text-[10px] font-mono text-cream/60 shrink-0">
+            {player.nome[0]}
+            {player.cognome[0]}
           </div>
         )}
-        <div className="min-w-0">
-          <p
+        <div className="min-w-0 flex items-baseline gap-2">
+          <span
             className={cn(
-              "text-sm leading-tight truncate",
-              isWinner ? "font-bold text-white" : "text-slate-200"
-            )}
-          >
-            {player.nome}
-          </p>
-          <p
-            className={cn(
-              "text-xs leading-tight truncate",
-              isWinner ? "font-semibold text-white" : "text-slate-300"
+              "font-body text-sm leading-tight truncate",
+              isWinner ? "font-semibold text-cream" : "text-cream/85"
             )}
           >
             {player.cognome}
-          </p>
+          </span>
+          <span className="text-[11px] text-cream/45 truncate">
+            {player.nome}
+          </span>
+          {player.livello > 0 && (
+            <span className="text-[9px] font-mono text-court-line/80 shrink-0">
+              [{player.livello}]
+            </span>
+          )}
         </div>
       </div>
-      {punteggio && (
-        <span className="text-xs font-mono text-slate-300 shrink-0">{punteggio}</span>
-      )}
+      <span
+        className={cn(
+          "text-stat text-xs shrink-0 tabular-nums",
+          isWinner ? "text-court-line" : "text-cream/45"
+        )}
+      >
+        {scoreCell ?? ""}
+      </span>
     </div>
   );
 }
@@ -77,39 +85,68 @@ export function BracketMatch({ match }: BracketMatchProps) {
   const player2Won =
     isCompletata && match.winner !== null && match.player2?.id === match.winner.id;
 
-  const punteggio = match.punteggio ?? undefined;
+  const punteggio = match.punteggio;
+  const sets = punteggio ? punteggio.split(",").map((s) => s.trim()) : [];
+  const set1Win = sets[0]?.split("-")[0];
+  const set1Loss = sets[0]?.split("-")[1];
 
   return (
     <div
       className={cn(
-        "w-[220px] rounded-md border border-slate-700 bg-slate-800 overflow-hidden shadow-sm",
-        isInCorso && "border-green-500 bg-green-950/30 shadow-green-500/30 shadow-md"
+        "relative w-[252px] rounded-sm bg-court border transition-all",
+        isInCorso
+          ? "border-court-line glow-line"
+          : isCompletata
+          ? "border-cream/15"
+          : "border-cream/10"
       )}
     >
-      <div className="flex items-center justify-between px-3 py-1 border-b border-slate-700/60 bg-slate-900/40">
+      {/* Status strip */}
+      <div className="flex items-center justify-between px-4 py-1.5 border-b border-cream/10">
+        <span className="font-mono text-[9px] tracking-[0.32em] uppercase text-cream/40">
+          {isInCorso ? "Live" : isCompletata ? "Final" : "—"}
+        </span>
         {isInCorso && (
-          <span className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-green-400 font-semibold">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
-            </span>
-            Live
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-court-line opacity-60" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-court-line" />
           </span>
         )}
         {isCompletata && (
-          <span className="text-[10px] uppercase tracking-wider text-blue-400 font-semibold">
-            Conclusa
-          </span>
-        )}
-        {match.stato === "ATTESA" && (
-          <span className="text-[10px] uppercase tracking-wider text-slate-500">
-            In attesa
+          <span className="text-[9px] font-mono text-cream/40 tabular-nums">
+            {match.finitaAt
+              ? new Date(match.finitaAt).toLocaleDateString("it-IT", {
+                  day: "2-digit",
+                  month: "short",
+                })
+              : ""}
           </span>
         )}
       </div>
-      <PlayerRow player={match.player1} isWinner={player1Won} punteggio={player1Won ? punteggio : undefined} />
-      <div className="border-t border-slate-700/60" />
-      <PlayerRow player={match.player2} isWinner={player2Won} punteggio={player2Won ? punteggio : undefined} />
+
+      <PlayerRow
+        player={match.player1}
+        isWinner={player1Won}
+        isLoser={isCompletata && !player1Won}
+        scoreCell={
+          isCompletata ? (player1Won ? set1Win : set1Loss) : undefined
+        }
+      />
+      <div className="border-t border-cream/8" />
+      <PlayerRow
+        player={match.player2}
+        isWinner={player2Won}
+        isLoser={isCompletata && !player2Won}
+        scoreCell={
+          isCompletata ? (player2Won ? set1Win : set1Loss) : undefined
+        }
+      />
+
+      {isCompletata && punteggio && sets.length > 1 && (
+        <div className="px-4 py-1.5 border-t border-cream/10 text-stat text-[10px] text-cream/55 text-right">
+          {punteggio}
+        </div>
+      )}
     </div>
   );
 }

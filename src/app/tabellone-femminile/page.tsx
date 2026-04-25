@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { TabelloneClient } from "@/components/TabelloneClient";
-import Link from "next/link";
+import { TabelloneHeader } from "@/components/TabelloneHeader";
 import type { TournamentWithMatches } from "@/types";
 
 export const dynamic = "force-dynamic";
@@ -17,23 +17,12 @@ export default async function TabelloneFemminilePage() {
   });
 
   return (
-    <main className="min-h-screen bg-slate-900 text-white">
-      <header className="px-6 py-5 border-b border-slate-700 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold">🎾 Tabellone Femminile</h1>
-          {torneo && (
-            <p className="text-slate-400 text-sm mt-1">
-              {torneo.nome} — {torneo.anno}
-            </p>
-          )}
-        </div>
-        <Link
-          href="/"
-          className="text-sm text-slate-400 hover:text-white transition-colors"
-        >
-          ← Home
-        </Link>
-      </header>
+    <main className="min-h-screen bg-court text-cream">
+      <TabelloneHeader
+        sezione="Sezione F"
+        titolo="Femminile"
+        torneo={torneo ? { nome: torneo.nome, anno: torneo.anno } : null}
+      />
 
       {torneo ? (
         <TabelloneClient
@@ -41,8 +30,11 @@ export default async function TabelloneFemminilePage() {
           genere="FEMMINILE"
         />
       ) : (
-        <div className="flex items-center justify-center h-64">
-          <p className="text-slate-400 text-xl">Nessun torneo femminile attivo al momento.</p>
+        <div className="flex flex-col items-center justify-center min-h-[50vh]">
+          <p className="font-display italic text-4xl text-cream/50">
+            Nessun torneo femminile attivo
+          </p>
+          <p className="text-eyebrow text-cream/40 mt-4">torna presto</p>
         </div>
       )}
     </main>
