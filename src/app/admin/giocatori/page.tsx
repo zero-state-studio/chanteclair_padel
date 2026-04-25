@@ -32,7 +32,8 @@ type Player = {
   telefono: string | null;
   fotoUrl: string | null;
   genere: Genere;
-  livello: number;
+  teamAsPlayer1?: { id: string; nome: string } | null;
+  teamAsPlayer2?: { id: string; nome: string } | null;
 };
 
 const empty = {
@@ -40,7 +41,6 @@ const empty = {
   cognome: "",
   email: "",
   telefono: "",
-  livello: 0,
 };
 
 export default function GiocatoriPage() {
@@ -86,7 +86,6 @@ export default function GiocatoriPage() {
       cognome: p.cognome,
       email: p.email ?? "",
       telefono: p.telefono ?? "",
-      livello: p.livello,
     });
     setFoto(null);
     setFotoPreview(p.fotoUrl);
@@ -118,7 +117,6 @@ export default function GiocatoriPage() {
       fd.append("email", form.email.trim());
       fd.append("telefono", form.telefono.trim());
       fd.append("genere", genereAttivo);
-      fd.append("livello", String(form.livello));
       if (foto) fd.append("foto", foto);
 
       const url = editing ? `/api/giocatori/${editing.id}` : "/api/giocatori";
@@ -219,24 +217,6 @@ export default function GiocatoriPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="livello">
-                  Testa di Serie (0 = nessuna, 1 = prima, 2 = seconda...)
-                </Label>
-                <Input
-                  id="livello"
-                  type="number"
-                  min={0}
-                  value={form.livello}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      livello: parseInt(e.target.value || "0", 10),
-                    })
-                  }
-                  className="bg-cream/5 border-cream/15 text-cream"
-                />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="foto">Foto</Label>
                 <div className="flex items-center gap-3">
                   {fotoPreview ? (
@@ -293,14 +273,14 @@ export default function GiocatoriPage() {
         </TabsList>
       </Tabs>
 
-      <div className="rounded-md border border-line bg-slate-900/40">
+      <div className="rounded-md border border-line bg-court-deep">
         <Table>
           <TableHeader>
             <TableRow className="border-line hover:bg-transparent">
               <TableHead className="w-16">Foto</TableHead>
               <TableHead>Nome</TableHead>
               <TableHead>Cognome</TableHead>
-              <TableHead>Testa di Serie</TableHead>
+              <TableHead>Squadra</TableHead>
               <TableHead>Email</TableHead>
               <TableHead className="text-right">Azioni</TableHead>
             </TableRow>
@@ -338,8 +318,10 @@ export default function GiocatoriPage() {
                   <TableCell>{p.nome}</TableCell>
                   <TableCell>{p.cognome}</TableCell>
                   <TableCell>
-                    {p.livello > 0 ? (
-                      <Badge className="bg-green-600">#{p.livello}</Badge>
+                    {p.teamAsPlayer1 || p.teamAsPlayer2 ? (
+                      <Badge className="bg-court-line text-court font-mono">
+                        {p.teamAsPlayer1?.nome ?? p.teamAsPlayer2?.nome}
+                      </Badge>
                     ) : (
                       <span className="text-cream/40">—</span>
                     )}

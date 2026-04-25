@@ -149,7 +149,7 @@ export default async function HomePage() {
                 (m) => m.stato === "IN_CORSO"
               ).length;
               const totali = torneo.matches.filter(
-                (m) => m.player1Id || m.player2Id
+                (m) => m.team1Id || m.team2Id
               ).length;
               const href =
                 torneo.genere === "MASCHILE"

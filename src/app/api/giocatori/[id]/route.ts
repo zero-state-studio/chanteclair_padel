@@ -49,15 +49,6 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     data.genere = genere.trim();
   }
 
-  const livelloRaw = formData.get("livello");
-  if (typeof livelloRaw === "string" && livelloRaw !== "") {
-    const livello = parseInt(livelloRaw, 10);
-    if (!Number.isFinite(livello)) {
-      return NextResponse.json({ error: "livello non valido" }, { status: 400 });
-    }
-    data.livello = livello;
-  }
-
   const foto = formData.get("foto") as File | null;
   if (foto && foto.size > 0) {
     if (existing.fotoUrl) await deletePhoto(existing.fotoUrl);

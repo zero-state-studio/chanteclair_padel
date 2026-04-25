@@ -7,8 +7,9 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/admin/giocatori", label: "Giocatori", code: "01" },
-  { href: "/admin/torneo", label: "Tornei", code: "02" },
-  { href: "/admin/partite", label: "Partite", code: "03" },
+  { href: "/admin/squadre", label: "Squadre", code: "02" },
+  { href: "/admin/torneo", label: "Tornei", code: "03" },
+  { href: "/admin/partite", label: "Partite", code: "04" },
 ];
 
 export function AdminNav() {

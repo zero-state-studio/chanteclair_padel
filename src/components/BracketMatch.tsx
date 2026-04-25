@@ -1,22 +1,38 @@
 import { cn } from "@/lib/utils";
-import type { MatchWithPlayers, PlayerWithMatches } from "@/types";
+import type { MatchWithTeams, TeamWithPlayers, PlayerWithMatches } from "@/types";
 
 interface BracketMatchProps {
-  match: MatchWithPlayers;
+  match: MatchWithTeams;
 }
 
-function PlayerRow({
-  player,
+function PlayerAvatar({ player }: { player: PlayerWithMatches }) {
+  return player.fotoUrl ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={player.fotoUrl}
+      alt=""
+      className="h-7 w-7 rounded-full object-cover bg-cream/10 shrink-0 ring-1 ring-cream/15"
+    />
+  ) : (
+    <div className="h-7 w-7 rounded-full bg-cream/10 ring-1 ring-cream/15 flex items-center justify-center text-[10px] font-mono text-cream/60 shrink-0">
+      {player.nome[0]}
+      {player.cognome[0]}
+    </div>
+  );
+}
+
+function TeamRow({
+  team,
   isWinner,
   isLoser,
   scoreCell,
 }: {
-  player: PlayerWithMatches | null;
+  team: TeamWithPlayers | null;
   isWinner: boolean;
   isLoser: boolean;
   scoreCell?: string;
 }) {
-  if (!player) {
+  if (!team) {
     return (
       <div className="flex items-center gap-3 px-4 py-2.5 text-cream/30">
         <span className="font-mono text-[10px] tracking-widest uppercase">— bye</span>
@@ -32,34 +48,22 @@ function PlayerRow({
       )}
     >
       <div className="flex items-center gap-3 min-w-0">
-        {player.fotoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={player.fotoUrl}
-            alt=""
-            className="h-7 w-7 rounded-full object-cover bg-cream/10 shrink-0 ring-1 ring-cream/15"
-          />
-        ) : (
-          <div className="h-7 w-7 rounded-full bg-cream/10 ring-1 ring-cream/15 flex items-center justify-center text-[10px] font-mono text-cream/60 shrink-0">
-            {player.nome[0]}
-            {player.cognome[0]}
-          </div>
-        )}
-        <div className="min-w-0 flex items-baseline gap-2">
+        <div className="flex -space-x-2 shrink-0">
+          <PlayerAvatar player={team.player1} />
+          <PlayerAvatar player={team.player2} />
+        </div>
+        <div className="min-w-0 flex flex-col">
           <span
             className={cn(
               "font-body text-sm leading-tight truncate",
               isWinner ? "font-semibold text-cream" : "text-cream/85"
             )}
           >
-            {player.cognome}
+            {team.player1.cognome} / {team.player2.cognome}
           </span>
-          <span className="text-[11px] text-cream/45 truncate">
-            {player.nome}
-          </span>
-          {player.livello > 0 && (
-            <span className="text-[9px] font-mono text-court-line/80 shrink-0">
-              [{player.livello}]
+          {team.livello > 0 && (
+            <span className="text-[9px] font-mono text-court-line/80 leading-tight">
+              tds {team.livello}
             </span>
           )}
         </div>
@@ -80,10 +84,10 @@ export function BracketMatch({ match }: BracketMatchProps) {
   const isInCorso = match.stato === "IN_CORSO";
   const isCompletata = match.stato === "COMPLETATA";
 
-  const player1Won =
-    isCompletata && match.winner !== null && match.player1?.id === match.winner.id;
-  const player2Won =
-    isCompletata && match.winner !== null && match.player2?.id === match.winner.id;
+  const team1Won =
+    isCompletata && match.winner !== null && match.team1?.id === match.winner.id;
+  const team2Won =
+    isCompletata && match.winner !== null && match.team2?.id === match.winner.id;
 
   const punteggio = match.punteggio;
   const sets = punteggio ? punteggio.split(",").map((s) => s.trim()) : [];
@@ -101,7 +105,6 @@ export function BracketMatch({ match }: BracketMatchProps) {
           : "border-cream/10"
       )}
     >
-      {/* Status strip */}
       <div className="flex items-center justify-between px-4 py-1.5 border-b border-cream/10">
         <span className="font-mono text-[9px] tracking-[0.32em] uppercase text-cream/40">
           {isInCorso ? "Live" : isCompletata ? "Final" : "—"}
@@ -124,21 +127,21 @@ export function BracketMatch({ match }: BracketMatchProps) {
         )}
       </div>
 
-      <PlayerRow
-        player={match.player1}
-        isWinner={player1Won}
-        isLoser={isCompletata && !player1Won}
+      <TeamRow
+        team={match.team1}
+        isWinner={team1Won}
+        isLoser={isCompletata && !team1Won}
         scoreCell={
-          isCompletata ? (player1Won ? set1Win : set1Loss) : undefined
+          isCompletata ? (team1Won ? set1Win : set1Loss) : undefined
         }
       />
       <div className="border-t border-cream/8" />
-      <PlayerRow
-        player={match.player2}
-        isWinner={player2Won}
-        isLoser={isCompletata && !player2Won}
+      <TeamRow
+        team={match.team2}
+        isWinner={team2Won}
+        isLoser={isCompletata && !team2Won}
         scoreCell={
-          isCompletata ? (player2Won ? set1Win : set1Loss) : undefined
+          isCompletata ? (team2Won ? set1Win : set1Loss) : undefined
         }
       />
 

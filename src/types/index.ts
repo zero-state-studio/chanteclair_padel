@@ -10,17 +10,25 @@ export interface PlayerWithMatches {
   telefono?: string | null;
   fotoUrl?: string | null;
   genere: Genere;
-  livello: number;
 }
 
-export interface MatchWithPlayers {
+export interface TeamWithPlayers {
+  id: string;
+  nome: string;
+  genere: Genere;
+  livello: number;
+  player1: PlayerWithMatches;
+  player2: PlayerWithMatches;
+}
+
+export interface MatchWithTeams {
   id: string;
   tournamentId: string;
   round: number;
   posizione: number;
-  player1: PlayerWithMatches | null;
-  player2: PlayerWithMatches | null;
-  winner: PlayerWithMatches | null;
+  team1: TeamWithPlayers | null;
+  team2: TeamWithPlayers | null;
+  winner: TeamWithPlayers | null;
   punteggio: string | null;
   stato: StatoPartita;
   iniziataAt: string | null;
@@ -33,15 +41,15 @@ export interface TournamentWithMatches {
   genere: Genere;
   stato: StatoTorneo;
   anno: number;
-  matches: MatchWithPlayers[];
+  matches: MatchWithTeams[];
 }
 
 export interface LiveEvent {
   tipo: "PARTITA_INIZIATA" | "PARTITA_FINITA";
   matchId: string;
-  player1: PlayerWithMatches;
-  player2: PlayerWithMatches;
+  team1: TeamWithPlayers;
+  team2: TeamWithPlayers;
   punteggio?: string;
-  winner?: PlayerWithMatches;
+  winner?: TeamWithPlayers;
   genere: Genere;
 }
