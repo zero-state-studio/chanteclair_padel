@@ -20,9 +20,9 @@ import type { Genere, StatoTorneo, TournamentWithMatches } from "@/types";
 type TorneoListItem = TournamentWithMatches;
 
 const STATO_BADGE: Record<StatoTorneo, string> = {
-  BOZZA: "bg-slate-600",
-  ATTIVO: "bg-green-600",
-  CONCLUSO: "bg-blue-600",
+  BOZZA: "bg-cream/20 text-cream",
+  ATTIVO: "bg-court-line text-court",
+  CONCLUSO: "bg-clay text-cream",
 };
 
 export default function TorneoPage() {
@@ -164,11 +164,26 @@ export default function TorneoPage() {
   const previewTorneo = tornei.find((t) => t.id === previewTorneoId);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 space-y-10">
-      <h1 className="text-3xl font-bold">Tornei & Sorteggio</h1>
+    <div className="mx-auto max-w-[1400px] px-6 md:px-12 py-12 space-y-12">
+      <div className="grid grid-cols-12 gap-6 items-end">
+        <div className="col-span-12 md:col-span-7">
+          <div className="text-eyebrow text-cream/50 mb-3">02 / Tornei</div>
+          <h1 className="text-display-jumbo text-cream text-[10vw] md:text-[6vw]">
+            Tornei
+          </h1>
+        </div>
+        <div className="col-span-12 md:col-span-5 md:pl-8 md:border-l border-line">
+          <p className="text-cream/70 leading-relaxed">
+            Crea l&apos;edizione, sorteggia il bracket, attiva la diretta. Il
+            sorteggio applica le teste di serie del regolamento e aggiunge i BYE
+            necessari per chiudere il tabellone alla potenza di 2 successiva.
+          </p>
+        </div>
+      </div>
 
-      <section className="rounded-lg border border-slate-800 bg-slate-900/40 p-6">
-        <h2 className="text-xl font-semibold mb-4">Crea nuovo torneo</h2>
+      <section className="rounded-sm border border-line bg-court-deep p-8">
+        <div className="text-eyebrow text-court-line mb-2">— nuova edizione</div>
+        <h2 className="font-display text-3xl mb-6 text-cream">Crea torneo</h2>
         <form onSubmit={handleCreate} className="grid md:grid-cols-4 gap-3">
           <div className="md:col-span-2 space-y-2">
             <Label htmlFor="nome-t">Nome torneo</Label>
@@ -177,7 +192,7 @@ export default function TorneoPage() {
               value={form.nome}
               onChange={(e) => setForm({ ...form, nome: e.target.value })}
               placeholder="Es. Torneo Estivo"
-              className="bg-slate-800 border-slate-700"
+              className="bg-cream/5 border-cream/15 text-cream"
               required
             />
           </div>
@@ -187,10 +202,10 @@ export default function TorneoPage() {
               value={form.genere}
               onValueChange={(v) => setForm({ ...form, genere: v as Genere })}
             >
-              <SelectTrigger className="bg-slate-800 border-slate-700">
+              <SelectTrigger className="bg-cream/5 border-cream/15 text-cream">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-slate-900 border-slate-700 text-slate-100">
+              <SelectContent className="bg-court-deep border-cream/15 text-cream">
                 <SelectItem value="MASCHILE">Maschile</SelectItem>
                 <SelectItem value="FEMMINILE">Femminile</SelectItem>
               </SelectContent>
@@ -205,7 +220,7 @@ export default function TorneoPage() {
               onChange={(e) =>
                 setForm({ ...form, anno: parseInt(e.target.value || "0", 10) })
               }
-              className="bg-slate-800 border-slate-700"
+              className="bg-cream/5 border-cream/15 text-cream"
               required
             />
           </div>
@@ -213,7 +228,7 @@ export default function TorneoPage() {
             <Button
               type="submit"
               disabled={creating}
-              className="bg-green-600 hover:bg-green-500"
+              className="bg-court-line text-court hover:bg-[#e7ff75]"
             >
               {creating ? "Creazione..." : "Crea Torneo"}
             </Button>
@@ -224,9 +239,9 @@ export default function TorneoPage() {
       <section>
         <h2 className="text-xl font-semibold mb-4">Tornei esistenti</h2>
         {loading ? (
-          <p className="text-slate-400">Caricamento...</p>
+          <p className="text-cream/60">Caricamento...</p>
         ) : tornei.length === 0 ? (
-          <p className="text-slate-400">Nessun torneo. Creane uno qui sopra.</p>
+          <p className="text-cream/60">Nessun torneo. Creane uno qui sopra.</p>
         ) : (
           <div className="grid md:grid-cols-2 gap-4">
             {tornei.map((t) => {
@@ -235,12 +250,12 @@ export default function TorneoPage() {
               return (
                 <div
                   key={t.id}
-                  className="rounded-lg border border-slate-800 bg-slate-900/40 p-5 space-y-4"
+                  className="rounded-lg border border-line bg-court-deep p-5 space-y-4"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <h3 className="text-lg font-semibold">{t.nome}</h3>
-                      <p className="text-sm text-slate-400">
+                      <p className="text-sm text-cream/60">
                         {t.genere === "MASCHILE" ? "Maschile" : "Femminile"} ·{" "}
                         {t.anno} · {partite} partite
                       </p>
@@ -252,7 +267,7 @@ export default function TorneoPage() {
                     </Badge>
                   </div>
 
-                  <p className="text-sm text-slate-400">
+                  <p className="text-sm text-cream/60">
                     Giocatori {t.genere === "MASCHILE" ? "maschili" : "femminili"}{" "}
                     disponibili: <strong className="text-white">{giocatoriDisp}</strong>
                   </p>
@@ -262,7 +277,7 @@ export default function TorneoPage() {
                       size="sm"
                       onClick={() => handleSorteggio(t)}
                       disabled={drawing === t.id || giocatoriDisp < 2}
-                      className="bg-green-600 hover:bg-green-500"
+                      className="bg-court-line text-court hover:bg-[#e7ff75]"
                     >
                       {drawing === t.id ? "Sorteggio..." : "Esegui Sorteggio"}
                     </Button>
@@ -270,7 +285,7 @@ export default function TorneoPage() {
                       size="sm"
                       variant="outline"
                       onClick={() => setPreviewTorneoId(t.id)}
-                      className="bg-transparent border-slate-700 hover:bg-slate-800"
+                      className="bg-transparent border-cream/20 hover:bg-cream/5 text-cream"
                       disabled={partite === 0}
                     >
                       Anteprima Bracket
@@ -280,7 +295,7 @@ export default function TorneoPage() {
                         size="sm"
                         variant="outline"
                         onClick={() => handleStato(t, "CONCLUSO")}
-                        className="bg-transparent border-slate-700 hover:bg-slate-800"
+                        className="bg-transparent border-cream/20 hover:bg-cream/5 text-cream"
                       >
                         Concludi
                       </Button>
@@ -303,7 +318,7 @@ export default function TorneoPage() {
       </section>
 
       {previewTorneo && previewTorneo.matches.length > 0 && (
-        <section className="rounded-lg border border-slate-800 bg-slate-900/40 p-4">
+        <section className="rounded-lg border border-line bg-court-deep p-4">
           <div className="flex items-center justify-between mb-2 px-2">
             <h2 className="text-xl font-semibold">
               Anteprima Bracket — {previewTorneo.nome}
@@ -312,7 +327,7 @@ export default function TorneoPage() {
               size="sm"
               variant="ghost"
               onClick={() => setPreviewTorneoId(null)}
-              className="text-slate-400"
+              className="text-cream/60"
             >
               Chiudi
             </Button>
