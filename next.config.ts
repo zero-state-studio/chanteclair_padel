@@ -7,15 +7,13 @@ const nextConfig: NextConfig = {
   },
   images: {
     remotePatterns: [
-      {
-        protocol: "http",
-        hostname: "localhost",
-      },
+      { protocol: "http", hostname: "localhost" },
+      { protocol: "https", hostname: "*.supabase.co" },
+      { protocol: "https", hostname: "*.vercel.app" },
     ],
   },
-  experimental: {
-    serverActions: { allowedOrigins: ["localhost:3000"] },
-  },
+  // Prisma deve restare serverful (no edge bundling)
+  serverExternalPackages: ["@prisma/client", "@prisma/engines"],
 };
 
 export default nextConfig;
