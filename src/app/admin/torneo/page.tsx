@@ -48,8 +48,8 @@ export default function TorneoPage() {
     try {
       const [tRes, mRes, fRes] = await Promise.all([
         fetch("/api/tornei", { cache: "no-store" }),
-        fetch("/api/giocatori?genere=MASCHILE", { cache: "no-store" }),
-        fetch("/api/giocatori?genere=FEMMINILE", { cache: "no-store" }),
+        fetch("/api/squadre?genere=MASCHILE", { cache: "no-store" }),
+        fetch("/api/squadre?genere=FEMMINILE", { cache: "no-store" }),
       ]);
       if (tRes.ok) setTornei(await tRes.json());
       const mList = mRes.ok ? ((await mRes.json()) as unknown[]) : [];
@@ -109,17 +109,17 @@ export default function TorneoPage() {
   };
 
   const handleSorteggio = async (t: TorneoListItem) => {
-    const numGiocatori = counts[t.genere];
-    if (numGiocatori < 2) {
-      toast.error(`Servono almeno 2 giocatori (${t.genere})`);
+    const numSquadre = counts[t.genere];
+    if (numSquadre < 2) {
+      toast.error(`Servono almeno 2 squadre (${t.genere})`);
       return;
     }
-    const totale = prossimaPotenzaDi2(numGiocatori);
-    const numBye = totale - numGiocatori;
+    const totale = prossimaPotenzaDi2(numSquadre);
+    const numBye = totale - numSquadre;
     const haPartite = t.matches?.length > 0;
 
     const msg = [
-      `Sorteggio per ${numGiocatori} giocatori${
+      `Sorteggio per ${numSquadre} squadre${
         numBye > 0 ? ` + ${numBye} BYE` : ""
       }.`,
       haPartite ? "ATTENZIONE: le partite esistenti verranno cancellate." : "",
@@ -246,7 +246,7 @@ export default function TorneoPage() {
           <div className="grid md:grid-cols-2 gap-4">
             {tornei.map((t) => {
               const partite = t.matches?.length ?? 0;
-              const giocatoriDisp = counts[t.genere as Genere];
+              const squadreDisp = counts[t.genere as Genere];
               return (
                 <div
                   key={t.id}
@@ -268,15 +268,15 @@ export default function TorneoPage() {
                   </div>
 
                   <p className="text-sm text-cream/60">
-                    Giocatori {t.genere === "MASCHILE" ? "maschili" : "femminili"}{" "}
-                    disponibili: <strong className="text-white">{giocatoriDisp}</strong>
+                    Squadre {t.genere === "MASCHILE" ? "maschili" : "femminili"}{" "}
+                    disponibili: <strong className="text-white">{squadreDisp}</strong>
                   </p>
 
                   <div className="flex flex-wrap gap-2">
                     <Button
                       size="sm"
                       onClick={() => handleSorteggio(t)}
-                      disabled={drawing === t.id || giocatoriDisp < 2}
+                      disabled={drawing === t.id || squadreDisp < 2}
                       className="bg-court-line text-court hover:bg-[#e7ff75]"
                     >
                       {drawing === t.id ? "Sorteggio..." : "Esegui Sorteggio"}

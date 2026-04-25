@@ -17,13 +17,28 @@ model Player {
   telefono  String?
   fotoUrl   String?
   genere    String
-  livello   Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  matchesAsPlayer1 Match[] @relation("Player1")
-  matchesAsPlayer2 Match[] @relation("Player2")
-  matchesWon       Match[] @relation("Winner")
+  teamAsPlayer1 Team? @relation("TeamPlayer1")
+  teamAsPlayer2 Team? @relation("TeamPlayer2")
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  nome      String
+  genere    String
+  livello   Int      @default(0)
+  player1Id String   @unique
+  player1   Player   @relation("TeamPlayer1", fields: [player1Id], references: [id], onDelete: Cascade)
+  player2Id String   @unique
+  player2   Player   @relation("TeamPlayer2", fields: [player2Id], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  matchesAsTeam1 Match[] @relation("Team1")
+  matchesAsTeam2 Match[] @relation("Team2")
+  matchesWon     Match[] @relation("Winner")
 }
 
 model Tournament {
@@ -46,13 +61,13 @@ model Match {
   round     Int
   posizione Int
 
-  player1Id String?
-  player1   Player? @relation("Player1", fields: [player1Id], references: [id])
-  player2Id String?
-  player2   Player? @relation("Player2", fields: [player2Id], references: [id])
+  team1Id String?
+  team1   Team?   @relation("Team1", fields: [team1Id], references: [id], onDelete: SetNull)
+  team2Id String?
+  team2   Team?   @relation("Team2", fields: [team2Id], references: [id], onDelete: SetNull)
 
   winnerId String?
-  winner   Player? @relation("Winner", fields: [winnerId], references: [id])
+  winner   Team?   @relation("Winner", fields: [winnerId], references: [id], onDelete: SetNull)
 
   punteggio String?
 

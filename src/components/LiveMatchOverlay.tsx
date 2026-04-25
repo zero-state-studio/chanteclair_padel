@@ -2,21 +2,39 @@
 
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { LiveEvent, PlayerWithMatches } from "@/types";
+import type { LiveEvent, TeamWithPlayers, PlayerWithMatches } from "@/types";
 
 interface LiveMatchOverlayProps {
   event: LiveEvent | null;
   onClose: () => void;
 }
 
-function PlayerColumn({
-  player,
+function MiniAvatar({ player }: { player: PlayerWithMatches }) {
+  return player.fotoUrl ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={player.fotoUrl}
+      alt={`${player.nome} ${player.cognome}`}
+      className="w-20 h-20 md:w-32 md:h-32 rounded-full object-cover bg-cream/10 ring-1 ring-cream/20"
+    />
+  ) : (
+    <div className="w-20 h-20 md:w-32 md:h-32 rounded-full bg-cream/10 ring-1 ring-cream/20 flex items-center justify-center">
+      <span className="font-display text-3xl md:text-5xl text-cream/70">
+        {player.nome[0]}
+        {player.cognome[0]}
+      </span>
+    </div>
+  );
+}
+
+function TeamColumn({
+  team,
   isWinner,
   isLoser,
   side,
   delay,
 }: {
-  player: PlayerWithMatches;
+  team: TeamWithPlayers;
   isWinner: boolean;
   isLoser: boolean;
   side: "left" | "right";
@@ -36,7 +54,7 @@ function PlayerColumn({
       }`}
     >
       <div className="text-eyebrow text-cream/50">
-        {side === "left" ? "Player A" : "Player B"}
+        {side === "left" ? "Team A" : "Team B"}
       </div>
 
       <div className="relative">
@@ -50,42 +68,25 @@ function PlayerColumn({
             vincitore
           </motion.div>
         )}
-        {player.fotoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={player.fotoUrl}
-            alt={`${player.nome} ${player.cognome}`}
-            className={`w-36 h-36 md:w-56 md:h-56 rounded-full object-cover bg-cream/10 ring-1 ${
-              isWinner
-                ? "ring-court-line ring-offset-8 ring-offset-court"
-                : "ring-cream/20"
-            }`}
-          />
-        ) : (
-          <div
-            className={`w-36 h-36 md:w-56 md:h-56 rounded-full bg-cream/10 ring-1 flex items-center justify-center ${
-              isWinner
-                ? "ring-court-line ring-offset-8 ring-offset-court"
-                : "ring-cream/20"
-            }`}
-          >
-            <span className="font-display text-6xl md:text-8xl text-cream/70">
-              {player.nome[0]}
-              {player.cognome[0]}
-            </span>
-          </div>
-        )}
+        <div
+          className={`flex -space-x-6 md:-space-x-10 ${
+            isWinner ? "ring-court-line ring-offset-8 ring-offset-court ring-1 rounded-full p-2" : ""
+          }`}
+        >
+          <MiniAvatar player={team.player1} />
+          <MiniAvatar player={team.player2} />
+        </div>
       </div>
 
       <div className={side === "left" ? "text-left" : "text-right"}>
         <div className="text-eyebrow text-cream/50 mb-1">
-          {player.livello > 0 ? `Testa di serie #${player.livello}` : "—"}
+          {team.livello > 0 ? `Testa di serie #${team.livello}` : "—"}
         </div>
-        <div className="font-display text-4xl md:text-6xl leading-[0.9] text-cream">
-          {player.cognome}
+        <div className="font-display text-3xl md:text-5xl leading-[0.9] text-cream">
+          {team.player1.cognome}
         </div>
-        <div className="font-display italic text-2xl md:text-3xl text-cream/70 leading-tight">
-          {player.nome}
+        <div className="font-display italic text-2xl md:text-4xl text-cream/70 leading-tight">
+          / {team.player2.cognome}
         </div>
       </div>
     </motion.div>
@@ -117,7 +118,6 @@ export function LiveMatchOverlay({ event, onClose }: LiveMatchOverlayProps) {
                 : "radial-gradient(ellipse at 50% 30%, #1f2c3a 0%, #060c09 70%)",
           }}
         >
-          {/* Court grid backdrop */}
           <motion.div
             initial={{ opacity: 0, scale: 1.1 }}
             animate={{ opacity: 0.4, scale: 1 }}
@@ -125,7 +125,6 @@ export function LiveMatchOverlay({ event, onClose }: LiveMatchOverlayProps) {
             className="absolute inset-0 court-grid pointer-events-none"
           />
 
-          {/* Animated court line */}
           <motion.div
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
@@ -140,7 +139,6 @@ export function LiveMatchOverlay({ event, onClose }: LiveMatchOverlayProps) {
           />
 
           <div className="relative h-full flex flex-col justify-between max-w-[1400px] mx-auto px-6 md:px-12 py-10 md:py-16">
-            {/* Top bar */}
             <motion.div
               initial={{ y: -30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -177,7 +175,6 @@ export function LiveMatchOverlay({ event, onClose }: LiveMatchOverlayProps) {
               </div>
             </motion.div>
 
-            {/* Headline */}
             <div className="flex flex-col items-center text-center">
               <motion.div
                 initial={{ y: 20, opacity: 0 }}
@@ -190,15 +187,14 @@ export function LiveMatchOverlay({ event, onClose }: LiveMatchOverlayProps) {
                   : "— Match concluso —"}
               </motion.div>
 
-              {/* Players */}
               <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-8 md:gap-16 items-center w-full">
-                <PlayerColumn
-                  player={event.player1}
-                  isWinner={event.winner?.id === event.player1.id}
+                <TeamColumn
+                  team={event.team1}
+                  isWinner={event.winner?.id === event.team1.id}
                   isLoser={
                     event.tipo === "PARTITA_FINITA" &&
                     event.winner !== undefined &&
-                    event.winner?.id !== event.player1.id
+                    event.winner?.id !== event.team1.id
                   }
                   side="left"
                   delay={0.5}
@@ -229,13 +225,13 @@ export function LiveMatchOverlay({ event, onClose }: LiveMatchOverlayProps) {
                   )}
                 </motion.div>
 
-                <PlayerColumn
-                  player={event.player2}
-                  isWinner={event.winner?.id === event.player2.id}
+                <TeamColumn
+                  team={event.team2}
+                  isWinner={event.winner?.id === event.team2.id}
                   isLoser={
                     event.tipo === "PARTITA_FINITA" &&
                     event.winner !== undefined &&
-                    event.winner?.id !== event.player2.id
+                    event.winner?.id !== event.team2.id
                   }
                   side="right"
                   delay={0.5}
@@ -243,7 +239,6 @@ export function LiveMatchOverlay({ event, onClose }: LiveMatchOverlayProps) {
               </div>
             </div>
 
-            {/* Footer hint */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

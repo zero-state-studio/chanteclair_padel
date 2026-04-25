@@ -15,18 +15,18 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: "Torneo non trovato" }, { status: 404 });
   }
 
-  const giocatori = await prisma.player.findMany({
+  const squadre = await prisma.team.findMany({
     where: { genere: torneo.genere },
   });
 
-  if (giocatori.length < 2) {
+  if (squadre.length < 2) {
     return NextResponse.json(
-      { error: "Servono almeno 2 giocatori per il sorteggio" },
+      { error: "Servono almeno 2 squadre per il sorteggio" },
       { status: 400 }
     );
   }
 
-  const matches = generaBracket(giocatori, torneo.id);
+  const matches = generaBracket(squadre, torneo.id);
 
   const result = await prisma.$transaction(async (tx) => {
     await tx.match.deleteMany({ where: { tournamentId: torneo.id } });
@@ -36,7 +36,11 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
       data: { stato: "ATTIVO" },
       include: {
         matches: {
-          include: { player1: true, player2: true, winner: true },
+          include: {
+            team1: { include: { player1: true, player2: true } },
+            team2: { include: { player1: true, player2: true } },
+            winner: { include: { player1: true, player2: true } },
+          },
           orderBy: [{ round: "desc" }, { posizione: "asc" }],
         },
       },

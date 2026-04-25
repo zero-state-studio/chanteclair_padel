@@ -1,5 +1,5 @@
 import { BracketMatch } from "@/components/BracketMatch";
-import type { MatchWithPlayers, TournamentWithMatches } from "@/types";
+import type { MatchWithTeams, TournamentWithMatches } from "@/types";
 
 function getRoundLabel(round: number, maxRound: number): {
   primary: string;
@@ -31,7 +31,7 @@ export function Bracket({ torneo }: BracketProps) {
     );
   }
 
-  const matchesByRound = torneo.matches.reduce<Record<number, MatchWithPlayers[]>>(
+  const matchesByRound = torneo.matches.reduce<Record<number, MatchWithTeams[]>>(
     (acc, match) => {
       (acc[match.round] ??= []).push(match);
       return acc;

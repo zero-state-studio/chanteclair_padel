@@ -16,7 +16,11 @@ export async function GET(request: NextRequest) {
 
   const players = await prisma.player.findMany({
     where,
-    orderBy: [{ livello: "desc" }, { cognome: "asc" }, { nome: "asc" }],
+    orderBy: [{ cognome: "asc" }, { nome: "asc" }],
+    include: {
+      teamAsPlayer1: { select: { id: true, nome: true } },
+      teamAsPlayer2: { select: { id: true, nome: true } },
+    },
   });
 
   return NextResponse.json(players);
@@ -31,8 +35,6 @@ export async function POST(request: NextRequest) {
   const email = (formData.get("email") as string | null)?.trim() || null;
   const telefono = (formData.get("telefono") as string | null)?.trim() || null;
   const genere = (formData.get("genere") as string | null)?.trim();
-  const livelloRaw = formData.get("livello") as string | null;
-  const livello = Number.isFinite(Number(livelloRaw)) ? parseInt(livelloRaw ?? "0", 10) : 0;
   const foto = formData.get("foto") as File | null;
 
   if (!nome || !cognome) {
@@ -48,7 +50,7 @@ export async function POST(request: NextRequest) {
   }
 
   const player = await prisma.player.create({
-    data: { nome, cognome, email, telefono, genere, livello, fotoUrl },
+    data: { nome, cognome, email, telefono, genere, fotoUrl },
   });
 
   return NextResponse.json(player, { status: 201 });
