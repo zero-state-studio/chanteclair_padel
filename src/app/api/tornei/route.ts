@@ -8,6 +8,12 @@ export const dynamic = "force-dynamic";
 const GENERI: Genere[] = ["MASCHILE", "FEMMINILE"];
 const STATI: StatoTorneo[] = ["BOZZA", "ATTIVO", "CONCLUSO"];
 
+const matchInclude = {
+  team1: { include: { player1: true, player2: true } },
+  team2: { include: { player1: true, player2: true } },
+  winner: { include: { player1: true, player2: true } },
+} as const;
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const genere = searchParams.get("genere") ?? undefined;
@@ -18,7 +24,7 @@ export async function GET(request: NextRequest) {
     where,
     include: {
       matches: {
-        include: { player1: true, player2: true, winner: true },
+        include: matchInclude,
         orderBy: [{ round: "desc" }, { posizione: "asc" }],
       },
     },

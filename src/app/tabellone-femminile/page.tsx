@@ -10,7 +10,11 @@ export default async function TabelloneFemminilePage() {
     where: { genere: "FEMMINILE", stato: "ATTIVO" },
     include: {
       matches: {
-        include: { player1: true, player2: true, winner: true },
+        include: {
+          team1: { include: { player1: true, player2: true } },
+          team2: { include: { player1: true, player2: true } },
+          winner: { include: { player1: true, player2: true } },
+        },
         orderBy: [{ round: "desc" }, { posizione: "asc" }],
       },
     },

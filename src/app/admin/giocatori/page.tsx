@@ -32,7 +32,8 @@ type Player = {
   telefono: string | null;
   fotoUrl: string | null;
   genere: Genere;
-  livello: number;
+  teamAsPlayer1?: { id: string; nome: string } | null;
+  teamAsPlayer2?: { id: string; nome: string } | null;
 };
 
 const empty = {
@@ -40,7 +41,6 @@ const empty = {
   cognome: "",
   email: "",
   telefono: "",
-  livello: 0,
 };
 
 export default function GiocatoriPage() {
@@ -53,6 +53,8 @@ export default function GiocatoriPage() {
   const [foto, setFoto] = useState<File | null>(null);
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadPlayers = useCallback(async () => {
@@ -69,7 +71,49 @@ export default function GiocatoriPage() {
 
   useEffect(() => {
     loadPlayers();
+    setSelected(new Set());
   }, [loadPlayers]);
+
+  const toggleOne = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    setSelected((prev) =>
+      prev.size === players.length ? new Set() : new Set(players.map((p) => p.id))
+    );
+  };
+
+  const bulkDelete = async () => {
+    if (selected.size === 0) return;
+    if (
+      !confirm(
+        `Eliminare ${selected.size} giocatori selezionati? Operazione non reversibile. Verranno eliminate anche le squadre che li contengono.`
+      )
+    )
+      return;
+    setBulkDeleting(true);
+    try {
+      const ids = Array.from(selected);
+      const results = await Promise.allSettled(
+        ids.map((id) => fetch(`/api/giocatori/${id}`, { method: "DELETE" }))
+      );
+      const failed = results.filter(
+        (r) => r.status === "rejected" || (r.status === "fulfilled" && !r.value.ok)
+      ).length;
+      if (failed > 0) toast.error(`${failed} eliminazioni fallite su ${ids.length}`);
+      else toast.success(`${ids.length} giocatori eliminati`);
+      setSelected(new Set());
+      await loadPlayers();
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
 
   const openCreate = () => {
     setEditing(null);
@@ -86,7 +130,6 @@ export default function GiocatoriPage() {
       cognome: p.cognome,
       email: p.email ?? "",
       telefono: p.telefono ?? "",
-      livello: p.livello,
     });
     setFoto(null);
     setFotoPreview(p.fotoUrl);
@@ -118,7 +161,6 @@ export default function GiocatoriPage() {
       fd.append("email", form.email.trim());
       fd.append("telefono", form.telefono.trim());
       fd.append("genere", genereAttivo);
-      fd.append("livello", String(form.livello));
       if (foto) fd.append("foto", foto);
 
       const url = editing ? `/api/giocatori/${editing.id}` : "/api/giocatori";
@@ -219,24 +261,6 @@ export default function GiocatoriPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="livello">
-                  Testa di Serie (0 = nessuna, 1 = prima, 2 = seconda...)
-                </Label>
-                <Input
-                  id="livello"
-                  type="number"
-                  min={0}
-                  value={form.livello}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      livello: parseInt(e.target.value || "0", 10),
-                    })
-                  }
-                  className="bg-cream/5 border-cream/15 text-cream"
-                />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="foto">Foto</Label>
                 <div className="flex items-center gap-3">
                   {fotoPreview ? (
@@ -282,25 +306,67 @@ export default function GiocatoriPage() {
           </DialogContent>
         </Dialog>
 
-      <Tabs
-        value={genereAttivo}
-        onValueChange={(v) => setGenereAttivo(v as Genere)}
-        className="mb-4"
-      >
-        <TabsList className="bg-court-deep">
-          <TabsTrigger value="MASCHILE">Maschile</TabsTrigger>
-          <TabsTrigger value="FEMMINILE">Femminile</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <div className="flex items-center justify-between mb-4 gap-4">
+        <Tabs
+          value={genereAttivo}
+          onValueChange={(v) => setGenereAttivo(v as Genere)}
+        >
+          <TabsList className="bg-court-deep">
+            <TabsTrigger value="MASCHILE">Maschile</TabsTrigger>
+            <TabsTrigger value="FEMMINILE">Femminile</TabsTrigger>
+          </TabsList>
+        </Tabs>
 
-      <div className="rounded-md border border-line bg-slate-900/40">
+        {selected.size > 0 && (
+          <div className="flex items-center gap-3 px-4 py-2 rounded-sm border border-clay/40 bg-clay/10">
+            <span className="text-eyebrow text-cream/80">
+              {selected.size} selezionati
+            </span>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setSelected(new Set())}
+              className="text-cream/70 hover:text-cream hover:bg-cream/5 h-8"
+            >
+              Deseleziona
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={bulkDelete}
+              disabled={bulkDeleting}
+              className="h-8"
+            >
+              {bulkDeleting ? "Eliminazione..." : `Elimina ${selected.size}`}
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-md border border-line bg-court-deep">
         <Table>
           <TableHeader>
             <TableRow className="border-line hover:bg-transparent">
+              <TableHead className="w-10">
+                <input
+                  type="checkbox"
+                  checked={
+                    players.length > 0 && selected.size === players.length
+                  }
+                  ref={(el) => {
+                    if (el)
+                      el.indeterminate =
+                        selected.size > 0 && selected.size < players.length;
+                  }}
+                  onChange={toggleAll}
+                  className="h-4 w-4 accent-court-line cursor-pointer"
+                  aria-label="Seleziona tutti"
+                />
+              </TableHead>
               <TableHead className="w-16">Foto</TableHead>
               <TableHead>Nome</TableHead>
               <TableHead>Cognome</TableHead>
-              <TableHead>Testa di Serie</TableHead>
+              <TableHead>Squadra</TableHead>
               <TableHead>Email</TableHead>
               <TableHead className="text-right">Azioni</TableHead>
             </TableRow>
@@ -308,19 +374,33 @@ export default function GiocatoriPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-cream/60 py-8">
+                <TableCell colSpan={7} className="text-center text-cream/60 py-8">
                   Caricamento...
                 </TableCell>
               </TableRow>
             ) : players.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-cream/60 py-8">
+                <TableCell colSpan={7} className="text-center text-cream/60 py-8">
                   Nessun giocatore. Aggiungine uno con il pulsante a destra.
                 </TableCell>
               </TableRow>
             ) : (
               players.map((p) => (
-                <TableRow key={p.id} className="border-line">
+                <TableRow
+                  key={p.id}
+                  className={`border-line ${
+                    selected.has(p.id) ? "bg-court-line/5" : ""
+                  }`}
+                >
+                  <TableCell>
+                    <input
+                      type="checkbox"
+                      checked={selected.has(p.id)}
+                      onChange={() => toggleOne(p.id)}
+                      className="h-4 w-4 accent-court-line cursor-pointer"
+                      aria-label={`Seleziona ${p.nome} ${p.cognome}`}
+                    />
+                  </TableCell>
                   <TableCell>
                     {p.fotoUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -338,8 +418,10 @@ export default function GiocatoriPage() {
                   <TableCell>{p.nome}</TableCell>
                   <TableCell>{p.cognome}</TableCell>
                   <TableCell>
-                    {p.livello > 0 ? (
-                      <Badge className="bg-green-600">#{p.livello}</Badge>
+                    {p.teamAsPlayer1 || p.teamAsPlayer2 ? (
+                      <Badge className="bg-court-line text-court font-mono">
+                        {p.teamAsPlayer1?.nome ?? p.teamAsPlayer2?.nome}
+                      </Badge>
                     ) : (
                       <span className="text-cream/40">—</span>
                     )}

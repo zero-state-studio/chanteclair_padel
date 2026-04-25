@@ -9,8 +9,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type {
   Genere,
-  MatchWithPlayers,
-  PlayerWithMatches,
+  MatchWithTeams,
+  TeamWithPlayers,
   TournamentWithMatches,
 } from "@/types";
 
@@ -22,25 +22,32 @@ function getRoundLabel(round: number, maxRound: number): string {
   return `Turno ${maxRound - round + 1}`;
 }
 
-function PlayerLabel({ player }: { player: PlayerWithMatches | null }) {
-  if (!player) return <span className="italic text-cream/40">BYE</span>;
+function TeamLabel({ team }: { team: TeamWithPlayers | null }) {
+  if (!team) return <span className="italic text-cream/40">BYE</span>;
   return (
     <span className="flex items-center gap-2">
-      {player.fotoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={player.fotoUrl}
-          alt=""
-          className="h-7 w-7 rounded-full object-cover bg-cream/10"
-        />
-      ) : (
-        <span className="h-7 w-7 rounded-full bg-cream/10 flex items-center justify-center text-sm">
-          👤
-        </span>
-      )}
-      <span className="text-sm">
-        {player.nome} {player.cognome}
+      <span className="flex -space-x-2 shrink-0">
+        {[team.player1, team.player2].map((p) =>
+          p.fotoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={p.id}
+              src={p.fotoUrl}
+              alt=""
+              className="h-7 w-7 rounded-full object-cover bg-cream/10 ring-2 ring-court-deep"
+            />
+          ) : (
+            <span
+              key={p.id}
+              className="h-7 w-7 rounded-full bg-cream/10 ring-2 ring-court-deep flex items-center justify-center text-[9px] font-mono"
+            >
+              {p.nome[0]}
+              {p.cognome[0]}
+            </span>
+          )
+        )}
       </span>
+      <span className="text-sm">{team.nome}</span>
     </span>
   );
 }
@@ -49,7 +56,7 @@ function PartitaCard({
   match,
   onAction,
 }: {
-  match: MatchWithPlayers;
+  match: MatchWithTeams;
   onAction: () => Promise<void>;
 }) {
   const [showForm, setShowForm] = useState(false);
@@ -57,7 +64,7 @@ function PartitaCard({
   const [punteggio, setPunteggio] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const canStart = !!(match.player1 && match.player2);
+  const canStart = !!(match.team1 && match.team2);
 
   const inizia = async () => {
     setBusy(true);
@@ -110,8 +117,8 @@ function PartitaCard({
     <div className="rounded-md border border-line bg-court-deep p-4 space-y-3">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <PlayerLabel player={match.player1} />
-          <PlayerLabel player={match.player2} />
+          <TeamLabel team={match.team1} />
+          <TeamLabel team={match.team2} />
         </div>
         <div className="text-right">
           {match.stato === "ATTESA" && (
@@ -138,7 +145,7 @@ function PartitaCard({
               </p>
               {match.winner && (
                 <p className="text-xs text-court-line font-semibold">
-                  🏆 {match.winner.nome} {match.winner.cognome}
+                  🏆 {match.winner.nome}
                 </p>
               )}
             </div>
@@ -181,19 +188,19 @@ function PartitaCard({
           <div className="space-y-2">
             <Label className="text-xs">Vincitore</Label>
             <div className="grid grid-cols-2 gap-2">
-              {[match.player1, match.player2].filter(Boolean).map((player) => (
+              {[match.team1, match.team2].filter(Boolean).map((team) => (
                 <button
-                  key={player!.id}
+                  key={team!.id}
                   type="button"
-                  onClick={() => setWinnerId(player!.id)}
+                  onClick={() => setWinnerId(team!.id)}
                   className={cn(
                     "flex items-center gap-2 p-2 rounded-md border-2 transition-colors text-left",
-                    winnerId === player!.id
+                    winnerId === team!.id
                       ? "border-court-line bg-court-line/10"
                       : "border-cream/15 hover:border-cream/40 bg-court"
                   )}
                 >
-                  <PlayerLabel player={player} />
+                  <TeamLabel team={team} />
                 </button>
               ))}
             </div>
@@ -255,7 +262,7 @@ export default function PartitePage() {
   }, [load]);
 
   const matchesByRound = (torneo?.matches ?? []).reduce<
-    Record<number, MatchWithPlayers[]>
+    Record<number, MatchWithTeams[]>
   >((acc, m) => {
     (acc[m.round] ??= []).push(m);
     return acc;

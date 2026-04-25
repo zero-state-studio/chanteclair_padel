@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sseEmitter } from "@/lib/sse";
-import type { Genere, LiveEvent, PlayerWithMatches } from "@/types";
+import type { Genere, LiveEvent, PlayerWithMatches, TeamWithPlayers } from "@/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,16 +9,32 @@ export const dynamic = "force-dynamic";
 type RouteContext = { params: Promise<{ id: string }> };
 
 const matchInclude = {
-  player1: true,
-  player2: true,
-  winner: true,
+  team1: { include: { player1: true, player2: true } },
+  team2: { include: { player1: true, player2: true } },
+  winner: { include: { player1: true, player2: true } },
   tournament: true,
 } as const;
 
-function toPlayerWithMatches(
-  p: { id: string; nome: string; cognome: string; email: string | null; telefono: string | null; fotoUrl: string | null; genere: string; livello: number } | null
-): PlayerWithMatches | null {
-  if (!p) return null;
+type DbPlayer = {
+  id: string;
+  nome: string;
+  cognome: string;
+  email: string | null;
+  telefono: string | null;
+  fotoUrl: string | null;
+  genere: string;
+};
+
+type DbTeam = {
+  id: string;
+  nome: string;
+  genere: string;
+  livello: number;
+  player1: DbPlayer;
+  player2: DbPlayer;
+};
+
+function toPlayer(p: DbPlayer): PlayerWithMatches {
   return {
     id: p.id,
     nome: p.nome,
@@ -27,7 +43,18 @@ function toPlayerWithMatches(
     telefono: p.telefono,
     fotoUrl: p.fotoUrl,
     genere: p.genere as Genere,
-    livello: p.livello,
+  };
+}
+
+function toTeam(t: DbTeam | null): TeamWithPlayers | null {
+  if (!t) return null;
+  return {
+    id: t.id,
+    nome: t.nome,
+    genere: t.genere as Genere,
+    livello: t.livello,
+    player1: toPlayer(t.player1),
+    player2: toPlayer(t.player2),
   };
 }
 
@@ -56,9 +83,9 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   if (!match) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   if (azione === "INIZIA") {
-    if (!match.player1Id || !match.player2Id) {
+    if (!match.team1Id || !match.team2Id) {
       return NextResponse.json(
-        { error: "Partita senza giocatori non può iniziare" },
+        { error: "Partita senza squadre non può iniziare" },
         { status: 400 }
       );
     }
@@ -72,8 +99,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     const event: LiveEvent = {
       tipo: "PARTITA_INIZIATA",
       matchId: updated.id,
-      player1: toPlayerWithMatches(updated.player1)!,
-      player2: toPlayerWithMatches(updated.player2)!,
+      team1: toTeam(updated.team1 as DbTeam | null)!,
+      team2: toTeam(updated.team2 as DbTeam | null)!,
       genere: updated.tournament.genere as Genere,
     };
     sseEmitter.emit("live-event", event);
@@ -88,9 +115,9 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
         { status: 400 }
       );
     }
-    if (winnerId !== match.player1Id && winnerId !== match.player2Id) {
+    if (winnerId !== match.team1Id && winnerId !== match.team2Id) {
       return NextResponse.json(
-        { error: "winnerId deve essere uno dei giocatori della partita" },
+        { error: "winnerId deve essere una delle squadre della partita" },
         { status: 400 }
       );
     }
@@ -111,9 +138,9 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     const event: LiveEvent = {
       tipo: "PARTITA_FINITA",
       matchId: updated.id,
-      player1: toPlayerWithMatches(updated.player1)!,
-      player2: toPlayerWithMatches(updated.player2)!,
-      winner: toPlayerWithMatches(updated.winner) ?? undefined,
+      team1: toTeam(updated.team1 as DbTeam | null)!,
+      team2: toTeam(updated.team2 as DbTeam | null)!,
+      winner: toTeam(updated.winner as DbTeam | null) ?? undefined,
       punteggio: updated.punteggio ?? undefined,
       genere: updated.tournament.genere as Genere,
     };
@@ -148,9 +175,9 @@ async function promoteWinner(match: MatchForPromotion) {
   });
   if (!nextMatch) return;
 
-  const isPlayer1 = match.posizione % 2 === 0;
+  const isTeam1 = match.posizione % 2 === 0;
   await prisma.match.update({
     where: { id: nextMatch.id },
-    data: isPlayer1 ? { player1Id: match.winnerId } : { player2Id: match.winnerId },
+    data: isTeam1 ? { team1Id: match.winnerId } : { team2Id: match.winnerId },
   });
 }

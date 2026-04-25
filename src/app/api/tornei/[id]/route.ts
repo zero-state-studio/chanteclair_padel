@@ -9,13 +9,19 @@ const STATI: StatoTorneo[] = ["BOZZA", "ATTIVO", "CONCLUSO"];
 
 type RouteContext = { params: Promise<{ id: string }> };
 
+const matchInclude = {
+  team1: { include: { player1: true, player2: true } },
+  team2: { include: { player1: true, player2: true } },
+  winner: { include: { player1: true, player2: true } },
+} as const;
+
 export async function GET(_request: NextRequest, { params }: RouteContext) {
   const { id } = await params;
   const torneo = await prisma.tournament.findUnique({
     where: { id },
     include: {
       matches: {
-        include: { player1: true, player2: true, winner: true },
+        include: matchInclude,
         orderBy: [{ round: "desc" }, { posizione: "asc" }],
       },
     },

@@ -7,81 +7,117 @@ async function main() {
 
   await prisma.match.deleteMany();
   await prisma.tournament.deleteMany();
+  await prisma.team.deleteMany();
   await prisma.player.deleteMany();
 
   const maschili = await Promise.all([
-    prisma.player.create({
-      data: {
-        nome: "Marco",
-        cognome: "Rossi",
-        genere: "MASCHILE",
-        livello: 1,
-        email: "rossi@test.it",
-      },
-    }),
-    prisma.player.create({
-      data: {
-        nome: "Luca",
-        cognome: "Bianchi",
-        genere: "MASCHILE",
-        livello: 2,
-        email: "bianchi@test.it",
-      },
-    }),
-    prisma.player.create({
-      data: { nome: "Paolo", cognome: "Verdi", genere: "MASCHILE", livello: 3 },
-    }),
-    prisma.player.create({
-      data: { nome: "Andrea", cognome: "Neri", genere: "MASCHILE", livello: 4 },
-    }),
-    prisma.player.create({
-      data: { nome: "Stefano", cognome: "Ferrari", genere: "MASCHILE", livello: 0 },
-    }),
-    prisma.player.create({
-      data: { nome: "Roberto", cognome: "Russo", genere: "MASCHILE", livello: 0 },
-    }),
-    prisma.player.create({
-      data: { nome: "Davide", cognome: "Marini", genere: "MASCHILE", livello: 0 },
-    }),
-    prisma.player.create({
-      data: { nome: "Francesco", cognome: "Conti", genere: "MASCHILE", livello: 0 },
-    }),
+    prisma.player.create({ data: { nome: "Marco", cognome: "Rossi", genere: "MASCHILE", email: "rossi@test.it" } }),
+    prisma.player.create({ data: { nome: "Luca", cognome: "Bianchi", genere: "MASCHILE", email: "bianchi@test.it" } }),
+    prisma.player.create({ data: { nome: "Paolo", cognome: "Verdi", genere: "MASCHILE" } }),
+    prisma.player.create({ data: { nome: "Andrea", cognome: "Neri", genere: "MASCHILE" } }),
+    prisma.player.create({ data: { nome: "Stefano", cognome: "Ferrari", genere: "MASCHILE" } }),
+    prisma.player.create({ data: { nome: "Roberto", cognome: "Russo", genere: "MASCHILE" } }),
+    prisma.player.create({ data: { nome: "Davide", cognome: "Marini", genere: "MASCHILE" } }),
+    prisma.player.create({ data: { nome: "Francesco", cognome: "Conti", genere: "MASCHILE" } }),
   ]);
 
   const femminili = await Promise.all([
-    prisma.player.create({
-      data: { nome: "Giulia", cognome: "Romano", genere: "FEMMINILE", livello: 1 },
+    prisma.player.create({ data: { nome: "Giulia", cognome: "Romano", genere: "FEMMINILE" } }),
+    prisma.player.create({ data: { nome: "Francesca", cognome: "Colombo", genere: "FEMMINILE" } }),
+    prisma.player.create({ data: { nome: "Sara", cognome: "Ricci", genere: "FEMMINILE" } }),
+    prisma.player.create({ data: { nome: "Chiara", cognome: "Marino", genere: "FEMMINILE" } }),
+    prisma.player.create({ data: { nome: "Valentina", cognome: "Greco", genere: "FEMMINILE" } }),
+    prisma.player.create({ data: { nome: "Elena", cognome: "Bruno", genere: "FEMMINILE" } }),
+    prisma.player.create({ data: { nome: "Laura", cognome: "Gallo", genere: "FEMMINILE" } }),
+    prisma.player.create({ data: { nome: "Silvia", cognome: "Barbieri", genere: "FEMMINILE" } }),
+  ]);
+
+  // 4 squadre maschili (2 teste di serie + 2 senza)
+  const teamsM = await Promise.all([
+    prisma.team.create({
+      data: {
+        nome: `${maschili[0].cognome} / ${maschili[1].cognome}`,
+        genere: "MASCHILE",
+        livello: 1,
+        player1Id: maschili[0].id,
+        player2Id: maschili[1].id,
+      },
     }),
-    prisma.player.create({
-      data: { nome: "Francesca", cognome: "Colombo", genere: "FEMMINILE", livello: 2 },
+    prisma.team.create({
+      data: {
+        nome: `${maschili[2].cognome} / ${maschili[3].cognome}`,
+        genere: "MASCHILE",
+        livello: 2,
+        player1Id: maschili[2].id,
+        player2Id: maschili[3].id,
+      },
     }),
-    prisma.player.create({
-      data: { nome: "Sara", cognome: "Ricci", genere: "FEMMINILE", livello: 3 },
+    prisma.team.create({
+      data: {
+        nome: `${maschili[4].cognome} / ${maschili[5].cognome}`,
+        genere: "MASCHILE",
+        livello: 0,
+        player1Id: maschili[4].id,
+        player2Id: maschili[5].id,
+      },
     }),
-    prisma.player.create({
-      data: { nome: "Chiara", cognome: "Marino", genere: "FEMMINILE", livello: 4 },
+    prisma.team.create({
+      data: {
+        nome: `${maschili[6].cognome} / ${maschili[7].cognome}`,
+        genere: "MASCHILE",
+        livello: 0,
+        player1Id: maschili[6].id,
+        player2Id: maschili[7].id,
+      },
     }),
-    prisma.player.create({
-      data: { nome: "Valentina", cognome: "Greco", genere: "FEMMINILE", livello: 0 },
+  ]);
+
+  const teamsF = await Promise.all([
+    prisma.team.create({
+      data: {
+        nome: `${femminili[0].cognome} / ${femminili[1].cognome}`,
+        genere: "FEMMINILE",
+        livello: 1,
+        player1Id: femminili[0].id,
+        player2Id: femminili[1].id,
+      },
     }),
-    prisma.player.create({
-      data: { nome: "Elena", cognome: "Bruno", genere: "FEMMINILE", livello: 0 },
+    prisma.team.create({
+      data: {
+        nome: `${femminili[2].cognome} / ${femminili[3].cognome}`,
+        genere: "FEMMINILE",
+        livello: 2,
+        player1Id: femminili[2].id,
+        player2Id: femminili[3].id,
+      },
     }),
-    prisma.player.create({
-      data: { nome: "Laura", cognome: "Gallo", genere: "FEMMINILE", livello: 0 },
+    prisma.team.create({
+      data: {
+        nome: `${femminili[4].cognome} / ${femminili[5].cognome}`,
+        genere: "FEMMINILE",
+        livello: 0,
+        player1Id: femminili[4].id,
+        player2Id: femminili[5].id,
+      },
     }),
-    prisma.player.create({
-      data: { nome: "Silvia", cognome: "Barbieri", genere: "FEMMINILE", livello: 0 },
+    prisma.team.create({
+      data: {
+        nome: `${femminili[6].cognome} / ${femminili[7].cognome}`,
+        genere: "FEMMINILE",
+        livello: 0,
+        player1Id: femminili[6].id,
+        player2Id: femminili[7].id,
+      },
     }),
   ]);
 
   const annoCorrente = new Date().getFullYear();
 
-  await prisma.tournament.create({
+  const torneoM = await prisma.tournament.create({
     data: {
       nome: `Torneo Chanteclair ${annoCorrente}`,
       genere: "MASCHILE",
-      stato: "BOZZA",
+      stato: "ATTIVO",
       anno: annoCorrente,
     },
   });
@@ -94,20 +130,63 @@ async function main() {
     },
   });
 
-  console.log(`✅ Creati ${maschili.length} giocatori maschili`);
-  console.log(`✅ Creati ${femminili.length} giocatrici femminili`);
-  console.log(`✅ Creati 2 tornei in stato BOZZA (${annoCorrente})`);
+  // Bracket M precompilato: semifinali concluse, finale Verdi/Neri vs Ferrari/Russo ancora da giocare
+  const byName = (nome: string) => teamsM.find((t) => t.nome === nome)!;
+  const verdiNeri = byName("Verdi / Neri");
+  const ferrariRusso = byName("Ferrari / Russo");
+  const rossiBianchi = byName("Rossi / Bianchi");
+  const mariniConti = byName("Marini / Conti");
+
+  const ora = Date.now();
+  const ore = (h: number) => new Date(ora - h * 3600 * 1000);
+
+  await prisma.match.create({
+    data: {
+      tournamentId: torneoM.id,
+      round: 2,
+      posizione: 0,
+      team1Id: verdiNeri.id,
+      team2Id: mariniConti.id,
+      winnerId: verdiNeri.id,
+      punteggio: "6-3, 6-2",
+      stato: "COMPLETATA",
+      iniziataAt: ore(4),
+      finitaAt: ore(3),
+    },
+  });
+  await prisma.match.create({
+    data: {
+      tournamentId: torneoM.id,
+      round: 2,
+      posizione: 1,
+      team1Id: ferrariRusso.id,
+      team2Id: rossiBianchi.id,
+      winnerId: ferrariRusso.id,
+      punteggio: "7-5, 6-4",
+      stato: "COMPLETATA",
+      iniziataAt: ore(3),
+      finitaAt: ore(2),
+    },
+  });
+  await prisma.match.create({
+    data: {
+      tournamentId: torneoM.id,
+      round: 1,
+      posizione: 0,
+      team1Id: verdiNeri.id,
+      team2Id: ferrariRusso.id,
+      stato: "ATTESA",
+    },
+  });
+
+  console.log(`✅ Creati ${maschili.length} giocatori maschili + ${femminili.length} giocatrici femminili`);
+  console.log(`✅ Create ${teamsM.length} squadre maschili + ${teamsF.length} squadre femminili`);
+  console.log(`✅ Torneo MASCHILE ATTIVO: 2 semifinali COMPLETATE, finale ATTESA (Verdi/Neri vs Ferrari/Russo)`);
+  console.log(`✅ Torneo FEMMINILE in BOZZA (${annoCorrente})`);
   console.log("");
   console.log("📋 Credenziali admin:");
   console.log("   Email:    admin@chanteclair.it");
-  console.log("   Password: admin123");
-  console.log("");
-  console.log("🎯 Prossimi passi:");
-  console.log("   1. Avvia il server:    npm run dev");
-  console.log("   2. Vai su:             http://localhost:3000/admin/login");
-  console.log("   3. Accedi e poi:       /admin/torneo → Esegui Sorteggio");
-  console.log("   4. Apri tabellone:     http://localhost:3000/tabellone-maschile");
-  console.log("   5. Da admin/partite:   Inizia partita → osserva overlay live!");
+  console.log("   Password: admin1234");
 }
 
 main()

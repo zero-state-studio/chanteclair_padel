@@ -1,11 +1,11 @@
-import type { Player } from "@prisma/client";
+import type { Team } from "@prisma/client";
 
 export type BracketMatchInput = {
   tournamentId: string;
   round: number;
   posizione: number;
-  player1Id: string | null;
-  player2Id: string | null;
+  team1Id: string | null;
+  team2Id: string | null;
   winnerId: null;
   punteggio: null;
   stato: "ATTESA";
@@ -13,9 +13,9 @@ export type BracketMatchInput = {
   finitaAt: null;
 };
 
-export function calcolaNumeroDiRound(numGiocatori: number): number {
-  if (numGiocatori < 2) return 0;
-  return Math.ceil(Math.log2(numGiocatori));
+export function calcolaNumeroDiRound(numTeams: number): number {
+  if (numTeams < 2) return 0;
+  return Math.ceil(Math.log2(numTeams));
 }
 
 export function prossimaPotenzaDi2(n: number): number {
@@ -44,23 +44,23 @@ export function getSeedPositions(size: number): number[] {
 }
 
 export function generaBracket(
-  giocatori: Player[],
+  squadre: Team[],
   torneoId: string
 ): BracketMatchInput[] {
-  if (giocatori.length < 2) {
-    throw new Error("Servono almeno 2 giocatori per generare un bracket");
+  if (squadre.length < 2) {
+    throw new Error("Servono almeno 2 squadre per generare un bracket");
   }
 
-  const totale = prossimaPotenzaDi2(giocatori.length);
+  const totale = prossimaPotenzaDi2(squadre.length);
   const numRound = calcolaNumeroDiRound(totale);
 
-  const testeDiSerie = giocatori
-    .filter((p) => p.livello > 0)
+  const testeDiSerie = squadre
+    .filter((s) => s.livello > 0)
     .sort((a, b) => a.livello - b.livello);
-  const altri = giocatori.filter((p) => p.livello === 0);
+  const altri = squadre.filter((s) => s.livello === 0);
   const altriMescolati = shuffle(altri);
 
-  const slots: (Player | null)[] = new Array(totale).fill(null);
+  const slots: (Team | null)[] = new Array(totale).fill(null);
 
   const seedPositions = getSeedPositions(totale);
   testeDiSerie.forEach((tds, i) => {
@@ -84,8 +84,8 @@ export function generaBracket(
       tournamentId: torneoId,
       round: numRound,
       posizione: i,
-      player1Id: slots[i * 2]?.id ?? null,
-      player2Id: slots[i * 2 + 1]?.id ?? null,
+      team1Id: slots[i * 2]?.id ?? null,
+      team2Id: slots[i * 2 + 1]?.id ?? null,
       winnerId: null,
       punteggio: null,
       stato: "ATTESA",
@@ -101,8 +101,8 @@ export function generaBracket(
         tournamentId: torneoId,
         round: r,
         posizione: i,
-        player1Id: null,
-        player2Id: null,
+        team1Id: null,
+        team2Id: null,
         winnerId: null,
         punteggio: null,
         stato: "ATTESA",
