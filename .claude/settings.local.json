@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__plugin_linear_linear__get_issue",
+      "mcp__plugin_linear_linear__list_projects"
+    ]
+  },
+  "enabledPlugins": {
+    "supabase@claude-plugins-official": true,
+    "vercel@claude-plugins-official": true
+  }
+}
