@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { Genere, StatoPartita } from "@/types";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 const GENERI: Genere[] = ["MASCHILE", "FEMMINILE"];
 const STATI: StatoPartita[] = ["ATTESA", "IN_CORSO", "COMPLETATA"];
 

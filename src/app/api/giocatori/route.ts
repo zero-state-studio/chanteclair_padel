@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { ensureUploadsDir, savePhoto } from "@/lib/uploads";
 import type { Genere } from "@/types";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 const GENERI: Genere[] = ["MASCHILE", "FEMMINILE"];
 
 export async function GET(request: NextRequest) {

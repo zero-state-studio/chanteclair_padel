@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { sseEmitter } from "@/lib/sse";
 import type { Genere, LiveEvent, PlayerWithMatches } from "@/types";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 type RouteContext = { params: Promise<{ id: string }> };
 
 const matchInclude = {
