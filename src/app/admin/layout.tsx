@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { AdminNav } from "@/components/AdminNav";
 import { headers } from "next/headers";
+import { Toaster } from "@/components/ui/sonner";
 
 export default async function AdminLayout({
   children,
@@ -16,6 +17,7 @@ export default async function AdminLayout({
     <div className="min-h-screen bg-slate-950 text-slate-100">
       {session && !isLoginPage && <AdminNav />}
       <main>{children}</main>
+      <Toaster theme="dark" position="top-right" />
     </div>
   );
 }
