@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { savePhoto, deletePhoto } from "@/lib/uploads";
-import type { Genere } from "@/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const GENERI: Genere[] = ["MASCHILE", "FEMMINILE"];
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -39,14 +36,6 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   if (formData.has("telefono")) {
     const telefono = (formData.get("telefono") as string | null)?.trim();
     data.telefono = telefono || null;
-  }
-
-  const genere = formData.get("genere");
-  if (typeof genere === "string" && genere.trim()) {
-    if (!GENERI.includes(genere.trim() as Genere)) {
-      return NextResponse.json({ error: "genere non valido" }, { status: 400 });
-    }
-    data.genere = genere.trim();
   }
 
   const foto = formData.get("foto") as File | null;

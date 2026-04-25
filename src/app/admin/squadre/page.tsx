@@ -202,10 +202,11 @@ function PlayerCombobox({
   );
 }
 
-const emptyForm = {
+const emptyForm: { player1Id: string; player2Id: string; livello: string; genere: Genere } = {
   player1Id: "",
   player2Id: "",
   livello: "0",
+  genere: "MASCHILE",
 };
 
 export default function SquadrePage() {
@@ -222,7 +223,7 @@ export default function SquadrePage() {
     setLoading(true);
     try {
       const [pRes, sRes] = await Promise.all([
-        fetch(`/api/giocatori?genere=${genereAttivo}`, { cache: "no-store" }),
+        fetch(`/api/giocatori`, { cache: "no-store" }),
         fetch(`/api/squadre?genere=${genereAttivo}`, { cache: "no-store" }),
       ]);
       if (pRes.ok) setPlayers(await pRes.json());
@@ -254,7 +255,7 @@ export default function SquadrePage() {
 
   const openCreate = () => {
     setEditing(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm, genere: genereAttivo });
     setDialogOpen(true);
   };
 
@@ -264,6 +265,7 @@ export default function SquadrePage() {
       player1Id: team.player1.id,
       player2Id: team.player2.id,
       livello: String(team.livello),
+      genere: team.genere,
     });
     setDialogOpen(true);
   };
@@ -290,6 +292,7 @@ export default function SquadrePage() {
           player1Id: form.player1Id,
           player2Id: form.player2Id,
           livello: parseInt(form.livello, 10) || 0,
+          genere: form.genere,
         }),
       });
       if (!res.ok) {
@@ -421,12 +424,32 @@ export default function SquadrePage() {
         <DialogContent className="bg-court-deep border-cream/15 text-cream">
           <DialogHeader>
             <DialogTitle>
-              {editing ? "Modifica squadra" : "Nuova squadra"} ·{" "}
-              {genereAttivo === "MASCHILE" ? "Maschile" : "Femminile"}
+              {editing ? "Modifica squadra" : "Nuova squadra"}
             </DialogTitle>
           </DialogHeader>
 
           <form onSubmit={submit} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Tabellone *</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {(["MASCHILE", "FEMMINILE"] as const).map((g) => (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => setForm({ ...form, genere: g })}
+                    className={cn(
+                      "px-3 py-2 rounded-sm border-2 text-sm font-semibold uppercase tracking-wider transition-colors",
+                      form.genere === g
+                        ? "border-court-line bg-court-line/10 text-cream"
+                        : "border-cream/15 text-cream/70 hover:border-cream/40"
+                    )}
+                  >
+                    {g === "MASCHILE" ? "Maschile" : "Femminile"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="p1">Giocatore 1 *</Label>
               <PlayerCombobox

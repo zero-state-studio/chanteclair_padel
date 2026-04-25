@@ -10,26 +10,31 @@ async function main() {
   await prisma.team.deleteMany();
   await prisma.player.deleteMany();
 
+  // Avatar disponibili: 4 maschili (01, 03, 05, 07) + 4 femminili (02, 04, 06, 08)
+  // Assegnati ai primi 4 player di ogni genere; gli altri 4 mostrano iniziali.
+  const avatarM = ["/uploads/avatar_01.png", "/uploads/avatar_03.png", "/uploads/avatar_05.png", "/uploads/avatar_07.png"];
+  const avatarF = ["/uploads/avatar_02.png", "/uploads/avatar_04.png", "/uploads/avatar_06.png", "/uploads/avatar_08.png"];
+
   const maschili = await Promise.all([
-    prisma.player.create({ data: { nome: "Marco", cognome: "Rossi", genere: "MASCHILE", email: "rossi@test.it" } }),
-    prisma.player.create({ data: { nome: "Luca", cognome: "Bianchi", genere: "MASCHILE", email: "bianchi@test.it" } }),
-    prisma.player.create({ data: { nome: "Paolo", cognome: "Verdi", genere: "MASCHILE" } }),
-    prisma.player.create({ data: { nome: "Andrea", cognome: "Neri", genere: "MASCHILE" } }),
-    prisma.player.create({ data: { nome: "Stefano", cognome: "Ferrari", genere: "MASCHILE" } }),
-    prisma.player.create({ data: { nome: "Roberto", cognome: "Russo", genere: "MASCHILE" } }),
-    prisma.player.create({ data: { nome: "Davide", cognome: "Marini", genere: "MASCHILE" } }),
-    prisma.player.create({ data: { nome: "Francesco", cognome: "Conti", genere: "MASCHILE" } }),
+    prisma.player.create({ data: { nome: "Marco", cognome: "Rossi", email: "rossi@test.it", fotoUrl: avatarM[0] } }),
+    prisma.player.create({ data: { nome: "Luca", cognome: "Bianchi", email: "bianchi@test.it", fotoUrl: avatarM[1] } }),
+    prisma.player.create({ data: { nome: "Paolo", cognome: "Verdi", fotoUrl: avatarM[2] } }),
+    prisma.player.create({ data: { nome: "Andrea", cognome: "Neri", fotoUrl: avatarM[3] } }),
+    prisma.player.create({ data: { nome: "Stefano", cognome: "Ferrari" } }),
+    prisma.player.create({ data: { nome: "Roberto", cognome: "Russo" } }),
+    prisma.player.create({ data: { nome: "Davide", cognome: "Marini" } }),
+    prisma.player.create({ data: { nome: "Francesco", cognome: "Conti" } }),
   ]);
 
   const femminili = await Promise.all([
-    prisma.player.create({ data: { nome: "Giulia", cognome: "Romano", genere: "FEMMINILE" } }),
-    prisma.player.create({ data: { nome: "Francesca", cognome: "Colombo", genere: "FEMMINILE" } }),
-    prisma.player.create({ data: { nome: "Sara", cognome: "Ricci", genere: "FEMMINILE" } }),
-    prisma.player.create({ data: { nome: "Chiara", cognome: "Marino", genere: "FEMMINILE" } }),
-    prisma.player.create({ data: { nome: "Valentina", cognome: "Greco", genere: "FEMMINILE" } }),
-    prisma.player.create({ data: { nome: "Elena", cognome: "Bruno", genere: "FEMMINILE" } }),
-    prisma.player.create({ data: { nome: "Laura", cognome: "Gallo", genere: "FEMMINILE" } }),
-    prisma.player.create({ data: { nome: "Silvia", cognome: "Barbieri", genere: "FEMMINILE" } }),
+    prisma.player.create({ data: { nome: "Giulia", cognome: "Romano", fotoUrl: avatarF[0] } }),
+    prisma.player.create({ data: { nome: "Francesca", cognome: "Colombo", fotoUrl: avatarF[1] } }),
+    prisma.player.create({ data: { nome: "Sara", cognome: "Ricci", fotoUrl: avatarF[2] } }),
+    prisma.player.create({ data: { nome: "Chiara", cognome: "Marino", fotoUrl: avatarF[3] } }),
+    prisma.player.create({ data: { nome: "Valentina", cognome: "Greco" } }),
+    prisma.player.create({ data: { nome: "Elena", cognome: "Bruno" } }),
+    prisma.player.create({ data: { nome: "Laura", cognome: "Gallo" } }),
+    prisma.player.create({ data: { nome: "Silvia", cognome: "Barbieri" } }),
   ]);
 
   // 4 squadre maschili (2 teste di serie + 2 senza)
