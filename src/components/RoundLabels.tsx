@@ -26,7 +26,7 @@ export function RoundLabels({ rounds, maxRound }: RoundLabelsProps) {
 
   return (
     <section
-      className="relative z-[3] grid gap-4 px-6 md:px-8 py-2.5 border-b"
+      className="relative z-[3] flex flex-wrap md:grid gap-x-3 gap-y-1 md:gap-4 px-4 md:px-8 py-2 md:py-2.5 border-b"
       style={{
         gridTemplateColumns: cols,
         borderColor: "oklch(0.3 0.04 255)",
@@ -35,11 +35,14 @@ export function RoundLabels({ rounds, maxRound }: RoundLabelsProps) {
       {ordered.map((r) => {
         const isFinale = r.round === 1;
         return (
-          <div key={r.round} className="flex items-baseline gap-2.5">
+          <div
+            key={r.round}
+            className="flex items-baseline gap-1.5 md:gap-2.5"
+          >
             <span
               className="cc-display"
               style={{
-                fontSize: 22,
+                fontSize: "clamp(14px, 4vw, 22px)",
                 color: isFinale ? "var(--color-yellow)" : "var(--color-paper)",
               }}
             >
@@ -55,7 +58,7 @@ export function RoundLabels({ rounds, maxRound }: RoundLabelsProps) {
                 opacity: isFinale ? 0.9 : 1,
               }}
             >
-              {r.total} {r.total === 1 ? "match" : "match"}
+              {r.total}
             </span>
           </div>
         );

@@ -33,6 +33,13 @@ export function Bracket({
       const stage = stageRef.current;
       const bracket = bracketRef.current;
       if (!stage || !bracket) return;
+      // Mobile: skip transform scaling — use horizontal scroll instead
+      const isMobile = window.matchMedia("(max-width: 767px)").matches;
+      if (isMobile) {
+        bracket.style.transform = "none";
+        setScale(1);
+        return;
+      }
       bracket.style.transform = "scale(1)";
       const stageBox = stage.getBoundingClientRect();
       const natW = bracket.scrollWidth;
@@ -89,8 +96,7 @@ export function Bracket({
   return (
     <section
       ref={stageRef}
-      className="relative z-[2] flex-1 min-h-0 px-6 md:px-8 py-3 flex items-center justify-center"
-      style={{ overflow: "hidden" }}
+      className="relative z-[2] md:flex-1 md:min-h-0 px-4 md:px-8 py-4 md:py-3 flex items-start md:items-center justify-start md:justify-center overflow-x-auto md:overflow-hidden"
     >
       <div
         ref={bracketRef}

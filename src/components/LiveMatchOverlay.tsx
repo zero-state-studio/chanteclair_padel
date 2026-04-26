@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { LiveEvent, TeamWithPlayers, PlayerWithMatches } from "@/types";
 
@@ -9,17 +9,44 @@ interface LiveMatchOverlayProps {
   onClose: () => void;
 }
 
-function MiniAvatar({ player }: { player: PlayerWithMatches }) {
+type Phase = "intro" | "reveal";
+
+const INTRO_DURATION_MS = 3500; // when reveal kicks in (FINITA only)
+const TOTAL_DURATION_FINITA_MS = 11000;
+const TOTAL_DURATION_INIZIATA_MS = 8000;
+
+function MiniAvatar({
+  player,
+  size,
+}: {
+  player: PlayerWithMatches;
+  size: string;
+}) {
   return player.fotoUrl ? (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={player.fotoUrl}
       alt={`${player.nome} ${player.cognome}`}
-      className="w-20 h-20 md:w-32 md:h-32 rounded-full object-cover bg-cream/10 ring-1 ring-cream/20"
+      className="rounded-full object-cover bg-paper/10"
+      style={{
+        width: size,
+        height: size,
+        boxShadow: "0 0 0 1px rgba(251, 250, 246, 0.2)",
+      }}
     />
   ) : (
-    <div className="w-20 h-20 md:w-32 md:h-32 rounded-full bg-cream/10 ring-1 ring-cream/20 flex items-center justify-center">
-      <span className="font-display text-3xl md:text-5xl text-cream/70">
+    <div
+      className="rounded-full bg-paper/10 flex items-center justify-center"
+      style={{
+        width: size,
+        height: size,
+        boxShadow: "0 0 0 1px rgba(251, 250, 246, 0.2)",
+      }}
+    >
+      <span
+        className="cc-display text-paper/70"
+        style={{ fontSize: `calc(${size} * 0.36)` }}
+      >
         {player.nome[0]}
         {player.cognome[0]}
       </span>
@@ -27,7 +54,7 @@ function MiniAvatar({ player }: { player: PlayerWithMatches }) {
   );
 }
 
-function TeamColumn({
+function IntroTeamColumn({
   team,
   isWinner,
   isLoser,
@@ -48,12 +75,13 @@ function TeamColumn({
         filter: "blur(12px)",
       }}
       animate={{ x: 0, opacity: 1, filter: "blur(0px)" }}
+      exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.5 } }}
       transition={{ delay, type: "spring", stiffness: 70, damping: 14 }}
       className={`flex flex-col items-${side === "left" ? "start" : "end"} gap-6 ${
-        isLoser ? "opacity-40" : ""
+        isLoser ? "opacity-50" : ""
       }`}
     >
-      <div className="text-eyebrow text-cream/50">
+      <div className="text-eyebrow text-paper/50">
         {side === "left" ? "Team A" : "Team B"}
       </div>
 
@@ -63,29 +91,50 @@ function TeamColumn({
             initial={{ scale: 0, rotate: -45 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ delay: delay + 0.4, type: "spring", stiffness: 200 }}
-            className="absolute -top-3 -right-3 z-10 px-3 py-1 bg-court-line text-court font-display italic text-sm rounded-full"
+            className="absolute -top-3 -right-3 z-10 px-3 py-1 cc-mono"
+            style={{
+              background: "var(--color-yellow)",
+              color: "var(--color-night-deep)",
+              fontSize: 11,
+              borderRadius: "999px",
+            }}
           >
             vincitore
           </motion.div>
         )}
         <div
-          className={`flex -space-x-6 md:-space-x-10 ${
-            isWinner ? "ring-court-line ring-offset-8 ring-offset-court ring-1 rounded-full p-2" : ""
-          }`}
+          className="flex"
+          style={{ gap: "calc(clamp(96px, 14vw, 220px) * -0.18)" }}
         >
-          <MiniAvatar player={team.player1} />
-          <MiniAvatar player={team.player2} />
+          <MiniAvatar
+            player={team.player1}
+            size="clamp(96px, 14vw, 220px)"
+          />
+          <MiniAvatar
+            player={team.player2}
+            size="clamp(96px, 14vw, 220px)"
+          />
         </div>
       </div>
 
       <div className={side === "left" ? "text-left" : "text-right"}>
-        <div className="text-eyebrow text-cream/50 mb-1">
+        <div className="text-eyebrow text-paper/50 mb-1">
           {team.livello > 0 ? `Testa di serie #${team.livello}` : "—"}
         </div>
-        <div className="font-display text-3xl md:text-5xl leading-[0.9] text-cream">
+        <div
+          className="cc-display text-paper"
+          style={{ fontSize: "clamp(48px, 7vw, 130px)", lineHeight: 0.9 }}
+        >
           {team.player1.cognome}
         </div>
-        <div className="font-display italic text-2xl md:text-4xl text-cream/70 leading-tight">
+        <div
+          className="cc-display text-paper/70"
+          style={{
+            fontSize: "clamp(32px, 5vw, 90px)",
+            lineHeight: 1,
+            letterSpacing: "0.01em",
+          }}
+        >
           / {team.player2.cognome}
         </div>
       </div>
@@ -93,12 +142,177 @@ function TeamColumn({
   );
 }
 
+function WinnerCelebration({
+  winner,
+  punteggio,
+}: {
+  winner: TeamWithPlayers;
+  punteggio?: string;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.92 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.6, ease: [0.22, 0.9, 0.34, 1] }}
+      className="flex flex-col items-center gap-5 md:gap-7 text-center"
+    >
+      <motion.div
+        initial={{ y: -30, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.2, duration: 0.5 }}
+        className="cc-mono"
+        style={{
+          fontSize: "clamp(14px, 1.4vw, 22px)",
+          color: "var(--color-yellow)",
+          letterSpacing: "0.4em",
+        }}
+      >
+        ★ vincitore ★
+      </motion.div>
+
+      <motion.div
+        initial={{ scale: 0.7, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{
+          delay: 0.1,
+          type: "spring",
+          stiffness: 90,
+          damping: 14,
+        }}
+        className="relative"
+      >
+        <div
+          className="absolute inset-0 -m-8 pointer-events-none"
+          aria-hidden
+          style={{
+            background:
+              "radial-gradient(ellipse 70% 60% at 50% 50%, var(--color-yellow) 0%, transparent 65%)",
+            opacity: 0.25,
+            filter: "blur(40px)",
+          }}
+        />
+        <div
+          className="relative flex"
+          style={{ gap: "calc(clamp(130px, 17vw, 260px) * -0.18)" }}
+        >
+          <div
+            className="rounded-full"
+            style={{
+              boxShadow:
+                "0 0 0 5px var(--color-yellow), 0 0 48px rgba(236, 210, 74, 0.45)",
+            }}
+          >
+            <MiniAvatar
+              player={winner.player1}
+              size="clamp(130px, 17vw, 260px)"
+            />
+          </div>
+          <div
+            className="rounded-full"
+            style={{
+              boxShadow:
+                "0 0 0 5px var(--color-yellow), 0 0 48px rgba(236, 210, 74, 0.45)",
+            }}
+          >
+            <MiniAvatar
+              player={winner.player2}
+              size="clamp(130px, 17vw, 260px)"
+            />
+          </div>
+        </div>
+      </motion.div>
+
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.35, duration: 0.5 }}
+      >
+        {winner.livello > 0 && (
+          <div className="text-eyebrow text-paper/50 mb-2">
+            Testa di serie #{winner.livello}
+          </div>
+        )}
+        <div
+          className="cc-display text-paper"
+          style={{
+            fontSize: "clamp(54px, 9vw, 160px)",
+            lineHeight: 0.9,
+            letterSpacing: "-0.005em",
+          }}
+        >
+          {winner.player1.cognome}
+        </div>
+        <div
+          className="cc-display"
+          style={{
+            fontSize: "clamp(36px, 6.5vw, 115px)",
+            lineHeight: 0.95,
+            color: "var(--color-yellow)",
+          }}
+        >
+          / {winner.player2.cognome}
+        </div>
+      </motion.div>
+
+      {punteggio && (
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.55, duration: 0.5 }}
+          className="flex flex-col items-center"
+        >
+          <div className="text-eyebrow text-paper/40 mb-1">Punteggio finale</div>
+          <div
+            className="text-stat tabular-nums"
+            style={{
+              fontSize: "clamp(28px, 4.2vw, 78px)",
+              color: "var(--color-yellow)",
+              lineHeight: 1,
+            }}
+          >
+            {punteggio}
+          </div>
+        </motion.div>
+      )}
+    </motion.div>
+  );
+}
+
 export function LiveMatchOverlay({ event, onClose }: LiveMatchOverlayProps) {
+  const eventKey = event ? `${event.matchId}-${event.tipo}` : null;
+  const [phase, setPhase] = useState<Phase>("intro");
+  const [phaseKey, setPhaseKey] = useState<string | null>(null);
+
+  // Reset phase synchronously when event changes (React-recommended pattern
+  // for "adjusting state during render" instead of using useEffect).
+  if (eventKey !== phaseKey) {
+    setPhaseKey(eventKey);
+    setPhase("intro");
+  }
+
+  // Schedule reveal + auto-close timers for the active event.
   useEffect(() => {
     if (!event) return;
-    const timer = setTimeout(onClose, 8000);
-    return () => clearTimeout(timer);
+
+    const timers: ReturnType<typeof setTimeout>[] = [];
+
+    if (event.tipo === "PARTITA_FINITA") {
+      timers.push(
+        setTimeout(() => setPhase("reveal"), INTRO_DURATION_MS),
+        setTimeout(onClose, TOTAL_DURATION_FINITA_MS)
+      );
+    } else {
+      timers.push(setTimeout(onClose, TOTAL_DURATION_INIZIATA_MS));
+    }
+
+    return () => {
+      timers.forEach(clearTimeout);
+    };
   }, [event, onClose]);
+
+  const winner =
+    event?.tipo === "PARTITA_FINITA" ? event.winner : undefined;
 
   return (
     <AnimatePresence>
@@ -118,56 +332,70 @@ export function LiveMatchOverlay({ event, onClose }: LiveMatchOverlayProps) {
                 : "radial-gradient(ellipse at 50% 30%, oklch(0.26 0.05 255) 0%, oklch(0.10 0.03 255) 70%)",
           }}
         >
+          {/* Diagonal stripes background */}
           <motion.div
             initial={{ opacity: 0, scale: 1.1 }}
             animate={{ opacity: 0.4, scale: 1 }}
             transition={{ duration: 1.2 }}
-            className="absolute inset-0 court-grid pointer-events-none"
+            className="absolute inset-0 cc-stripes pointer-events-none"
           />
 
+          {/* Top + bottom yellow accent bars */}
           <motion.div
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
             transition={{ delay: 0.1, duration: 0.6, ease: [0.85, 0, 0.15, 1] }}
-            className="absolute top-0 left-0 right-0 h-[3px] bg-court-line origin-left"
+            className="absolute top-0 left-0 right-0 h-[3px] origin-left"
+            style={{ background: "var(--color-yellow)" }}
           />
           <motion.div
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
             transition={{ delay: 0.2, duration: 0.6, ease: [0.85, 0, 0.15, 1] }}
-            className="absolute bottom-0 left-0 right-0 h-[3px] bg-court-line origin-right"
+            className="absolute bottom-0 left-0 right-0 h-[3px] origin-right"
+            style={{ background: "var(--color-yellow)" }}
           />
 
-          <div className="relative h-full flex flex-col justify-between max-w-[1400px] mx-auto px-6 md:px-12 py-10 md:py-16">
+          <div className="relative h-full flex flex-col justify-between max-w-[1600px] mx-auto px-6 md:px-12 py-8 md:py-12">
+            {/* Top chrome */}
             <motion.div
               initial={{ y: -30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.3 }}
               className="flex items-center justify-between"
             >
-              <div className="text-eyebrow text-cream/60">
+              <div className="text-eyebrow text-paper/60">
                 Chanteclair · {event.genere}
               </div>
               <div className="flex items-center gap-3">
+                {event.tipo === "PARTITA_INIZIATA" && (
+                  <span className="relative flex h-2 w-2">
+                    <span
+                      className="absolute inline-flex h-full w-full rounded-full opacity-60"
+                      style={{
+                        background: "var(--color-yellow)",
+                        animation: "cc-live-pulse 1.4s ease-in-out infinite",
+                      }}
+                    />
+                    <span
+                      className="relative inline-flex rounded-full h-2 w-2"
+                      style={{ background: "var(--color-yellow)" }}
+                    />
+                  </span>
+                )}
                 <span
-                  className={`relative flex h-2 w-2 ${
-                    event.tipo === "PARTITA_INIZIATA" ? "" : "hidden"
-                  }`}
-                >
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-court-line opacity-60" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-court-line" />
-                </span>
-                <span
-                  className={`text-eyebrow ${
-                    event.tipo === "PARTITA_INIZIATA"
-                      ? "text-court-line"
-                      : "text-clay"
-                  }`}
+                  className="text-eyebrow"
+                  style={{
+                    color:
+                      event.tipo === "PARTITA_INIZIATA"
+                        ? "var(--color-yellow)"
+                        : "var(--color-red)",
+                  }}
                 >
                   {event.tipo === "PARTITA_INIZIATA" ? "in campo" : "concluso"}
                 </span>
               </div>
-              <div className="text-eyebrow text-cream/60 hidden md:block">
+              <div className="text-eyebrow text-paper/60 hidden md:block">
                 {new Date().toLocaleTimeString("it-IT", {
                   hour: "2-digit",
                   minute: "2-digit",
@@ -175,79 +403,127 @@ export function LiveMatchOverlay({ event, onClose }: LiveMatchOverlayProps) {
               </div>
             </motion.div>
 
+            {/* Center content (intro vs reveal) */}
             <div className="flex flex-col items-center text-center">
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.4 }}
-                className="text-eyebrow text-court-line mb-6"
-              >
-                {event.tipo === "PARTITA_INIZIATA"
-                  ? "— Inizia il match —"
-                  : "— Match concluso —"}
-              </motion.div>
+              <AnimatePresence mode="wait">
+                {phase === "intro" || event.tipo === "PARTITA_INIZIATA" ? (
+                  <motion.div
+                    key="intro"
+                    exit={{ opacity: 0, transition: { duration: 0.5 } }}
+                    className="w-full"
+                  >
+                    <motion.div
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.4 }}
+                      className="text-eyebrow mb-8"
+                      style={{ color: "var(--color-yellow)" }}
+                    >
+                      {event.tipo === "PARTITA_INIZIATA"
+                        ? "— Inizia il match —"
+                        : "— Match concluso —"}
+                    </motion.div>
 
-              <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-8 md:gap-16 items-center w-full">
-                <TeamColumn
-                  team={event.team1}
-                  isWinner={event.winner?.id === event.team1.id}
-                  isLoser={
-                    event.tipo === "PARTITA_FINITA" &&
-                    event.winner !== undefined &&
-                    event.winner?.id !== event.team1.id
-                  }
-                  side="left"
-                  delay={0.5}
-                />
+                    <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-10 md:gap-20 items-center w-full">
+                      <IntroTeamColumn
+                        team={event.team1}
+                        isWinner={winner?.id === event.team1.id}
+                        isLoser={
+                          event.tipo === "PARTITA_FINITA" &&
+                          winner !== undefined &&
+                          winner.id !== event.team1.id
+                        }
+                        side="left"
+                        delay={0.5}
+                      />
 
-                <motion.div
-                  initial={{ scale: 0.5, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.7, type: "spring", stiffness: 120 }}
-                  className="flex flex-col items-center gap-2"
-                >
-                  {event.tipo === "PARTITA_INIZIATA" ? (
-                    <>
-                      <div className="text-eyebrow text-cream/40">vs</div>
-                      <div className="font-display italic text-court-line text-7xl md:text-9xl leading-none">
-                        ×
-                      </div>
-                      <div className="text-eyebrow text-cream/40">match 01</div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-eyebrow text-cream/40">Risultato</div>
-                      <div className="text-stat text-court-line text-3xl md:text-5xl tabular-nums leading-tight">
-                        {event.punteggio}
-                      </div>
-                      <div className="text-eyebrow text-cream/40">finale</div>
-                    </>
-                  )}
-                </motion.div>
+                      <motion.div
+                        initial={{ scale: 0.5, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{
+                          delay: 0.7,
+                          type: "spring",
+                          stiffness: 120,
+                        }}
+                        className="flex flex-col items-center gap-2"
+                      >
+                        {event.tipo === "PARTITA_INIZIATA" ? (
+                          <>
+                            <div className="text-eyebrow text-paper/40">vs</div>
+                            <div
+                              className="cc-display"
+                              style={{
+                                fontSize: "clamp(80px, 12vw, 200px)",
+                                lineHeight: 1,
+                                color: "var(--color-yellow)",
+                              }}
+                            >
+                              ×
+                            </div>
+                            <div className="text-eyebrow text-paper/40">
+                              match
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="text-eyebrow text-paper/40">
+                              Risultato
+                            </div>
+                            <div
+                              className="text-stat tabular-nums"
+                              style={{
+                                fontSize: "clamp(48px, 7vw, 130px)",
+                                color: "var(--color-yellow)",
+                                lineHeight: 1,
+                              }}
+                            >
+                              {event.punteggio}
+                            </div>
+                            <div className="text-eyebrow text-paper/40">
+                              finale
+                            </div>
+                          </>
+                        )}
+                      </motion.div>
 
-                <TeamColumn
-                  team={event.team2}
-                  isWinner={event.winner?.id === event.team2.id}
-                  isLoser={
-                    event.tipo === "PARTITA_FINITA" &&
-                    event.winner !== undefined &&
-                    event.winner?.id !== event.team2.id
-                  }
-                  side="right"
-                  delay={0.5}
-                />
-              </div>
+                      <IntroTeamColumn
+                        team={event.team2}
+                        isWinner={winner?.id === event.team2.id}
+                        isLoser={
+                          event.tipo === "PARTITA_FINITA" &&
+                          winner !== undefined &&
+                          winner.id !== event.team2.id
+                        }
+                        side="right"
+                        delay={0.5}
+                      />
+                    </div>
+                  </motion.div>
+                ) : (
+                  winner && (
+                    <WinnerCelebration
+                      key="reveal"
+                      winner={winner}
+                      punteggio={event.punteggio}
+                    />
+                  )
+                )}
+              </AnimatePresence>
             </div>
 
+            {/* Bottom chrome */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1.5 }}
-              className="flex items-center justify-between text-eyebrow text-cream/40"
+              className="flex items-center justify-between text-eyebrow text-paper/40"
             >
               <span>tocca per chiudere</span>
               <span className="hidden md:inline">
-                chiusura automatica · 8s
+                chiusura automatica ·{" "}
+                {event.tipo === "PARTITA_FINITA"
+                  ? `${TOTAL_DURATION_FINITA_MS / 1000}s`
+                  : `${TOTAL_DURATION_INIZIATA_MS / 1000}s`}
               </span>
               <span>match #{event.matchId.slice(-6)}</span>
             </motion.div>

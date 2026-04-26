@@ -22,13 +22,7 @@ export default async function TabelloneMaschilePage() {
 
   return (
     <div
-      className="relative bg-night-deep text-paper overflow-hidden"
-      style={{
-        height: "100vh",
-        width: "100vw",
-        display: "grid",
-        gridTemplateRows: "auto auto auto 1fr",
-      }}
+      className="relative bg-night-deep text-paper flex flex-col min-h-screen w-screen md:grid md:h-screen md:overflow-hidden md:grid-rows-[auto_auto_auto_1fr]"
     >
       <div
         aria-hidden
