@@ -322,11 +322,11 @@ export default function SquadrePage() {
   };
 
   return (
-    <div className="mx-auto max-w-[1400px] px-6 md:px-12 py-12">
-      <div className="grid grid-cols-12 gap-6 mb-12 items-end">
+    <div className="mx-auto max-w-[1400px] px-4 md:px-12 py-6 md:py-12">
+      <div className="grid grid-cols-12 gap-4 md:gap-6 mb-6 md:mb-12 items-end">
         <div className="col-span-12 md:col-span-7">
-          <div className="text-eyebrow text-cream/50 mb-3">03 / Pairs</div>
-          <h1 className="text-display-jumbo text-cream text-[10vw] md:text-[6vw]">
+          <div className="text-eyebrow text-cream/50 mb-2 md:mb-3">03 / Pairs</div>
+          <h1 className="text-display-jumbo text-cream text-[14vw] sm:text-[10vw] md:text-[6vw] leading-[0.85]">
             Squadre
           </h1>
         </div>
@@ -337,7 +337,7 @@ export default function SquadrePage() {
           </p>
           <Button
             onClick={openCreate}
-            className="bg-court-line text-court hover:bg-[#e7ff75] font-body font-semibold tracking-wider uppercase text-xs h-12 px-6 rounded-sm self-start md:self-end"
+            className="bg-court-line text-court hover:bg-[#e7ff75] font-body font-semibold tracking-wider uppercase text-xs h-12 px-6 rounded-sm w-full md:w-auto md:self-end"
           >
             + Nuova squadra
           </Button>
@@ -349,9 +349,9 @@ export default function SquadrePage() {
         onValueChange={(v) => setGenereAttivo(v as Genere)}
         className="mb-6"
       >
-        <TabsList className="bg-court-deep">
-          <TabsTrigger value="MASCHILE">Maschile</TabsTrigger>
-          <TabsTrigger value="FEMMINILE">Femminile</TabsTrigger>
+        <TabsList className="bg-court-deep w-full sm:w-auto">
+          <TabsTrigger value="MASCHILE" className="flex-1 sm:flex-none">Maschile</TabsTrigger>
+          <TabsTrigger value="FEMMINILE" className="flex-1 sm:flex-none">Femminile</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -366,9 +366,9 @@ export default function SquadrePage() {
           {squadre.map((s) => (
             <div
               key={s.id}
-              className="rounded-sm border border-line bg-court-deep p-5 flex items-center justify-between gap-4"
+              className="rounded-sm border border-line bg-court-deep p-4 md:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-4"
             >
-              <div className="flex items-center gap-4 min-w-0">
+              <div className="flex items-center gap-3 md:gap-4 min-w-0">
                 <div className="flex -space-x-3 shrink-0">
                   {[s.player1, s.player2].map((p) =>
                     p.fotoUrl ? (
@@ -390,19 +390,19 @@ export default function SquadrePage() {
                     )
                   )}
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="font-body font-semibold text-cream truncate">{s.nome}</p>
                   <p className="text-eyebrow text-cream/50 mt-1">
                     {s.livello > 0 ? `Testa di serie #${s.livello}` : "non tds"}
                   </p>
                 </div>
               </div>
-              <div className="flex gap-2 shrink-0">
+              <div className="flex gap-2 shrink-0 border-t sm:border-t-0 border-line pt-3 sm:pt-0 -mx-1 sm:mx-0">
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={() => openEdit(s)}
-                  className="text-cream/70 hover:text-cream hover:bg-cream/5"
+                  className="text-cream/70 hover:text-cream hover:bg-cream/5 flex-1 sm:flex-none h-10"
                 >
                   Modifica
                 </Button>
@@ -410,7 +410,7 @@ export default function SquadrePage() {
                   size="sm"
                   variant="ghost"
                   onClick={() => remove(s)}
-                  className="text-clay hover:text-clay hover:bg-clay/10"
+                  className="text-clay hover:text-clay hover:bg-clay/10 flex-1 sm:flex-none h-10"
                 >
                   Elimina
                 </Button>
@@ -421,7 +421,7 @@ export default function SquadrePage() {
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-court-deep border-cream/15 text-cream">
+        <DialogContent className="bg-court-deep border-cream/15 text-cream max-h-[90vh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
               {editing ? "Modifica squadra" : "Nuova squadra"}

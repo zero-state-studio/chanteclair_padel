@@ -114,13 +114,13 @@ function PartitaCard({
   };
 
   return (
-    <div className="rounded-md border border-line bg-court-deep p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
+    <div className="rounded-md border border-line bg-court-deep p-3 sm:p-4 space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1.5 min-w-0">
           <TeamLabel team={match.team1} />
           <TeamLabel team={match.team2} />
         </div>
-        <div className="text-right">
+        <div className="text-right shrink-0">
           {match.stato === "ATTESA" && (
             <span className="text-xs uppercase tracking-widest text-cream/60">
               In attesa
@@ -158,7 +158,7 @@ function PartitaCard({
           size="sm"
           onClick={inizia}
           disabled={!canStart || busy}
-          className="bg-court-line text-court hover:bg-[#e7ff75]"
+          className="bg-court-line text-court hover:bg-[#e7ff75] w-full sm:w-auto h-10"
         >
           ▶ Inizia Partita
         </Button>
@@ -168,7 +168,7 @@ function PartitaCard({
         <Button
           size="sm"
           onClick={() => setShowForm(true)}
-          className="bg-cream text-court hover:bg-cream/90"
+          className="bg-cream text-court hover:bg-cream/90 w-full sm:w-auto h-10"
         >
           ⏹ Inserisci Risultato
         </Button>
@@ -187,14 +187,14 @@ function PartitaCard({
           </div>
           <div className="space-y-2">
             <Label className="text-xs">Vincitore</Label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {[match.team1, match.team2].filter(Boolean).map((team) => (
                 <button
                   key={team!.id}
                   type="button"
                   onClick={() => setWinnerId(team!.id)}
                   className={cn(
-                    "flex items-center gap-2 p-2 rounded-md border-2 transition-colors text-left",
+                    "flex items-center gap-2 p-3 rounded-md border-2 transition-colors text-left min-h-[48px]",
                     winnerId === team!.id
                       ? "border-court-line bg-court-line/10"
                       : "border-cream/15 hover:border-cream/40 bg-court"
@@ -205,15 +205,7 @@ function PartitaCard({
               ))}
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              onClick={termina}
-              disabled={busy || !winnerId || !punteggio.trim()}
-              className="bg-court-line text-court hover:bg-[#e7ff75] flex-1"
-            >
-              {busy ? "Salvataggio..." : "✓ Conferma e Notifica"}
-            </Button>
+          <div className="flex flex-col-reverse sm:flex-row gap-2">
             <Button
               size="sm"
               variant="ghost"
@@ -222,8 +214,17 @@ function PartitaCard({
                 setWinnerId("");
                 setPunteggio("");
               }}
+              className="h-10 sm:flex-none"
             >
               Annulla
+            </Button>
+            <Button
+              size="sm"
+              onClick={termina}
+              disabled={busy || !winnerId || !punteggio.trim()}
+              className="bg-court-line text-court hover:bg-[#e7ff75] flex-1 h-10"
+            >
+              {busy ? "Salvataggio..." : "✓ Conferma e Notifica"}
             </Button>
           </div>
         </div>
@@ -274,16 +275,16 @@ export default function PartitePage() {
   const maxRound = rounds[0] ?? 0;
 
   return (
-    <div className="mx-auto max-w-[1400px] px-6 md:px-12 py-12">
-      <div className="grid grid-cols-12 gap-6 items-end mb-12">
+    <div className="mx-auto max-w-[1400px] px-4 md:px-12 py-6 md:py-12">
+      <div className="grid grid-cols-12 gap-4 md:gap-6 items-end mb-6 md:mb-12">
         <div className="col-span-12 md:col-span-7">
-          <div className="text-eyebrow text-cream/50 mb-3">04 / Diretta</div>
-          <h1 className="text-display-jumbo text-cream text-[10vw] md:text-[6vw]">
+          <div className="text-eyebrow text-cream/50 mb-2 md:mb-3">04 / Diretta</div>
+          <h1 className="text-display-jumbo text-cream text-[14vw] sm:text-[10vw] md:text-[6vw] leading-[0.85]">
             Partite
           </h1>
         </div>
         <div className="col-span-12 md:col-span-5 md:pl-8 md:border-l border-line">
-          <p className="text-cream/70 leading-relaxed">
+          <p className="text-cream/70 text-sm md:text-base leading-relaxed">
             Ogni azione qui invia un overlay sui tabelloni del club. Click su{" "}
             <em className="font-display italic text-court-line">Inizia</em> per
             partire, poi inserisci punteggio e vincitore quando il match si
@@ -297,9 +298,9 @@ export default function PartitePage() {
         onValueChange={(v) => setGenereAttivo(v as Genere)}
         className="mb-6"
       >
-        <TabsList className="bg-court-deep">
-          <TabsTrigger value="MASCHILE">Maschile</TabsTrigger>
-          <TabsTrigger value="FEMMINILE">Femminile</TabsTrigger>
+        <TabsList className="bg-court-deep w-full sm:w-auto">
+          <TabsTrigger value="MASCHILE" className="flex-1 sm:flex-none">Maschile</TabsTrigger>
+          <TabsTrigger value="FEMMINILE" className="flex-1 sm:flex-none">Femminile</TabsTrigger>
         </TabsList>
       </Tabs>
 
