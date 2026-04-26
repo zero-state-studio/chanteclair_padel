@@ -6,9 +6,9 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/admin/giocatori", label: "Giocatori", code: "01" },
-  { href: "/admin/squadre", label: "Squadre", code: "02" },
-  { href: "/admin/torneo", label: "Tornei", code: "03" },
+  { href: "/admin/torneo", label: "Tornei", code: "01" },
+  { href: "/admin/giocatori", label: "Giocatori", code: "02" },
+  { href: "/admin/squadre", label: "Squadre", code: "03" },
   { href: "/admin/partite", label: "Partite", code: "04" },
 ];
 
@@ -19,7 +19,7 @@ export function AdminNav() {
     <nav className="border-b border-line bg-court-deep">
       <div className="mx-auto max-w-[1400px] px-6 md:px-12 py-4 flex items-center justify-between gap-6">
         <Link
-          href="/admin/giocatori"
+          href="/admin/torneo"
           className="flex items-baseline gap-3 text-cream hover:text-court-line transition-colors"
         >
           <span className="font-display italic text-2xl leading-none">

@@ -277,7 +277,7 @@ export default function PartitePage() {
     <div className="mx-auto max-w-[1400px] px-6 md:px-12 py-12">
       <div className="grid grid-cols-12 gap-6 items-end mb-12">
         <div className="col-span-12 md:col-span-7">
-          <div className="text-eyebrow text-cream/50 mb-3">03 / Diretta</div>
+          <div className="text-eyebrow text-cream/50 mb-3">04 / Diretta</div>
           <h1 className="text-display-jumbo text-cream text-[10vw] md:text-[6vw]">
             Partite
           </h1>
