@@ -164,16 +164,16 @@ export default function TorneoPage() {
   const previewTorneo = tornei.find((t) => t.id === previewTorneoId);
 
   return (
-    <div className="mx-auto max-w-[1400px] px-6 md:px-12 py-12 space-y-12">
-      <div className="grid grid-cols-12 gap-6 items-end">
+    <div className="mx-auto max-w-[1400px] px-4 md:px-12 py-6 md:py-12 space-y-8 md:space-y-12">
+      <div className="grid grid-cols-12 gap-4 md:gap-6 items-end">
         <div className="col-span-12 md:col-span-7">
-          <div className="text-eyebrow text-cream/50 mb-3">01 / Tornei</div>
-          <h1 className="text-display-jumbo text-cream text-[10vw] md:text-[6vw]">
+          <div className="text-eyebrow text-cream/50 mb-2 md:mb-3">01 / Tornei</div>
+          <h1 className="text-display-jumbo text-cream text-[14vw] sm:text-[10vw] md:text-[6vw] leading-[0.85]">
             Tornei
           </h1>
         </div>
         <div className="col-span-12 md:col-span-5 md:pl-8 md:border-l border-line">
-          <p className="text-cream/70 leading-relaxed">
+          <p className="text-cream/70 text-sm md:text-base leading-relaxed">
             Crea l&apos;edizione, sorteggia il bracket, attiva la diretta. Il
             sorteggio applica le teste di serie del regolamento e aggiunge i BYE
             necessari per chiudere il tabellone alla potenza di 2 successiva.
@@ -181,10 +181,10 @@ export default function TorneoPage() {
         </div>
       </div>
 
-      <section className="rounded-sm border border-line bg-court-deep p-8">
+      <section className="rounded-sm border border-line bg-court-deep p-5 md:p-8">
         <div className="text-eyebrow text-court-line mb-2">— nuova edizione</div>
-        <h2 className="font-display text-3xl mb-6 text-cream">Crea torneo</h2>
-        <form onSubmit={handleCreate} className="grid md:grid-cols-4 gap-3">
+        <h2 className="font-display text-2xl md:text-3xl mb-5 md:mb-6 text-cream">Crea torneo</h2>
+        <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div className="md:col-span-2 space-y-2">
             <Label htmlFor="nome-t">Nome torneo</Label>
             <Input
@@ -228,7 +228,7 @@ export default function TorneoPage() {
             <Button
               type="submit"
               disabled={creating}
-              className="bg-court-line text-court hover:bg-[#e7ff75]"
+              className="bg-court-line text-court hover:bg-[#e7ff75] w-full md:w-auto h-11"
             >
               {creating ? "Creazione..." : "Crea Torneo"}
             </Button>
@@ -250,34 +250,34 @@ export default function TorneoPage() {
               return (
                 <div
                   key={t.id}
-                  className="rounded-lg border border-line bg-court-deep p-5 space-y-4"
+                  className="rounded-lg border border-line bg-court-deep p-4 md:p-5 space-y-4"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-lg font-semibold">{t.nome}</h3>
-                      <p className="text-sm text-cream/60">
+                    <div className="min-w-0">
+                      <h3 className="text-base md:text-lg font-semibold truncate">{t.nome}</h3>
+                      <p className="text-xs md:text-sm text-cream/60 mt-0.5">
                         {t.genere === "MASCHILE" ? "Maschile" : "Femminile"} ·{" "}
                         {t.anno} · {partite} partite
                       </p>
                     </div>
                     <Badge
-                      className={`${STATO_BADGE[t.stato as StatoTorneo]} hover:opacity-100`}
+                      className={`${STATO_BADGE[t.stato as StatoTorneo]} hover:opacity-100 shrink-0`}
                     >
                       {t.stato}
                     </Badge>
                   </div>
 
-                  <p className="text-sm text-cream/60">
+                  <p className="text-xs md:text-sm text-cream/60">
                     Squadre {t.genere === "MASCHILE" ? "maschili" : "femminili"}{" "}
                     disponibili: <strong className="text-white">{squadreDisp}</strong>
                   </p>
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
                     <Button
                       size="sm"
                       onClick={() => handleSorteggio(t)}
                       disabled={drawing === t.id || squadreDisp < 2}
-                      className="bg-court-line text-court hover:bg-[#e7ff75]"
+                      className="bg-court-line text-court hover:bg-[#e7ff75] h-10 col-span-2 sm:col-span-1"
                     >
                       {drawing === t.id ? "Sorteggio..." : "Esegui Sorteggio"}
                     </Button>
@@ -285,17 +285,17 @@ export default function TorneoPage() {
                       size="sm"
                       variant="outline"
                       onClick={() => setPreviewTorneoId(t.id)}
-                      className="bg-transparent border-cream/20 hover:bg-cream/5 text-cream"
+                      className="bg-transparent border-cream/20 hover:bg-cream/5 text-cream h-10"
                       disabled={partite === 0}
                     >
-                      Anteprima Bracket
+                      Anteprima
                     </Button>
                     {t.stato !== "CONCLUSO" && partite > 0 && (
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleStato(t, "CONCLUSO")}
-                        className="bg-transparent border-cream/20 hover:bg-cream/5 text-cream"
+                        className="bg-transparent border-cream/20 hover:bg-cream/5 text-cream h-10"
                       >
                         Concludi
                       </Button>
@@ -305,6 +305,7 @@ export default function TorneoPage() {
                         size="sm"
                         variant="destructive"
                         onClick={() => handleDelete(t)}
+                        className="h-10"
                       >
                         Elimina
                       </Button>
@@ -318,21 +319,24 @@ export default function TorneoPage() {
       </section>
 
       {previewTorneo && previewTorneo.matches.length > 0 && (
-        <section className="rounded-lg border border-line bg-court-deep p-4">
-          <div className="flex items-center justify-between mb-2 px-2">
-            <h2 className="text-xl font-semibold">
-              Anteprima Bracket — {previewTorneo.nome}
+        <section className="rounded-lg border border-line bg-court-deep p-3 md:p-4">
+          <div className="flex items-center justify-between mb-2 px-2 gap-2">
+            <h2 className="text-base md:text-xl font-semibold truncate">
+              <span className="hidden sm:inline">Anteprima Bracket — </span>
+              {previewTorneo.nome}
             </h2>
             <Button
               size="sm"
               variant="ghost"
               onClick={() => setPreviewTorneoId(null)}
-              className="text-cream/60"
+              className="text-cream/60 shrink-0"
             >
               Chiudi
             </Button>
           </div>
-          <Bracket torneo={previewTorneo} />
+          <div className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0">
+            <Bracket torneo={previewTorneo} />
+          </div>
         </section>
       )}
     </div>

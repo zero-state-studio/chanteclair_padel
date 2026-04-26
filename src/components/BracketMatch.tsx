@@ -5,9 +5,30 @@ import type { MatchWithTeams, TeamWithPlayers, PlayerWithMatches } from "@/types
 
 type Visual = "live" | "done" | "next" | "pending";
 
+export type MatchSize = "xs" | "sm" | "md" | "lg" | "xl";
+
+interface SizeSpec {
+  font: number;
+  avatar: number;
+  padX: number;
+  padY: number;
+  divider: number;
+  scoreFont: number;
+  metaFont: number;
+  gap: number;
+}
+
+const SIZE_MAP: Record<MatchSize, SizeSpec> = {
+  xs: { font: 11, avatar: 14, padX: 8, padY: 5, divider: 3, scoreFont: 10, metaFont: 9, gap: 6 },
+  sm: { font: 14, avatar: 18, padX: 10, padY: 7, divider: 5, scoreFont: 11, metaFont: 9, gap: 7 },
+  md: { font: 20, avatar: 24, padX: 14, padY: 11, divider: 8, scoreFont: 13, metaFont: 10, gap: 9 },
+  lg: { font: 28, avatar: 32, padX: 20, padY: 16, divider: 11, scoreFont: 16, metaFont: 10, gap: 11 },
+  xl: { font: 40, avatar: 44, padX: 28, padY: 22, divider: 14, scoreFont: 22, metaFont: 11, gap: 14 },
+};
+
 interface BracketMatchProps {
   match: MatchWithTeams;
-  big?: boolean;
+  size?: MatchSize;
   accent: string;
   focused: boolean;
   onFocus: (code: string | null) => void;
@@ -55,7 +76,7 @@ function MiniAvatar({
 
 export function BracketMatch({
   match,
-  big = false,
+  size = "sm",
   accent,
   focused,
   onFocus,
@@ -66,6 +87,7 @@ export function BracketMatch({
   const isDone = visual === "done";
   const isNext = visual === "next";
   const isPending = visual === "pending";
+  const spec = SIZE_MAP[size];
 
   const team1Won =
     isDone && match.winner !== null && match.team1?.id === match.winner?.id;
@@ -91,7 +113,7 @@ export function BracketMatch({
           isLive || focused
             ? `1.5px solid ${accent}`
             : "1px solid oklch(0.32 0.05 255)",
-        padding: big ? "20px 28px" : "5px 10px",
+        padding: `${spec.padY}px ${spec.padX}px`,
         opacity: isDone ? 0.65 : 1,
         boxShadow: isLive
           ? `0 0 0 4px oklch(0.30 0.05 255), 0 0 24px ${accent}55`
@@ -99,11 +121,13 @@ export function BracketMatch({
         position: "relative",
       }}
     >
-      {/* Header row */}
-      <div className="flex items-center justify-between mb-1">
+      <div
+        className="flex items-center justify-between"
+        style={{ marginBottom: Math.max(2, Math.round(spec.padY * 0.3)) }}
+      >
         <span
           className="cc-mono"
-          style={{ fontSize: 9, color: "oklch(0.7 0.02 255)" }}
+          style={{ fontSize: spec.metaFont, color: "oklch(0.7 0.02 255)" }}
         >
           {code}
           {match.team1 || match.team2 ? "" : " · —"}
@@ -111,13 +135,13 @@ export function BracketMatch({
         {isLive && (
           <span
             className="cc-mono inline-flex items-center gap-1"
-            style={{ fontSize: 9, color: "var(--color-yellow)" }}
+            style={{ fontSize: spec.metaFont, color: "var(--color-yellow)" }}
           >
             <span
               className="inline-block"
               style={{
-                width: 6,
-                height: 6,
+                width: Math.max(5, Math.round(spec.metaFont * 0.7)),
+                height: Math.max(5, Math.round(spec.metaFont * 0.7)),
                 borderRadius: "50%",
                 background: "var(--color-yellow)",
                 animation: "cc-live-pulse 1.4s ease-in-out infinite",
@@ -129,7 +153,7 @@ export function BracketMatch({
         {isDone && (
           <span
             className="cc-mono"
-            style={{ fontSize: 9, color: "oklch(0.7 0.18 140)" }}
+            style={{ fontSize: spec.metaFont, color: "oklch(0.7 0.18 140)" }}
           >
             ✓
           </span>
@@ -137,7 +161,7 @@ export function BracketMatch({
         {isNext && orario && (
           <span
             className="cc-mono"
-            style={{ fontSize: 9, color: "oklch(0.6 0.02 255)" }}
+            style={{ fontSize: spec.metaFont, color: "oklch(0.6 0.02 255)" }}
           >
             {orario}
           </span>
@@ -146,7 +170,7 @@ export function BracketMatch({
 
       <TeamRow
         team={match.team1}
-        big={big}
+        spec={spec}
         isWinner={team1Won}
         isDimmed={isDone && !team1Won}
       />
@@ -154,21 +178,22 @@ export function BracketMatch({
         style={{
           height: 1,
           background: "oklch(0.32 0.05 255)",
-          margin: big ? "14px 0" : "4px 0",
+          margin: `${spec.divider}px 0`,
         }}
       />
       <TeamRow
         team={match.team2}
-        big={big}
+        spec={spec}
         isWinner={team2Won}
         isDimmed={isDone && !team2Won}
       />
 
       {(isLive || isDone) && match.punteggio && (
         <div
-          className="cc-mono cc-num mt-1.5"
+          className="cc-mono cc-num"
           style={{
-            fontSize: 10,
+            marginTop: Math.max(3, Math.round(spec.padY * 0.35)),
+            fontSize: spec.scoreFont,
             color: isLive ? "var(--color-yellow)" : "oklch(0.7 0.02 255)",
             letterSpacing: "0.06em",
           }}
@@ -182,21 +207,22 @@ export function BracketMatch({
 
 function TeamRow({
   team,
-  big,
+  spec,
   isWinner,
   isDimmed,
 }: {
   team: TeamWithPlayers | null;
-  big: boolean;
+  spec: SizeSpec;
   isWinner: boolean;
   isDimmed: boolean;
 }) {
   if (!team) {
     return (
       <div
-        className="cc-display truncate flex items-center gap-2"
+        className="cc-display truncate flex items-center"
         style={{
-          fontSize: big ? 36 : 13,
+          gap: spec.gap,
+          fontSize: spec.font,
           color: "oklch(0.55 0.02 255)",
           lineHeight: 1.05,
           letterSpacing: "0.01em",
@@ -209,19 +235,20 @@ function TeamRow({
 
   return (
     <div
-      className={cn("flex items-center gap-2 min-w-0")}
+      className={cn("flex items-center min-w-0")}
       style={{
+        gap: spec.gap,
         color: isDimmed ? "oklch(0.55 0.02 255)" : "var(--color-paper)",
       }}
     >
       <span className="flex -space-x-1.5 shrink-0">
-        <MiniAvatar player={team.player1} size={big ? 36 : 18} />
-        <MiniAvatar player={team.player2} size={big ? 36 : 18} />
+        <MiniAvatar player={team.player1} size={spec.avatar} />
+        <MiniAvatar player={team.player2} size={spec.avatar} />
       </span>
       <span
         className="cc-display truncate min-w-0"
         style={{
-          fontSize: big ? 36 : 13,
+          fontSize: spec.font,
           lineHeight: 1.05,
           letterSpacing: "0.01em",
           fontWeight: isWinner ? 500 : 400,

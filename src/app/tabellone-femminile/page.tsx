@@ -22,7 +22,7 @@ export default async function TabelloneFemminilePage() {
 
   return (
     <div
-      className="relative bg-night-deep text-paper flex flex-col min-h-screen w-screen md:grid md:h-screen md:overflow-hidden md:grid-rows-[auto_auto_auto_1fr]"
+      className="relative bg-night-deep text-paper flex flex-col min-h-screen w-screen md:grid md:h-screen md:overflow-hidden md:grid-rows-[auto_auto_auto_auto_1fr]"
     >
       <div
         aria-hidden
@@ -48,7 +48,7 @@ function EmptyState() {
   return (
     <div
       className="relative z-[2] flex flex-col items-center justify-center text-center px-6"
-      style={{ gridRow: "2 / span 3" }}
+      style={{ gridRow: "2 / span 4" }}
     >
       <div
         className="cc-display"

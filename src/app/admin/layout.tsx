@@ -16,7 +16,9 @@ export default async function AdminLayout({
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       {session && !isLoginPage && <AdminNav />}
-      <main>{children}</main>
+      <main className={session && !isLoginPage ? "pb-[calc(72px+env(safe-area-inset-bottom))] md:pb-0" : ""}>
+        {children}
+      </main>
       <Toaster theme="dark" position="top-right" />
     </div>
   );

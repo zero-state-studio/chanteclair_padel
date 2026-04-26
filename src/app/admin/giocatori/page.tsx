@@ -186,32 +186,32 @@ export default function GiocatoriPage() {
   };
 
   return (
-    <div className="mx-auto max-w-[1400px] px-6 md:px-12 py-12">
-      <div className="grid grid-cols-12 gap-6 mb-12 items-end">
+    <div className="mx-auto max-w-[1400px] px-4 md:px-12 py-6 md:py-12">
+      <div className="grid grid-cols-12 gap-4 md:gap-6 mb-6 md:mb-12 items-end">
         <div className="col-span-12 md:col-span-7">
-          <div className="text-eyebrow text-cream/50 mb-3">02 / Roster</div>
-          <h1 className="text-display-jumbo text-cream text-[10vw] md:text-[6vw]">
+          <div className="text-eyebrow text-cream/50 mb-2 md:mb-3">02 / Roster</div>
+          <h1 className="text-display-jumbo text-cream text-[14vw] sm:text-[10vw] md:text-[6vw] leading-[0.85]">
             Giocatori
           </h1>
         </div>
         <div className="col-span-12 md:col-span-5 flex md:justify-end">
           <Button
             onClick={openCreate}
-            className="bg-court-line text-court hover:bg-[#e7ff75] font-body font-semibold tracking-wider uppercase text-xs h-12 px-6 rounded-sm"
+            className="bg-court-line text-court hover:bg-[#e7ff75] font-body font-semibold tracking-wider uppercase text-xs h-12 px-6 rounded-sm w-full md:w-auto"
           >
             + Nuovo giocatore
           </Button>
         </div>
       </div>
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="bg-court-deep border-cream/15 text-cream max-h-[90vh] overflow-y-auto">
+          <DialogContent className="bg-court-deep border-cream/15 text-cream max-h-[90vh] overflow-y-auto sm:max-w-md">
             <DialogHeader>
               <DialogTitle>
                 {editing ? "Modifica giocatore" : "Nuovo giocatore"}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={submit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor="nome">Nome *</Label>
                   <Input
@@ -299,38 +299,137 @@ export default function GiocatoriPage() {
           </DialogContent>
         </Dialog>
 
-      <div className="flex items-center justify-between mb-4 gap-4">
+      <div className="flex flex-wrap items-center justify-between mb-4 gap-3">
         <p className="text-eyebrow text-cream/50">
           {players.length} {players.length === 1 ? "giocatore" : "giocatori"}
         </p>
 
         {selected.size > 0 && (
-          <div className="flex items-center gap-3 px-4 py-2 rounded-sm border border-clay/40 bg-clay/10">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 rounded-sm border border-clay/40 bg-clay/10 w-full sm:w-auto">
             <span className="text-eyebrow text-cream/80">
               {selected.size} selezionati
             </span>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setSelected(new Set())}
-              className="text-cream/70 hover:text-cream hover:bg-cream/5 h-8"
-            >
-              Deseleziona
-            </Button>
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={bulkDelete}
-              disabled={bulkDeleting}
-              className="h-8"
-            >
-              {bulkDeleting ? "Eliminazione..." : `Elimina ${selected.size}`}
-            </Button>
+            <div className="flex gap-2 ml-auto sm:ml-0">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setSelected(new Set())}
+                className="text-cream/70 hover:text-cream hover:bg-cream/5 h-8"
+              >
+                Deseleziona
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={bulkDelete}
+                disabled={bulkDeleting}
+                className="h-8"
+              >
+                {bulkDeleting ? "Eliminazione..." : `Elimina ${selected.size}`}
+              </Button>
+            </div>
           </div>
         )}
       </div>
 
-      <div className="rounded-md border border-line bg-court-deep">
+      {/* Mobile: card list */}
+      <div className="md:hidden space-y-2">
+        {loading ? (
+          <p className="text-cream/60 text-center py-8">Caricamento...</p>
+        ) : players.length === 0 ? (
+          <p className="text-cream/60 text-center py-8">
+            Nessun giocatore. Aggiungine uno con il pulsante sopra.
+          </p>
+        ) : (
+          <>
+            <label className="flex items-center gap-2 px-3 py-2 text-eyebrow text-cream/60">
+              <input
+                type="checkbox"
+                checked={
+                  players.length > 0 && selected.size === players.length
+                }
+                ref={(el) => {
+                  if (el)
+                    el.indeterminate =
+                      selected.size > 0 && selected.size < players.length;
+                }}
+                onChange={toggleAll}
+                className="h-4 w-4 accent-court-line cursor-pointer"
+                aria-label="Seleziona tutti"
+              />
+              Seleziona tutti
+            </label>
+            {players.map((p) => {
+              const team = p.teamAsPlayer1 ?? p.teamAsPlayer2;
+              return (
+                <div
+                  key={p.id}
+                  className={`rounded-md border border-line bg-court-deep p-3 flex items-center gap-3 ${
+                    selected.has(p.id) ? "bg-court-line/5" : ""
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected.has(p.id)}
+                    onChange={() => toggleOne(p.id)}
+                    className="h-5 w-5 accent-court-line cursor-pointer shrink-0"
+                    aria-label={`Seleziona ${p.nome} ${p.cognome}`}
+                  />
+                  {p.fotoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={p.fotoUrl}
+                      alt=""
+                      className="h-12 w-12 rounded-full object-cover bg-cream/10 shrink-0"
+                    />
+                  ) : (
+                    <div className="h-12 w-12 rounded-full bg-cream/10 flex items-center justify-center shrink-0">
+                      👤
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-cream truncate">
+                      {p.cognome} {p.nome}
+                    </p>
+                    {team ? (
+                      <Badge className="bg-court-line text-court font-mono mt-1 text-[10px]">
+                        {team.nome}
+                      </Badge>
+                    ) : p.email ? (
+                      <p className="text-xs text-cream/50 truncate mt-0.5">
+                        {p.email}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-cream/40 mt-0.5">—</p>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-1 shrink-0">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openEdit(p)}
+                      className="bg-transparent border-slate-700 hover:bg-court-deep h-8 px-3 text-xs"
+                    >
+                      Modifica
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleDelete(p)}
+                      className="h-8 px-3 text-xs"
+                    >
+                      Elimina
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </>
+        )}
+      </div>
+
+      {/* Desktop: table */}
+      <div className="hidden md:block rounded-md border border-line bg-court-deep">
         <Table>
           <TableHeader>
             <TableRow className="border-line hover:bg-transparent">
