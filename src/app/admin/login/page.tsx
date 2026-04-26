@@ -24,7 +24,7 @@ export default function LoginPage() {
       setError("Credenziali non valide");
       setLoading(false);
     } else {
-      router.push("/admin/giocatori");
+      router.push("/admin/torneo");
       router.refresh();
     }
   };
