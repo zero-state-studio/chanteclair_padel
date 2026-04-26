@@ -66,34 +66,65 @@ export default async function HomePage() {
       </header>
 
       {/* HERO */}
-      <section className="relative px-6 md:px-10 pt-8 pb-16 md:pb-20 min-h-[720px]">
+      <section
+        className="relative px-6 md:px-10 pt-6 pb-8 overflow-hidden flex flex-col justify-between"
+        style={{ minHeight: "calc(100vh - 130px)" }}
+      >
         <div
           aria-hidden
           className="absolute inset-0 cc-stripes opacity-60 pointer-events-none"
         />
+
+        {/* Yellow slash — bottom layer, aligned with hero vertical center */}
         <div
           aria-hidden
           className="absolute pointer-events-none z-[1]"
           style={{
             left: "-10%",
-            top: "30%",
+            top: "50%",
             width: "120%",
-            height: 180,
+            height: "clamp(110px, 14vw, 180px)",
             background: "var(--color-yellow)",
-            transform: "rotate(-6deg)",
+            transform: "translateY(-50%) rotate(-6deg)",
           }}
         />
 
-        <div className="relative z-[3]">
-          <div className="cc-mono inline-block bg-red text-paper px-3 py-1.5 mb-5">
+        {/* Brand image circle — vertically centered on slash, right-anchored */}
+        <div
+          aria-hidden
+          className="absolute pointer-events-none z-[2] aspect-square rounded-full bg-paper flex items-center justify-center"
+          style={{
+            right: "4%",
+            top: "50%",
+            width: "clamp(120px, 30vw, 460px)",
+            transform: "translateY(-50%)",
+            boxShadow: "0 12px 40px rgba(0, 0, 0, 0.45)",
+          }}
+        >
+          <Image
+            src="/chanteclairpadel_home_v2.png"
+            alt=""
+            width={517}
+            height={368}
+            priority
+            className="object-contain"
+            style={{ width: "88%", height: "88%" }}
+          />
+        </div>
+
+        <div className="relative z-[3] flex-1 flex flex-col justify-center">
+          <div className="cc-mono inline-block bg-red text-paper px-3 py-1.5 mb-3 self-start">
             ◆ Sabato 13 Giugno 2026 · Open Padel S.A.B.
           </div>
 
-          <h1 className="m-0 relative">
+          <h1
+            className="m-0 relative"
+            style={{ maxWidth: "min(70%, 1100px)" }}
+          >
             <div
               className="cc-display text-paper"
               style={{
-                fontSize: "clamp(120px, 17vw, 260px)",
+                fontSize: "clamp(80px, 11vw, 190px)",
                 lineHeight: 0.84,
                 textShadow: "0 6px 0 var(--color-night-deep)",
               }}
@@ -101,43 +132,45 @@ export default async function HomePage() {
               Chanteclair
             </div>
             <div
-              className="cc-display text-night-deep -mt-2.5"
+              className="cc-display text-paper -mt-2"
               style={{
-                fontSize: "clamp(180px, 26vw, 400px)",
+                fontSize: "clamp(100px, 14vw, 240px)",
                 lineHeight: 0.82,
+                textShadow:
+                  "0 6px 0 var(--color-night-deep), 0 0 22px rgba(14, 20, 36, 0.55)",
               }}
             >
               Padel Cup
             </div>
           </h1>
+        </div>
 
-          <div className="mt-12 grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-10 items-end">
-            <div
-              className="cc-display text-yellow max-w-[560px]"
-              style={{ fontSize: 44, lineHeight: 1 }}
+        <div className="relative z-[3] mt-6 grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-6 lg:gap-10 items-end">
+          <div
+            className="cc-display text-yellow max-w-[560px]"
+            style={{ fontSize: "clamp(24px, 3vw, 40px)", lineHeight: 1 }}
+          >
+            Due tornei,
+            <br />
+            <span className="text-paper">un&apos;unica grande</span>
+            <br />
+            giornata di sport.
+          </div>
+          <div className="flex gap-3 justify-start lg:justify-end flex-wrap">
+            <Link
+              href="/tabellone-maschile"
+              className="cc-btn cc-btn-primary"
+              style={{ fontSize: 20, padding: "14px 24px 11px" }}
             >
-              Due tornei,
-              <br />
-              <span className="text-paper">un&apos;unica grande</span>
-              <br />
-              giornata di sport.
-            </div>
-            <div className="flex gap-3 justify-start lg:justify-end flex-wrap">
-              <Link
-                href="/tabellone-maschile"
-                className="cc-btn cc-btn-primary"
-                style={{ fontSize: 22, padding: "18px 28px 14px" }}
-              >
-                Tabellone live →
-              </Link>
-              <a
-                href="#programma"
-                className="cc-btn cc-btn-ghost text-paper"
-                style={{ fontSize: 22, padding: "16.5px 28px 12.5px" }}
-              >
-                Programma
-              </a>
-            </div>
+              Tabellone live →
+            </Link>
+            <a
+              href="#programma"
+              className="cc-btn cc-btn-ghost text-paper"
+              style={{ fontSize: 20, padding: "12.5px 24px 9.5px" }}
+            >
+              Programma
+            </a>
           </div>
         </div>
       </section>
@@ -243,22 +276,29 @@ function TournamentTile({
 }) {
   return (
     <div
-      className="relative overflow-hidden text-paper"
-      style={{ background: bg, padding: "60px 40px", minHeight: 420 }}
+      className="relative overflow-hidden text-paper px-6 py-10 md:px-10 md:py-[60px]"
+      style={{ background: bg, minHeight: "clamp(280px, 60vw, 420px)" }}
     >
       <div className="cc-mono mb-2">
         Torneo · {String(index).padStart(2, "0")} / 02
       </div>
       <div
         className="cc-display"
-        style={{ fontSize: 220, lineHeight: 0.84, letterSpacing: "-0.01em" }}
+        style={{
+          fontSize: "clamp(64px, 18vw, 220px)",
+          lineHeight: 0.84,
+          letterSpacing: "-0.01em",
+        }}
       >
         {title}
       </div>
-      <div className="cc-display mt-6 opacity-95" style={{ fontSize: 32 }}>
+      <div
+        className="cc-display mt-4 md:mt-6 opacity-95"
+        style={{ fontSize: "clamp(18px, 4vw, 32px)" }}
+      >
         {coppieCount > 0 ? `${coppieCount} coppie` : "32 coppie"} · Tabellone live
       </div>
-      <div className="mt-7 flex gap-3 flex-wrap">
+      <div className="mt-5 md:mt-7 flex gap-3 flex-wrap">
         <Link href={href} className="cc-btn cc-btn-primary">
           Tabellone live →
         </Link>
@@ -267,9 +307,9 @@ function TournamentTile({
         aria-hidden
         className="cc-display absolute pointer-events-none"
         style={{
-          right: -30,
-          bottom: -100,
-          fontSize: 520,
+          right: "-6%",
+          bottom: "-18%",
+          fontSize: "clamp(220px, 60vw, 520px)",
           lineHeight: 1,
           color: "rgba(255,255,255,0.10)",
         }}

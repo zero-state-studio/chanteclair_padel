@@ -18,6 +18,15 @@ const COL_TEMPLATES: Record<number, string> = {
   1: "1fr",
 };
 
+// Smaller natural container for sparse brackets so the auto-scale logic can
+// upscale them to fill the stage instead of leaving big empty margins.
+const CONTAINER_WIDTHS: Record<number, number> = {
+  4: 1280,
+  3: 1100,
+  2: 920,
+  1: 600,
+};
+
 export function Bracket({
   torneo,
   accent = "var(--color-yellow)",
@@ -33,15 +42,24 @@ export function Bracket({
       const stage = stageRef.current;
       const bracket = bracketRef.current;
       if (!stage || !bracket) return;
+      // Mobile: skip transform scaling — use horizontal scroll instead
+      const isMobile = window.matchMedia("(max-width: 767px)").matches;
+      if (isMobile) {
+        bracket.style.transform = "none";
+        setScale(1);
+        return;
+      }
       bracket.style.transform = "scale(1)";
       const stageBox = stage.getBoundingClientRect();
       const natW = bracket.scrollWidth;
       const natH = bracket.scrollHeight;
       const padding = 12;
+      // Allow upscale for sparse brackets (semi+finale): cap at 1.8 so it fills
+      // vertical/horizontal space without becoming grotesque.
       const s = Math.min(
         (stageBox.width - padding) / natW,
         (stageBox.height - padding) / natH,
-        1
+        2.4
       );
       setScale(Number.isFinite(s) && s > 0 ? s : 1);
     };
@@ -85,17 +103,17 @@ export function Bracket({
     .map(Number)
     .sort((a, b) => b - a);
   const cols = COL_TEMPLATES[rounds.length] ?? `repeat(${rounds.length}, 1fr)`;
+  const containerWidth = CONTAINER_WIDTHS[rounds.length] ?? 1280;
 
   return (
     <section
       ref={stageRef}
-      className="relative z-[2] flex-1 min-h-0 px-6 md:px-8 py-3 flex items-center justify-center"
-      style={{ overflow: "hidden" }}
+      className="relative z-[2] md:flex-1 md:min-h-0 px-4 md:px-8 py-4 md:py-3 flex items-start md:items-center justify-start md:justify-center overflow-x-auto md:overflow-hidden"
     >
       <div
         ref={bracketRef}
         style={{
-          width: 1280,
+          width: containerWidth,
           transform: `scale(${scale})`,
           transformOrigin: "center center",
           display: "grid",

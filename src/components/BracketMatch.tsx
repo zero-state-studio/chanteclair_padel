@@ -14,7 +14,13 @@ interface BracketMatchProps {
   code: string;
 }
 
-function MiniAvatar({ player }: { player: PlayerWithMatches }) {
+function MiniAvatar({
+  player,
+  size = 18,
+}: {
+  player: PlayerWithMatches;
+  size?: number;
+}) {
   const initials = `${player.nome[0] ?? ""}${player.cognome[0] ?? ""}`.toUpperCase();
   return player.fotoUrl ? (
     // eslint-disable-next-line @next/next/no-img-element
@@ -23,8 +29,8 @@ function MiniAvatar({ player }: { player: PlayerWithMatches }) {
       alt=""
       className="rounded-full object-cover shrink-0"
       style={{
-        width: 18,
-        height: 18,
+        width: size,
+        height: size,
         background: "oklch(0.4 0.04 255)",
         boxShadow: "0 0 0 1px oklch(0.32 0.05 255)",
       }}
@@ -33,9 +39,9 @@ function MiniAvatar({ player }: { player: PlayerWithMatches }) {
     <span
       className="rounded-full inline-flex items-center justify-center shrink-0 cc-mono"
       style={{
-        width: 18,
-        height: 18,
-        fontSize: 8,
+        width: size,
+        height: size,
+        fontSize: Math.round(size * 0.45),
         letterSpacing: 0,
         background: "oklch(0.4 0.04 255)",
         color: "oklch(0.85 0.02 255)",
@@ -85,7 +91,7 @@ export function BracketMatch({
           isLive || focused
             ? `1.5px solid ${accent}`
             : "1px solid oklch(0.32 0.05 255)",
-        padding: big ? "8px 12px" : "5px 10px",
+        padding: big ? "20px 28px" : "5px 10px",
         opacity: isDone ? 0.65 : 1,
         boxShadow: isLive
           ? `0 0 0 4px oklch(0.30 0.05 255), 0 0 24px ${accent}55`
@@ -148,7 +154,7 @@ export function BracketMatch({
         style={{
           height: 1,
           background: "oklch(0.32 0.05 255)",
-          margin: big ? "5px 0" : "4px 0",
+          margin: big ? "14px 0" : "4px 0",
         }}
       />
       <TeamRow
@@ -190,7 +196,7 @@ function TeamRow({
       <div
         className="cc-display truncate flex items-center gap-2"
         style={{
-          fontSize: big ? 18 : 13,
+          fontSize: big ? 36 : 13,
           color: "oklch(0.55 0.02 255)",
           lineHeight: 1.05,
           letterSpacing: "0.01em",
@@ -209,13 +215,13 @@ function TeamRow({
       }}
     >
       <span className="flex -space-x-1.5 shrink-0">
-        <MiniAvatar player={team.player1} />
-        <MiniAvatar player={team.player2} />
+        <MiniAvatar player={team.player1} size={big ? 36 : 18} />
+        <MiniAvatar player={team.player2} size={big ? 36 : 18} />
       </span>
       <span
         className="cc-display truncate min-w-0"
         style={{
-          fontSize: big ? 18 : 13,
+          fontSize: big ? 36 : 13,
           lineHeight: 1.05,
           letterSpacing: "0.01em",
           fontWeight: isWinner ? 500 : 400,

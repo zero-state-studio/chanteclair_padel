@@ -23,7 +23,7 @@ export function LiveStrip({
 
   return (
     <section
-      className="relative z-[4] grid items-center gap-6 px-6 md:px-8 py-3.5 border-b"
+      className="relative z-[4] flex flex-col md:grid md:items-center gap-3 md:gap-6 px-4 md:px-8 py-3 md:py-3.5 border-b"
       style={{
         gridTemplateColumns: "auto 1fr",
         background: `linear-gradient(90deg, ${accent}22, transparent 60%)`,
@@ -59,9 +59,9 @@ export function LiveStrip({
       </div>
 
       <div
-        className="grid gap-3"
+        className="grid gap-3 w-full"
         style={{
-          gridTemplateColumns: `repeat(${Math.max(liveMatches.length, 1)}, 1fr)`,
+          gridTemplateColumns: `repeat(auto-fit, minmax(min(220px, 100%), 1fr))`,
         }}
       >
         {liveMatches.length === 0 ? (
