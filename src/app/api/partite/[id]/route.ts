@@ -22,7 +22,6 @@ type DbPlayer = {
   email: string | null;
   telefono: string | null;
   fotoUrl: string | null;
-  genere: string;
 };
 
 type DbTeam = {
@@ -42,7 +41,6 @@ function toPlayer(p: DbPlayer): PlayerWithMatches {
     email: p.email,
     telefono: p.telefono,
     fotoUrl: p.fotoUrl,
-    genere: p.genere as Genere,
   };
 }
 

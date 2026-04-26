@@ -114,8 +114,8 @@ export function LiveMatchOverlay({ event, onClose }: LiveMatchOverlayProps) {
           style={{
             background:
               event.tipo === "PARTITA_INIZIATA"
-                ? "radial-gradient(ellipse at 50% 30%, #1a3526 0%, #060c09 70%)"
-                : "radial-gradient(ellipse at 50% 30%, #1f2c3a 0%, #060c09 70%)",
+                ? "radial-gradient(ellipse at 50% 30%, oklch(0.22 0.04 255) 0%, oklch(0.10 0.03 255) 70%)"
+                : "radial-gradient(ellipse at 50% 30%, oklch(0.26 0.05 255) 0%, oklch(0.10 0.03 255) 70%)",
           }}
         >
           <motion.div

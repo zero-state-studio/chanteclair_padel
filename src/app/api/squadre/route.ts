@@ -26,10 +26,11 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "JSON body richiesto" }, { status: 400 });
 
-  const { player1Id, player2Id, livello } = body as {
+  const { player1Id, player2Id, livello, genere } = body as {
     player1Id?: string;
     player2Id?: string;
     livello?: number;
+    genere?: string;
   };
 
   if (!player1Id || !player2Id) {
@@ -38,15 +39,15 @@ export async function POST(request: NextRequest) {
   if (player1Id === player2Id) {
     return NextResponse.json({ error: "I due giocatori devono essere diversi" }, { status: 400 });
   }
+  if (!genere || !GENERI.includes(genere as Genere)) {
+    return NextResponse.json({ error: "Tabellone (MASCHILE|FEMMINILE) richiesto" }, { status: 400 });
+  }
 
   const [p1, p2] = await Promise.all([
     prisma.player.findUnique({ where: { id: player1Id } }),
     prisma.player.findUnique({ where: { id: player2Id } }),
   ]);
   if (!p1 || !p2) return NextResponse.json({ error: "Giocatore non trovato" }, { status: 404 });
-  if (p1.genere !== p2.genere) {
-    return NextResponse.json({ error: "I due giocatori devono avere lo stesso genere" }, { status: 400 });
-  }
 
   const livelloFinal = Number.isFinite(Number(livello)) ? parseInt(String(livello ?? 0), 10) : 0;
   const nome = `${p1.cognome} / ${p2.cognome}`;
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
     const team = await prisma.team.create({
       data: {
         nome,
-        genere: p1.genere,
+        genere,
         livello: livelloFinal,
         player1Id: p1.id,
         player2Id: p2.id,

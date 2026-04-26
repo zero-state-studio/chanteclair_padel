@@ -9,7 +9,6 @@ export interface PlayerWithMatches {
   email?: string | null;
   telefono?: string | null;
   fotoUrl?: string | null;
-  genere: Genere;
 }
 
 export interface TeamWithPlayers {

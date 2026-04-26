@@ -1,30 +1,32 @@
 import type { Metadata } from "next";
-import { Fraunces, Bricolage_Grotesque, JetBrains_Mono } from "next/font/google";
+import { Bebas_Neue, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
+const bebas = Bebas_Neue({
+  variable: "--font-bebas",
   subsets: ["latin"],
-  axes: ["opsz", "SOFT", "WONK"],
+  weight: "400",
   display: "swap",
 });
 
-const bricolage = Bricolage_Grotesque({
-  variable: "--font-bricolage",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
 const jetbrains = JetBrains_Mono({
   variable: "--font-jetbrains",
   subsets: ["latin"],
+  weight: ["400", "500"],
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Chanteclair Padel · Tournament",
+  title: "Chanteclair Padel Cup · 13.06.2026",
   description:
-    "Tabellone live del torneo Chanteclair Padel. Aggiornamenti realtime, animazioni in campo.",
+    "Chanteclair Padel Cup — 13 giugno 2026, Sant'Agata Bolognese. Tabellone live del torneo.",
 };
 
 export default function RootLayout({
@@ -35,9 +37,9 @@ export default function RootLayout({
   return (
     <html
       lang="it"
-      className={`${fraunces.variable} ${bricolage.variable} ${jetbrains.variable} h-full antialiased`}
+      className={`${bebas.variable} ${inter.variable} ${jetbrains.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-court text-cream font-body">
+      <body className="min-h-full flex flex-col bg-night-deep text-paper font-body">
         {children}
       </body>
     </html>

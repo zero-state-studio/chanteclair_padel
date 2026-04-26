@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import type { Genere } from "@/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const GENERI: Genere[] = ["MASCHILE", "FEMMINILE"];
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -29,6 +32,12 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
   const data: Record<string, unknown> = {};
   if (typeof body.livello === "number") data.livello = body.livello;
+  if (typeof body.genere === "string") {
+    if (!GENERI.includes(body.genere as Genere)) {
+      return NextResponse.json({ error: "genere non valido" }, { status: 400 });
+    }
+    data.genere = body.genere;
+  }
 
   let player1 = existing.player1;
   let player2 = existing.player2;
@@ -37,9 +46,6 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   if (typeof body.player1Id === "string" && body.player1Id !== existing.player1Id) {
     const p = await prisma.player.findUnique({ where: { id: body.player1Id } });
     if (!p) return NextResponse.json({ error: "player1 non trovato" }, { status: 404 });
-    if (p.genere !== existing.genere) {
-      return NextResponse.json({ error: "Genere non compatibile" }, { status: 400 });
-    }
     data.player1Id = body.player1Id;
     player1 = p;
     recomputeName = true;
@@ -47,9 +53,6 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   if (typeof body.player2Id === "string" && body.player2Id !== existing.player2Id) {
     const p = await prisma.player.findUnique({ where: { id: body.player2Id } });
     if (!p) return NextResponse.json({ error: "player2 non trovato" }, { status: 404 });
-    if (p.genere !== existing.genere) {
-      return NextResponse.json({ error: "Genere non compatibile" }, { status: 400 });
-    }
     data.player2Id = body.player2Id;
     player2 = p;
     recomputeName = true;

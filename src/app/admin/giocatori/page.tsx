@@ -20,9 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import type { Genere } from "@/types";
 
 type Player = {
   id: string;
@@ -31,9 +29,8 @@ type Player = {
   email: string | null;
   telefono: string | null;
   fotoUrl: string | null;
-  genere: Genere;
-  teamAsPlayer1?: { id: string; nome: string } | null;
-  teamAsPlayer2?: { id: string; nome: string } | null;
+  teamAsPlayer1?: { id: string; nome: string; genere: string } | null;
+  teamAsPlayer2?: { id: string; nome: string; genere: string } | null;
 };
 
 const empty = {
@@ -44,7 +41,6 @@ const empty = {
 };
 
 export default function GiocatoriPage() {
-  const [genereAttivo, setGenereAttivo] = useState<Genere>("MASCHILE");
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -60,14 +56,12 @@ export default function GiocatoriPage() {
   const loadPlayers = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/giocatori?genere=${genereAttivo}`, {
-        cache: "no-store",
-      });
+      const res = await fetch(`/api/giocatori`, { cache: "no-store" });
       if (res.ok) setPlayers(await res.json());
     } finally {
       setLoading(false);
     }
-  }, [genereAttivo]);
+  }, []);
 
   useEffect(() => {
     loadPlayers();
@@ -160,7 +154,6 @@ export default function GiocatoriPage() {
       fd.append("cognome", form.cognome.trim());
       fd.append("email", form.email.trim());
       fd.append("telefono", form.telefono.trim());
-      fd.append("genere", genereAttivo);
       if (foto) fd.append("foto", foto);
 
       const url = editing ? `/api/giocatori/${editing.id}` : "/api/giocatori";
@@ -307,15 +300,9 @@ export default function GiocatoriPage() {
         </Dialog>
 
       <div className="flex items-center justify-between mb-4 gap-4">
-        <Tabs
-          value={genereAttivo}
-          onValueChange={(v) => setGenereAttivo(v as Genere)}
-        >
-          <TabsList className="bg-court-deep">
-            <TabsTrigger value="MASCHILE">Maschile</TabsTrigger>
-            <TabsTrigger value="FEMMINILE">Femminile</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <p className="text-eyebrow text-cream/50">
+          {players.length} {players.length === 1 ? "giocatore" : "giocatori"}
+        </p>
 
         {selected.size > 0 && (
           <div className="flex items-center gap-3 px-4 py-2 rounded-sm border border-clay/40 bg-clay/10">

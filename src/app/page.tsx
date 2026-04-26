@@ -1,7 +1,18 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import Image from "next/image";
 
 export const dynamic = "force-dynamic";
+
+const STATS: { v: string; l: string }[] = [
+  { v: "64", l: "Coppie iscritte" },
+  { v: "8", l: "Campi attivi" },
+  { v: "12h", l: "Di sport non-stop" },
+  { v: "2K€", l: "Montepremi totale" },
+];
+
+const TICKER_TOP = "★ Chanteclair Padel Cup · 13.06.2026 · Sant'Agata Bolognese · ";
+const TICKER_BOTTOM = "★ Sport · Divertimento · Musica · 13.06.2026 · ";
 
 export default async function HomePage() {
   const tornei = await prisma.tournament.findMany({
@@ -11,301 +22,274 @@ export default async function HomePage() {
 
   const torneoM = tornei.find((t) => t.genere === "MASCHILE");
   const torneoF = tornei.find((t) => t.genere === "FEMMINILE");
-  const annoCorrente = new Date().getFullYear();
-
-  const liveCount = tornei.reduce(
-    (acc, t) => acc + t.matches.filter((m) => m.stato === "IN_CORSO").length,
-    0
-  );
 
   return (
-    <main className="min-h-screen bg-court text-cream grain overflow-hidden">
-      {/* Top bar */}
-      <header className="relative z-10 border-b border-line">
-        <div className="mx-auto max-w-[1400px] px-6 md:px-12 py-5 flex items-center justify-between text-eyebrow">
-          <span className="text-cream/80">Chanteclair · Padel Club</span>
-          <span className="hidden md:flex items-center gap-3 text-cream/60">
-            <span
-              className={`h-1.5 w-1.5 rounded-full ${
-                liveCount > 0 ? "bg-court-line" : "bg-cream/30"
-              }`}
-            />
-            {liveCount > 0 ? `${liveCount} match in corso` : "Nessun match live"}
-          </span>
-          <span className="text-cream/60 hidden md:inline">
-            Stagione {annoCorrente}
-          </span>
-        </div>
+    <main className="relative min-h-screen overflow-x-hidden bg-night-deep text-paper">
+      <Marquee text={TICKER_TOP} />
+
+      {/* Header */}
+      <header className="relative z-10 flex items-center justify-between gap-6 px-6 md:px-10 py-5">
+        <Link href="/" className="flex items-center gap-3.5">
+          <Image
+            src="/chantepadel.PNG"
+            alt="Chanteclair Padel Cup"
+            width={56}
+            height={52}
+            priority
+            className="object-contain"
+          />
+          <span className="cc-display text-2xl">Chanteclair</span>
+        </Link>
+        <nav className="hidden md:flex items-center gap-6 text-sm">
+          <a href="#tornei" className="hover:text-yellow transition-colors">
+            Tornei
+          </a>
+          <a href="#premi" className="hover:text-yellow transition-colors">
+            Premi
+          </a>
+          <a href="#programma" className="hover:text-yellow transition-colors">
+            Programma
+          </a>
+          <Link
+            href="/tabellone-maschile"
+            className="hover:text-yellow transition-colors"
+          >
+            Tabelloni
+          </Link>
+        </nav>
+        <Link
+          href="/tabellone-maschile"
+          className="cc-btn cc-btn-primary"
+        >
+          Tabellone live →
+        </Link>
       </header>
 
-      {/* Hero — asymmetric editorial */}
-      <section className="relative">
-        <div className="court-grid absolute inset-0 opacity-50 pointer-events-none" />
+      {/* HERO */}
+      <section className="relative px-6 md:px-10 pt-8 pb-16 md:pb-20 min-h-[720px]">
+        <div
+          aria-hidden
+          className="absolute inset-0 cc-stripes opacity-60 pointer-events-none"
+        />
+        <div
+          aria-hidden
+          className="absolute pointer-events-none z-[1]"
+          style={{
+            left: "-10%",
+            top: "30%",
+            width: "120%",
+            height: 180,
+            background: "var(--color-yellow)",
+            transform: "rotate(-6deg)",
+          }}
+        />
 
-        <div className="relative mx-auto max-w-[1400px] px-6 md:px-12 pt-16 md:pt-24 pb-12 md:pb-20 grid grid-cols-12 gap-6 md:gap-10">
-          <div className="col-span-12 md:col-span-7 flex flex-col justify-between min-h-[60vh]">
-            <div className="text-eyebrow text-cream/60 flex items-center gap-3">
-              <span>Volume {annoCorrente - 2000}</span>
-              <span className="h-px flex-1 bg-cream/15" />
-              <span>Open · Singolare</span>
-            </div>
-
-            <div className="my-12 md:my-0">
-              <h1 className="text-display-jumbo text-cream text-[18vw] md:text-[12vw] leading-[0.82]">
-                Torneo
-                <br />
-                <span className="italic text-court-line">Chanteclair</span>
-              </h1>
-              <p className="mt-8 max-w-md text-cream/80 text-lg leading-relaxed">
-                Tabelloni live aggiornati in tempo reale. Animazioni in campo a ogni
-                inizio e chiusura partita. Edizione {annoCorrente}.
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Link
-                href="/tabellone-maschile"
-                className="group btn-primary inline-flex items-center justify-between gap-6 px-6 py-4 rounded-sm hover:bg-[#e7ff75] transition-colors"
-              >
-                <span className="font-body font-semibold tracking-wide uppercase text-sm">
-                  Tabellone · Maschile
-                </span>
-                <span className="font-mono text-xs">→</span>
-              </Link>
-              <Link
-                href="/tabellone-femminile"
-                className="group btn-ghost inline-flex items-center justify-between gap-6 px-6 py-4 rounded-sm transition-colors"
-              >
-                <span className="font-body font-semibold tracking-wide uppercase text-sm">
-                  Tabellone · Femminile
-                </span>
-                <span className="font-mono text-xs">→</span>
-              </Link>
-            </div>
+        <div className="relative z-[3]">
+          <div className="cc-mono inline-block bg-red text-paper px-3 py-1.5 mb-5">
+            ◆ Sabato 13 Giugno 2026 · Open Padel S.A.B.
           </div>
 
-          <aside className="col-span-12 md:col-span-5 md:pl-10 md:border-l border-line flex flex-col justify-between gap-12">
-            <div>
-              <div className="text-eyebrow text-cream/50 mb-2">L&apos;anno</div>
-              <div className="text-numeral text-court-line text-[26vw] md:text-[14vw]">
-                {annoCorrente}
-              </div>
+          <h1 className="m-0 relative">
+            <div
+              className="cc-display text-paper"
+              style={{
+                fontSize: "clamp(120px, 17vw, 260px)",
+                lineHeight: 0.84,
+                textShadow: "0 6px 0 var(--color-night-deep)",
+              }}
+            >
+              Chanteclair
             </div>
-
-            <div className="space-y-4">
-              <div className="text-eyebrow text-cream/50">In programma</div>
-              <ScheduleRow
-                label="Maschile"
-                tournament={torneoM}
-                href="/tabellone-maschile"
-              />
-              <ScheduleRow
-                label="Femminile"
-                tournament={torneoF}
-                href="/tabellone-femminile"
-              />
+            <div
+              className="cc-display text-night-deep -mt-2.5"
+              style={{
+                fontSize: "clamp(180px, 26vw, 400px)",
+                lineHeight: 0.82,
+              }}
+            >
+              Padel Cup
             </div>
-          </aside>
-        </div>
+          </h1>
 
-        <div className="accent-bar mx-6 md:mx-12 mb-0" />
-      </section>
-
-      {/* Tournament cards */}
-      <section className="relative mx-auto max-w-[1400px] px-6 md:px-12 py-16 md:py-24">
-        <div className="grid grid-cols-12 gap-6 md:gap-10 mb-10">
-          <div className="col-span-12 md:col-span-4">
-            <div className="text-eyebrow text-cream/50">Sezione 01</div>
-            <h2 className="font-display text-4xl md:text-5xl text-cream mt-3 leading-none">
-              Tornei
+          <div className="mt-12 grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-10 items-end">
+            <div
+              className="cc-display text-yellow max-w-[560px]"
+              style={{ fontSize: 44, lineHeight: 1 }}
+            >
+              Due tornei,
               <br />
-              <span className="italic text-cream/70">in corso</span>
-            </h2>
+              <span className="text-paper">un&apos;unica grande</span>
+              <br />
+              giornata di sport.
+            </div>
+            <div className="flex gap-3 justify-start lg:justify-end flex-wrap">
+              <Link
+                href="/tabellone-maschile"
+                className="cc-btn cc-btn-primary"
+                style={{ fontSize: 22, padding: "18px 28px 14px" }}
+              >
+                Tabellone live →
+              </Link>
+              <a
+                href="#programma"
+                className="cc-btn cc-btn-ghost text-paper"
+                style={{ fontSize: 22, padding: "16.5px 28px 12.5px" }}
+              >
+                Programma
+              </a>
+            </div>
           </div>
-          <div className="col-span-12 md:col-span-8 md:pt-12">
-            <p className="text-cream/70 text-base md:text-lg leading-relaxed max-w-2xl">
-              Eliminazione diretta · teste di serie sorteggiate dal regolamento del
-              club. Le partite vengono registrate dall&apos;arbitro al momento del
-              fischio iniziale: il bracket si aggiorna ovunque, in diretta.
-            </p>
-          </div>
-        </div>
-
-        {tornei.length === 0 ? (
-          <div className="border-y border-line py-20 text-center">
-            <p className="font-display italic text-3xl text-cream/60">
-              Nessun torneo attivo, al momento.
-            </p>
-            <p className="text-eyebrow text-cream/40 mt-4">torna presto</p>
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-2 gap-px bg-cream/10 border border-line">
-            {[torneoM, torneoF].filter(Boolean).map((torneo, idx) => {
-              if (!torneo) return null;
-              const giocate = torneo.matches.filter(
-                (m) => m.stato === "COMPLETATA"
-              ).length;
-              const inCorso = torneo.matches.filter(
-                (m) => m.stato === "IN_CORSO"
-              ).length;
-              const totali = torneo.matches.filter(
-                (m) => m.team1Id || m.team2Id
-              ).length;
-              const href =
-                torneo.genere === "MASCHILE"
-                  ? "/tabellone-maschile"
-                  : "/tabellone-femminile";
-
-              return (
-                <Link
-                  key={torneo.id}
-                  href={href}
-                  className="group bg-court hover:bg-court-deep transition-colors p-8 md:p-10 flex flex-col gap-8 relative overflow-hidden"
-                >
-                  <div className="absolute inset-0 court-grid opacity-30 pointer-events-none" />
-                  <div className="relative flex items-start justify-between">
-                    <div className="text-eyebrow text-cream/50 flex items-center gap-2">
-                      <span className="text-numeral text-court-line text-2xl leading-none">
-                        0{idx + 1}
-                      </span>
-                      <span>·</span>
-                      <span>{torneo.genere === "MASCHILE" ? "Maschile" : "Femminile"}</span>
-                    </div>
-                    {inCorso > 0 && (
-                      <span className="flex items-center gap-2 text-eyebrow text-court-line">
-                        <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-court-line opacity-60" />
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-court-line" />
-                        </span>
-                        Live
-                      </span>
-                    )}
-                  </div>
-
-                  <h3 className="relative font-display text-5xl md:text-6xl text-cream leading-[0.9] group-hover:text-court-line transition-colors">
-                    {torneo.nome}
-                  </h3>
-
-                  <div className="relative grid grid-cols-3 gap-4 pt-6 border-t border-line text-cream/70">
-                    <Stat label="Stagione" value={String(torneo.anno)} />
-                    <Stat
-                      label="Match conclusi"
-                      value={`${giocate}/${totali}`}
-                    />
-                    <Stat
-                      label="Stato"
-                      value={torneo.stato}
-                      accent
-                    />
-                  </div>
-
-                  <div className="relative flex items-center justify-between pt-2 text-cream/60 group-hover:text-court-line transition-colors">
-                    <span className="text-eyebrow">Apri tabellone</span>
-                    <span className="font-mono text-2xl group-hover:translate-x-1 transition-transform">
-                      →
-                    </span>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      {/* Editorial pull-quote */}
-      <section className="relative border-y border-line bg-court-deep">
-        <div className="mx-auto max-w-[1400px] px-6 md:px-12 py-16 md:py-24 grid grid-cols-12 gap-6 md:gap-10 items-center">
-          <div className="col-span-12 md:col-span-2 text-eyebrow text-cream/50">
-            Manifesto
-          </div>
-          <blockquote className="col-span-12 md:col-span-10 font-display text-3xl md:text-5xl text-cream leading-tight">
-            <span className="text-court-line">«</span> Il padel non è solo
-            uno sport. È <em className="italic">il</em> sport del club —
-            piazzato tra il mosaico dei campi e il legno della clubhouse.
-            <span className="text-court-line">»</span>
-          </blockquote>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="relative">
-        <div className="mx-auto max-w-[1400px] px-6 md:px-12 py-10 grid grid-cols-12 gap-6 text-eyebrow">
-          <div className="col-span-12 md:col-span-4 text-cream/60">
-            Chanteclair Padel Club · {annoCorrente}
+      {/* Stat strip */}
+      <section className="bg-paper text-night-deep px-6 md:px-10 py-8 grid grid-cols-2 md:grid-cols-4 gap-y-6">
+        {STATS.map((s, i) => (
+          <div
+            key={s.l}
+            className="text-center px-3"
+            style={{
+              borderLeft: i > 0 ? "1px solid var(--color-line)" : undefined,
+            }}
+          >
+            <div
+              className="cc-display cc-num"
+              style={{ fontSize: 96, lineHeight: 0.9 }}
+            >
+              {s.v}
+            </div>
+            <div
+              className="cc-mono mt-1.5"
+              style={{ color: "oklch(0.45 0.02 255)" }}
+            >
+              {s.l}
+            </div>
           </div>
-          <div className="col-span-12 md:col-span-4 text-cream/40">
-            Eliminazione diretta · arbitri certificati
-          </div>
-          <div className="col-span-12 md:col-span-4 md:text-right text-cream/40">
-            <Link href="/admin/login" className="hover:text-court-line transition-colors">
-              Area arbitri ↗
-            </Link>
-          </div>
-        </div>
-      </footer>
+        ))}
+      </section>
+
+      {/* I due tornei */}
+      <section id="tornei" className="grid grid-cols-1 md:grid-cols-2">
+        <TournamentTile
+          tag="M"
+          index={1}
+          title="Maschile"
+          bg="var(--color-blue)"
+          href="/tabellone-maschile"
+          coppieCount={countTeams(torneoM)}
+        />
+        <TournamentTile
+          tag="F"
+          index={2}
+          title="Femminile"
+          bg="var(--color-pink)"
+          href="/tabellone-femminile"
+          coppieCount={countTeams(torneoF)}
+        />
+      </section>
+
+      <Marquee text={TICKER_BOTTOM} />
+
+      <div className="px-6 md:px-10 py-4 text-center">
+        <Link
+          href="/admin/login"
+          className="cc-mono text-paper/40 hover:text-yellow transition-colors"
+        >
+          Area arbitri ↗
+        </Link>
+      </div>
     </main>
   );
 }
 
-function Stat({
-  label,
-  value,
-  accent = false,
-}: {
-  label: string;
-  value: string;
-  accent?: boolean;
-}) {
+function Marquee({ text }: { text: string }) {
   return (
-    <div>
-      <div className="text-eyebrow text-cream/40 mb-1">{label}</div>
-      <div
-        className={`text-stat text-base ${
-          accent ? "text-court-line" : "text-cream"
-        }`}
-      >
-        {value}
+    <div
+      className="cc-ticker fast"
+      style={{
+        padding: "10px 0",
+        background: "var(--color-yellow)",
+        color: "var(--color-night-deep)",
+        fontFamily: "var(--font-bebas), Impact, sans-serif",
+        fontSize: 22,
+        letterSpacing: "0.04em",
+      }}
+    >
+      <div>
+        {Array.from({ length: 10 }).map((_, i) => (
+          <span key={i} className="pr-7">
+            {text}
+          </span>
+        ))}
       </div>
     </div>
   );
 }
 
-function ScheduleRow({
-  label,
-  tournament,
+function TournamentTile({
+  tag,
+  index,
+  title,
+  bg,
   href,
+  coppieCount,
 }: {
-  label: string;
-  tournament: { nome: string; anno: number; matches: { stato: string }[] } | undefined;
+  tag: "M" | "F";
+  index: number;
+  title: string;
+  bg: string;
   href: string;
+  coppieCount: number;
 }) {
-  if (!tournament) {
-    return (
-      <div className="flex items-baseline justify-between border-b border-line pb-3">
-        <span className="font-display text-xl text-cream/60">{label}</span>
-        <span className="text-eyebrow text-cream/40">— in attesa</span>
-      </div>
-    );
-  }
-  const inCorso = tournament.matches.filter((m) => m.stato === "IN_CORSO").length;
   return (
-    <Link
-      href={href}
-      className="group flex items-baseline justify-between border-b border-line pb-3 hover:border-court-line transition-colors"
+    <div
+      className="relative overflow-hidden text-paper"
+      style={{ background: bg, padding: "60px 40px", minHeight: 420 }}
     >
-      <div>
-        <div className="text-eyebrow text-cream/50">{label}</div>
-        <div className="font-display text-xl text-cream group-hover:text-court-line transition-colors">
-          {tournament.nome}
-        </div>
+      <div className="cc-mono mb-2">
+        Torneo · {String(index).padStart(2, "0")} / 02
       </div>
-      <span className="text-eyebrow text-cream/60 flex items-center gap-2">
-        {inCorso > 0 && (
-          <span className="h-1.5 w-1.5 rounded-full bg-court-line animate-pulse" />
-        )}
-        {inCorso > 0 ? "live" : "ATTIVO"}
-        <span className="font-mono">→</span>
-      </span>
-    </Link>
+      <div
+        className="cc-display"
+        style={{ fontSize: 220, lineHeight: 0.84, letterSpacing: "-0.01em" }}
+      >
+        {title}
+      </div>
+      <div className="cc-display mt-6 opacity-95" style={{ fontSize: 32 }}>
+        {coppieCount > 0 ? `${coppieCount} coppie` : "32 coppie"} · Tabellone live
+      </div>
+      <div className="mt-7 flex gap-3 flex-wrap">
+        <Link href={href} className="cc-btn cc-btn-primary">
+          Tabellone live →
+        </Link>
+      </div>
+      <div
+        aria-hidden
+        className="cc-display absolute pointer-events-none"
+        style={{
+          right: -30,
+          bottom: -100,
+          fontSize: 520,
+          lineHeight: 1,
+          color: "rgba(255,255,255,0.10)",
+        }}
+      >
+        {tag}
+      </div>
+    </div>
   );
+}
+
+function countTeams(
+  t:
+    | { matches: { team1Id: string | null; team2Id: string | null }[] }
+    | undefined
+): number {
+  if (!t) return 0;
+  const ids = new Set<string>();
+  for (const m of t.matches) {
+    if (m.team1Id) ids.add(m.team1Id);
+    if (m.team2Id) ids.add(m.team2Id);
+  }
+  return ids.size;
 }

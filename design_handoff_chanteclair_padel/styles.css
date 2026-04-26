@@ -1,0 +1,185 @@
+/* Chanteclair Padel Cup — shared tokens */
+
+:root {
+  /* Palette derived from the poster */
+  --ink: oklch(0.18 0.03 255);
+  --ink-2: oklch(0.26 0.05 255);
+  --paper: oklch(0.985 0.005 95);
+  --paper-2: oklch(0.95 0.01 95);
+  --line: oklch(0.88 0.01 255);
+
+  --night: oklch(0.22 0.04 255);
+  --night-2: oklch(0.28 0.05 255);
+  --night-deep: oklch(0.14 0.04 255);
+
+  --yellow: oklch(0.86 0.18 95);
+  --yellow-2: oklch(0.78 0.18 80);
+  --red: oklch(0.6 0.2 25);
+  --pink: oklch(0.66 0.22 0);
+  --blue: oklch(0.62 0.18 250);
+
+  --mono: ui-monospace, "JetBrains Mono", "Menlo", monospace;
+  --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --display: "Bebas Neue", "Anton", "Oswald", Impact, sans-serif;
+}
+
+html, body { margin: 0; padding: 0; }
+* { box-sizing: border-box; }
+
+.cc-root {
+  font-family: var(--sans);
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Striped placeholder — brand-aware, label in monospace */
+.cc-ph {
+  position: relative;
+  overflow: hidden;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      oklch(0.92 0.01 255) 0 12px,
+      oklch(0.88 0.01 255) 12px 24px
+    );
+  color: oklch(0.4 0.03 255);
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  padding: 14px;
+}
+.cc-ph[data-tone="dark"] {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      oklch(0.26 0.04 255) 0 12px,
+      oklch(0.22 0.04 255) 12px 24px
+    );
+  color: oklch(0.78 0.02 255);
+}
+.cc-ph[data-tone="yellow"] {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      oklch(0.88 0.16 95) 0 12px,
+      oklch(0.82 0.18 90) 12px 24px
+    );
+  color: oklch(0.25 0.04 95);
+}
+.cc-ph .cc-ph-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgba(255,255,255,0.85);
+  padding: 4px 8px;
+  border-radius: 2px;
+  color: oklch(0.3 0.04 255);
+  font-weight: 500;
+}
+.cc-ph[data-tone="dark"] .cc-ph-label,
+.cc-ph[data-tone="yellow"] .cc-ph-label {
+  background: rgba(0,0,0,0.55);
+  color: oklch(0.92 0.02 95);
+}
+
+/* Logo placeholder — circular */
+.cc-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--red);
+  color: var(--paper);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--display);
+  font-size: 22px;
+  letter-spacing: 0.02em;
+  border: 2px solid currentColor;
+  position: relative;
+  flex-shrink: 0;
+}
+.cc-logo::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  opacity: 0.4;
+}
+.cc-logo span { color: var(--paper); }
+
+/* Display type helper */
+.cc-display {
+  font-family: var(--display);
+  font-weight: 400;
+  letter-spacing: 0.005em;
+  line-height: 0.88;
+  text-transform: uppercase;
+}
+
+.cc-mono {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Buttons */
+.cc-btn {
+  font-family: var(--display);
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 14px 22px 11px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease;
+  text-decoration: none;
+}
+.cc-btn:hover { transform: translateY(-1px); }
+.cc-btn-primary { background: var(--yellow); color: var(--night-deep); }
+.cc-btn-primary:hover { background: var(--paper); }
+.cc-btn-ghost {
+  background: transparent;
+  color: currentColor;
+  border: 1.5px solid currentColor;
+  padding: 12.5px 22px 9.5px;
+}
+.cc-btn-ghost:hover { background: currentColor; color: var(--night-deep); }
+
+/* Tickers / marquee */
+@keyframes cc-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.cc-ticker {
+  display: flex;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.cc-ticker > div {
+  display: flex;
+  flex-shrink: 0;
+  animation: cc-marquee 40s linear infinite;
+}
+.cc-ticker.fast > div { animation-duration: 22s; }
+
+/* Numbers — tabular */
+.cc-num { font-variant-numeric: tabular-nums; }
+
+/* Section divider line */
+.cc-rule {
+  height: 1px;
+  background: currentColor;
+  opacity: 0.15;
+}
+
+a { color: inherit; }
+button { font-family: inherit; }
