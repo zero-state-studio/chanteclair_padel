@@ -94,7 +94,7 @@ export function BracketMatch({
   const team2Won =
     isDone && match.winner !== null && match.team2?.id === match.winner?.id;
 
-  const score = match.punteggio ?? (isPending ? "—" : "—");
+  const sets = parsePunteggio(match.punteggio);
   const orario = formatOrario(match.iniziataAt);
 
   return (
@@ -173,6 +173,9 @@ export function BracketMatch({
         spec={spec}
         isWinner={team1Won}
         isDimmed={isDone && !team1Won}
+        scores={sets.map((s) => s[0])}
+        oppScores={sets.map((s) => s[1])}
+        isLive={isLive}
       />
       <div
         style={{
@@ -186,21 +189,10 @@ export function BracketMatch({
         spec={spec}
         isWinner={team2Won}
         isDimmed={isDone && !team2Won}
+        scores={sets.map((s) => s[1])}
+        oppScores={sets.map((s) => s[0])}
+        isLive={isLive}
       />
-
-      {(isLive || isDone) && match.punteggio && (
-        <div
-          className="cc-mono cc-num"
-          style={{
-            marginTop: Math.max(3, Math.round(spec.padY * 0.35)),
-            fontSize: spec.scoreFont,
-            color: isLive ? "var(--color-yellow)" : "oklch(0.7 0.02 255)",
-            letterSpacing: "0.06em",
-          }}
-        >
-          {score}
-        </div>
-      )}
     </div>
   );
 }
@@ -210,25 +202,46 @@ function TeamRow({
   spec,
   isWinner,
   isDimmed,
+  scores,
+  oppScores,
+  isLive,
 }: {
   team: TeamWithPlayers | null;
   spec: SizeSpec;
   isWinner: boolean;
   isDimmed: boolean;
+  scores: number[];
+  oppScores: number[];
+  isLive: boolean;
 }) {
+  const cellWidth = Math.round(spec.font * 0.7);
+  const setFont = Math.round(spec.font * 0.78);
+
   if (!team) {
     return (
       <div
-        className="cc-display truncate flex items-center"
-        style={{
-          gap: spec.gap,
-          fontSize: spec.font,
-          color: "oklch(0.55 0.02 255)",
-          lineHeight: 1.05,
-          letterSpacing: "0.01em",
-        }}
+        className="flex items-center min-w-0"
+        style={{ gap: spec.gap }}
       >
-        <span style={{ opacity: 0.6 }}>—</span>
+        <span
+          className="cc-display truncate flex-1"
+          style={{
+            fontSize: spec.font,
+            color: "oklch(0.55 0.02 255)",
+            lineHeight: 1.05,
+            letterSpacing: "0.01em",
+            opacity: 0.6,
+          }}
+        >
+          —
+        </span>
+        <SetScores
+          scores={scores}
+          oppScores={oppScores}
+          cellWidth={cellWidth}
+          font={setFont}
+          isLive={isLive}
+        />
       </div>
     );
   }
@@ -246,7 +259,7 @@ function TeamRow({
         <MiniAvatar player={team.player2} size={spec.avatar} />
       </span>
       <span
-        className="cc-display truncate min-w-0"
+        className="cc-display truncate min-w-0 flex-1"
         style={{
           fontSize: spec.font,
           lineHeight: 1.05,
@@ -256,6 +269,56 @@ function TeamRow({
       >
         {team.player1.cognome} / {team.player2.cognome}
       </span>
+      <SetScores
+        scores={scores}
+        oppScores={oppScores}
+        cellWidth={cellWidth}
+        font={setFont}
+        isLive={isLive}
+      />
+    </div>
+  );
+}
+
+function SetScores({
+  scores,
+  oppScores,
+  cellWidth,
+  font,
+  isLive,
+}: {
+  scores: number[];
+  oppScores: number[];
+  cellWidth: number;
+  font: number;
+  isLive: boolean;
+}) {
+  if (scores.length === 0) return null;
+  return (
+    <div className="flex shrink-0" style={{ gap: Math.max(2, Math.round(cellWidth * 0.2)) }}>
+      {scores.map((s, i) => {
+        const opp = oppScores[i] ?? 0;
+        const wonSet = s > opp;
+        const isCurrentSet = isLive && i === scores.length - 1;
+        return (
+          <span
+            key={i}
+            className="cc-display cc-num text-center tabular-nums"
+            style={{
+              minWidth: cellWidth,
+              fontSize: font,
+              lineHeight: 1.05,
+              color: wonSet
+                ? "var(--color-yellow)"
+                : "oklch(0.7 0.02 255)",
+              fontWeight: wonSet ? 600 : 400,
+              opacity: isCurrentSet && !wonSet ? 0.85 : 1,
+            }}
+          >
+            {Number.isFinite(s) ? s : "–"}
+          </span>
+        );
+      })}
     </div>
   );
 }
@@ -277,4 +340,22 @@ function formatOrario(iso: string | null): string | null {
   } catch {
     return null;
   }
+}
+
+// Parse "6-3, 7-5" / "6-3 7-5" / "6-3,7-5" → [[6,3],[7,5]]
+function parsePunteggio(raw: string | null): [number, number][] {
+  if (!raw) return [];
+  return raw
+    .split(/[,;|]/)
+    .map((chunk) => chunk.trim())
+    .filter(Boolean)
+    .map((chunk) => {
+      const m = chunk.match(/(\d+)\s*[-–:]\s*(\d+)/);
+      if (!m) return null;
+      const a = parseInt(m[1], 10);
+      const b = parseInt(m[2], 10);
+      if (Number.isNaN(a) || Number.isNaN(b)) return null;
+      return [a, b] as [number, number];
+    })
+    .filter((x): x is [number, number] => x !== null);
 }
