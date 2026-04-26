@@ -18,6 +18,15 @@ const COL_TEMPLATES: Record<number, string> = {
   1: "1fr",
 };
 
+// Smaller natural container for sparse brackets so the auto-scale logic can
+// upscale them to fill the stage instead of leaving big empty margins.
+const CONTAINER_WIDTHS: Record<number, number> = {
+  4: 1280,
+  3: 1100,
+  2: 920,
+  1: 600,
+};
+
 export function Bracket({
   torneo,
   accent = "var(--color-yellow)",
@@ -45,10 +54,12 @@ export function Bracket({
       const natW = bracket.scrollWidth;
       const natH = bracket.scrollHeight;
       const padding = 12;
+      // Allow upscale for sparse brackets (semi+finale): cap at 1.8 so it fills
+      // vertical/horizontal space without becoming grotesque.
       const s = Math.min(
         (stageBox.width - padding) / natW,
         (stageBox.height - padding) / natH,
-        1
+        2.4
       );
       setScale(Number.isFinite(s) && s > 0 ? s : 1);
     };
@@ -92,6 +103,7 @@ export function Bracket({
     .map(Number)
     .sort((a, b) => b - a);
   const cols = COL_TEMPLATES[rounds.length] ?? `repeat(${rounds.length}, 1fr)`;
+  const containerWidth = CONTAINER_WIDTHS[rounds.length] ?? 1280;
 
   return (
     <section
@@ -101,7 +113,7 @@ export function Bracket({
       <div
         ref={bracketRef}
         style={{
-          width: 1280,
+          width: containerWidth,
           transform: `scale(${scale})`,
           transformOrigin: "center center",
           display: "grid",
