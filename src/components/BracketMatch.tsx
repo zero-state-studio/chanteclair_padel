@@ -1,155 +1,247 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import type { MatchWithTeams, TeamWithPlayers, PlayerWithMatches } from "@/types";
 
+type Visual = "live" | "done" | "next" | "pending";
+
 interface BracketMatchProps {
   match: MatchWithTeams;
+  big?: boolean;
+  accent: string;
+  focused: boolean;
+  onFocus: (code: string | null) => void;
+  code: string;
 }
 
-function PlayerAvatar({ player }: { player: PlayerWithMatches }) {
+function MiniAvatar({ player }: { player: PlayerWithMatches }) {
+  const initials = `${player.nome[0] ?? ""}${player.cognome[0] ?? ""}`.toUpperCase();
   return player.fotoUrl ? (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={player.fotoUrl}
       alt=""
-      className="h-7 w-7 rounded-full object-cover bg-cream/10 shrink-0 ring-1 ring-cream/15"
+      className="rounded-full object-cover shrink-0"
+      style={{
+        width: 18,
+        height: 18,
+        background: "oklch(0.4 0.04 255)",
+        boxShadow: "0 0 0 1px oklch(0.32 0.05 255)",
+      }}
     />
   ) : (
-    <div className="h-7 w-7 rounded-full bg-cream/10 ring-1 ring-cream/15 flex items-center justify-center text-[10px] font-mono text-cream/60 shrink-0">
-      {player.nome[0]}
-      {player.cognome[0]}
-    </div>
-  );
-}
-
-function TeamRow({
-  team,
-  isWinner,
-  isLoser,
-  scoreCell,
-}: {
-  team: TeamWithPlayers | null;
-  isWinner: boolean;
-  isLoser: boolean;
-  scoreCell?: string;
-}) {
-  if (!team) {
-    return (
-      <div className="flex items-center gap-3 px-4 py-2.5 text-cream/30">
-        <span className="font-mono text-[10px] tracking-widest uppercase">— bye</span>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className={cn(
-        "flex items-center justify-between gap-3 px-4 py-2.5 transition-colors",
-        isLoser && "opacity-40"
-      )}
+    <span
+      className="rounded-full inline-flex items-center justify-center shrink-0 cc-mono"
+      style={{
+        width: 18,
+        height: 18,
+        fontSize: 8,
+        letterSpacing: 0,
+        background: "oklch(0.4 0.04 255)",
+        color: "oklch(0.85 0.02 255)",
+        boxShadow: "0 0 0 1px oklch(0.32 0.05 255)",
+      }}
     >
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="flex -space-x-2 shrink-0">
-          <PlayerAvatar player={team.player1} />
-          <PlayerAvatar player={team.player2} />
-        </div>
-        <div className="min-w-0 flex flex-col">
-          <span
-            className={cn(
-              "font-body text-sm leading-tight truncate",
-              isWinner ? "font-semibold text-cream" : "text-cream/85"
-            )}
-          >
-            {team.player1.cognome} / {team.player2.cognome}
-          </span>
-          {team.livello > 0 && (
-            <span className="text-[9px] font-mono text-court-line/80 leading-tight">
-              tds {team.livello}
-            </span>
-          )}
-        </div>
-      </div>
-      <span
-        className={cn(
-          "text-stat text-xs shrink-0 tabular-nums",
-          isWinner ? "text-court-line" : "text-cream/45"
-        )}
-      >
-        {scoreCell ?? ""}
-      </span>
-    </div>
+      {initials}
+    </span>
   );
 }
 
-export function BracketMatch({ match }: BracketMatchProps) {
-  const isInCorso = match.stato === "IN_CORSO";
-  const isCompletata = match.stato === "COMPLETATA";
+export function BracketMatch({
+  match,
+  big = false,
+  accent,
+  focused,
+  onFocus,
+  code,
+}: BracketMatchProps) {
+  const visual = computeVisual(match);
+  const isLive = visual === "live";
+  const isDone = visual === "done";
+  const isNext = visual === "next";
+  const isPending = visual === "pending";
 
   const team1Won =
-    isCompletata && match.winner !== null && match.team1?.id === match.winner.id;
+    isDone && match.winner !== null && match.team1?.id === match.winner?.id;
   const team2Won =
-    isCompletata && match.winner !== null && match.team2?.id === match.winner.id;
+    isDone && match.winner !== null && match.team2?.id === match.winner?.id;
 
-  const punteggio = match.punteggio;
-  const sets = punteggio ? punteggio.split(",").map((s) => s.trim()) : [];
-  const set1Win = sets[0]?.split("-")[0];
-  const set1Loss = sets[0]?.split("-")[1];
+  const score = match.punteggio ?? (isPending ? "—" : "—");
+  const orario = formatOrario(match.iniziataAt);
 
   return (
     <div
-      className={cn(
-        "relative w-[252px] rounded-sm bg-court border transition-all",
-        isInCorso
-          ? "border-court-line glow-line"
-          : isCompletata
-          ? "border-cream/15"
-          : "border-cream/10"
-      )}
+      onMouseEnter={() => onFocus(code)}
+      onMouseLeave={() => onFocus(null)}
+      onClick={() => onFocus(focused ? null : code)}
+      className="cursor-pointer transition-all"
+      style={{
+        background: isLive
+          ? "oklch(0.30 0.05 255)"
+          : focused
+          ? "oklch(0.32 0.05 255)"
+          : "oklch(0.24 0.05 255)",
+        border:
+          isLive || focused
+            ? `1.5px solid ${accent}`
+            : "1px solid oklch(0.32 0.05 255)",
+        padding: big ? "8px 12px" : "5px 10px",
+        opacity: isDone ? 0.65 : 1,
+        boxShadow: isLive
+          ? `0 0 0 4px oklch(0.30 0.05 255), 0 0 24px ${accent}55`
+          : "none",
+        position: "relative",
+      }}
     >
-      <div className="flex items-center justify-between px-4 py-1.5 border-b border-cream/10">
-        <span className="font-mono text-[9px] tracking-[0.32em] uppercase text-cream/40">
-          {isInCorso ? "Live" : isCompletata ? "Final" : "—"}
+      {/* Header row */}
+      <div className="flex items-center justify-between mb-1">
+        <span
+          className="cc-mono"
+          style={{ fontSize: 9, color: "oklch(0.7 0.02 255)" }}
+        >
+          {code}
+          {match.team1 || match.team2 ? "" : " · —"}
         </span>
-        {isInCorso && (
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-court-line opacity-60" />
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-court-line" />
+        {isLive && (
+          <span
+            className="cc-mono inline-flex items-center gap-1"
+            style={{ fontSize: 9, color: "var(--color-yellow)" }}
+          >
+            <span
+              className="inline-block"
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                background: "var(--color-yellow)",
+                animation: "cc-live-pulse 1.4s ease-in-out infinite",
+              }}
+            />
+            LIVE
           </span>
         )}
-        {isCompletata && (
-          <span className="text-[9px] font-mono text-cream/40 tabular-nums">
-            {match.finitaAt
-              ? new Date(match.finitaAt).toLocaleDateString("it-IT", {
-                  day: "2-digit",
-                  month: "short",
-                })
-              : ""}
+        {isDone && (
+          <span
+            className="cc-mono"
+            style={{ fontSize: 9, color: "oklch(0.7 0.18 140)" }}
+          >
+            ✓
+          </span>
+        )}
+        {isNext && orario && (
+          <span
+            className="cc-mono"
+            style={{ fontSize: 9, color: "oklch(0.6 0.02 255)" }}
+          >
+            {orario}
           </span>
         )}
       </div>
 
       <TeamRow
         team={match.team1}
+        big={big}
         isWinner={team1Won}
-        isLoser={isCompletata && !team1Won}
-        scoreCell={
-          isCompletata ? (team1Won ? set1Win : set1Loss) : undefined
-        }
+        isDimmed={isDone && !team1Won}
       />
-      <div className="border-t border-cream/8" />
+      <div
+        style={{
+          height: 1,
+          background: "oklch(0.32 0.05 255)",
+          margin: big ? "5px 0" : "4px 0",
+        }}
+      />
       <TeamRow
         team={match.team2}
+        big={big}
         isWinner={team2Won}
-        isLoser={isCompletata && !team2Won}
-        scoreCell={
-          isCompletata ? (team2Won ? set1Win : set1Loss) : undefined
-        }
+        isDimmed={isDone && !team2Won}
       />
 
-      {isCompletata && punteggio && sets.length > 1 && (
-        <div className="px-4 py-1.5 border-t border-cream/10 text-stat text-[10px] text-cream/55 text-right">
-          {punteggio}
+      {(isLive || isDone) && match.punteggio && (
+        <div
+          className="cc-mono cc-num mt-1.5"
+          style={{
+            fontSize: 10,
+            color: isLive ? "var(--color-yellow)" : "oklch(0.7 0.02 255)",
+            letterSpacing: "0.06em",
+          }}
+        >
+          {score}
         </div>
       )}
     </div>
   );
+}
+
+function TeamRow({
+  team,
+  big,
+  isWinner,
+  isDimmed,
+}: {
+  team: TeamWithPlayers | null;
+  big: boolean;
+  isWinner: boolean;
+  isDimmed: boolean;
+}) {
+  if (!team) {
+    return (
+      <div
+        className="cc-display truncate flex items-center gap-2"
+        style={{
+          fontSize: big ? 18 : 13,
+          color: "oklch(0.55 0.02 255)",
+          lineHeight: 1.05,
+          letterSpacing: "0.01em",
+        }}
+      >
+        <span style={{ opacity: 0.6 }}>—</span>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={cn("flex items-center gap-2 min-w-0")}
+      style={{
+        color: isDimmed ? "oklch(0.55 0.02 255)" : "var(--color-paper)",
+      }}
+    >
+      <span className="flex -space-x-1.5 shrink-0">
+        <MiniAvatar player={team.player1} />
+        <MiniAvatar player={team.player2} />
+      </span>
+      <span
+        className="cc-display truncate min-w-0"
+        style={{
+          fontSize: big ? 18 : 13,
+          lineHeight: 1.05,
+          letterSpacing: "0.01em",
+          fontWeight: isWinner ? 500 : 400,
+        }}
+      >
+        {team.player1.cognome} / {team.player2.cognome}
+      </span>
+    </div>
+  );
+}
+
+function computeVisual(match: MatchWithTeams): Visual {
+  if (match.stato === "IN_CORSO") return "live";
+  if (match.stato === "COMPLETATA") return "done";
+  if (!match.team1 || !match.team2) return "pending";
+  return "next";
+}
+
+function formatOrario(iso: string | null): string | null {
+  if (!iso) return null;
+  try {
+    return new Date(iso).toLocaleTimeString("it-IT", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return null;
+  }
 }

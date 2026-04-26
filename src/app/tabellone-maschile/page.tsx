@@ -21,12 +21,22 @@ export default async function TabelloneMaschilePage() {
   });
 
   return (
-    <main className="min-h-screen bg-court text-cream">
-      <TabelloneHeader
-        sezione="Sezione M"
-        titolo="Maschile"
-        torneo={torneo ? { nome: torneo.nome, anno: torneo.anno } : null}
+    <div
+      className="relative bg-night-deep text-paper overflow-hidden"
+      style={{
+        height: "100vh",
+        width: "100vw",
+        display: "grid",
+        gridTemplateRows: "auto auto auto 1fr",
+      }}
+    >
+      <div
+        aria-hidden
+        className="absolute inset-0 cc-stripes pointer-events-none"
+        style={{ opacity: 0.4 }}
       />
+
+      <TabelloneHeader genereAttivo="MASCHILE" />
 
       {torneo ? (
         <TabelloneClient
@@ -34,13 +44,27 @@ export default async function TabelloneMaschilePage() {
           genere="MASCHILE"
         />
       ) : (
-        <div className="flex flex-col items-center justify-center min-h-[50vh]">
-          <p className="font-display italic text-4xl text-cream/50">
-            Nessun torneo maschile attivo
-          </p>
-          <p className="text-eyebrow text-cream/40 mt-4">torna presto</p>
-        </div>
+        <EmptyState />
       )}
-    </main>
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div
+      className="relative z-[2] flex flex-col items-center justify-center text-center px-6"
+      style={{ gridRow: "2 / span 3" }}
+    >
+      <div
+        className="cc-display"
+        style={{ fontSize: 80, color: "var(--color-paper)" }}
+      >
+        Nessun torneo maschile attivo
+      </div>
+      <div className="cc-mono mt-4" style={{ color: "oklch(0.7 0.02 255)" }}>
+        torna presto
+      </div>
+    </div>
   );
 }

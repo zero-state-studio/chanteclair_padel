@@ -1,33 +1,75 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import { BracketMatch } from "@/components/BracketMatch";
 import type { MatchWithTeams, TournamentWithMatches } from "@/types";
 
-function getRoundLabel(round: number, maxRound: number): {
-  primary: string;
-  secondary: string;
-} {
-  if (round === 1) return { primary: "Finale", secondary: "Round 01" };
-  if (round === 2) return { primary: "Semifinali", secondary: "Round 02" };
-  if (round === 3) return { primary: "Quarti", secondary: "Round 03" };
-  if (round === 4) return { primary: "Ottavi", secondary: "Round 04" };
-  return {
-    primary: `Turno ${maxRound - round + 1}`,
-    secondary: `Round 0${maxRound - round + 1}`,
-  };
-}
-
 interface BracketProps {
   torneo: TournamentWithMatches;
+  accent?: string;
+  focused?: string | null;
+  onFocus?: (code: string | null) => void;
 }
 
-export function Bracket({ torneo }: BracketProps) {
+const COL_TEMPLATES: Record<number, string> = {
+  4: "1.5fr 1.2fr 1fr 1fr",
+  3: "1.4fr 1.1fr 1fr",
+  2: "1.2fr 1fr",
+  1: "1fr",
+};
+
+export function Bracket({
+  torneo,
+  accent = "var(--color-yellow)",
+  focused = null,
+  onFocus = () => {},
+}: BracketProps) {
+  const stageRef = useRef<HTMLDivElement>(null);
+  const bracketRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const fit = () => {
+      const stage = stageRef.current;
+      const bracket = bracketRef.current;
+      if (!stage || !bracket) return;
+      bracket.style.transform = "scale(1)";
+      const stageBox = stage.getBoundingClientRect();
+      const natW = bracket.scrollWidth;
+      const natH = bracket.scrollHeight;
+      const padding = 12;
+      const s = Math.min(
+        (stageBox.width - padding) / natW,
+        (stageBox.height - padding) / natH,
+        1
+      );
+      setScale(Number.isFinite(s) && s > 0 ? s : 1);
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    if (stageRef.current) ro.observe(stageRef.current);
+    window.addEventListener("resize", fit);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", fit);
+    };
+  }, [torneo.id, torneo.matches.length]);
+
   if (!torneo.matches.length) {
     return (
-      <div className="flex flex-col items-center justify-center py-20">
-        <p className="font-display italic text-3xl text-cream/50">
-          Bracket non ancora generato
-        </p>
-        <p className="text-eyebrow text-cream/40 mt-3">In attesa di sorteggio</p>
-      </div>
+      <section className="relative z-[2] flex flex-1 items-center justify-center px-6">
+        <div className="text-center">
+          <div
+            className="cc-display"
+            style={{ fontSize: 60, color: "oklch(0.55 0.02 255)" }}
+          >
+            Bracket non ancora generato
+          </div>
+          <div className="cc-mono mt-3" style={{ color: "oklch(0.55 0.02 255)" }}>
+            In attesa di sorteggio
+          </div>
+        </div>
+      </section>
     );
   }
 
@@ -42,58 +84,112 @@ export function Bracket({ torneo }: BracketProps) {
   const rounds = Object.keys(matchesByRound)
     .map(Number)
     .sort((a, b) => b - a);
-
-  const maxRound = rounds[0];
+  const cols = COL_TEMPLATES[rounds.length] ?? `repeat(${rounds.length}, 1fr)`;
 
   return (
-    <div className="overflow-x-auto">
-      <div className="inline-flex gap-12 px-6 md:px-12 py-12 min-w-full">
-        {rounds.map((round, roundIdx) => {
-          const label = getRoundLabel(round, maxRound);
+    <section
+      ref={stageRef}
+      className="relative z-[2] flex-1 min-h-0 px-6 md:px-8 py-3 flex items-center justify-center"
+      style={{ overflow: "hidden" }}
+    >
+      <div
+        ref={bracketRef}
+        style={{
+          width: 1280,
+          transform: `scale(${scale})`,
+          transformOrigin: "center center",
+          display: "grid",
+          gridTemplateColumns: cols,
+          gap: 16,
+        }}
+      >
+        {rounds.map((round, idx) => {
           const matches = matchesByRound[round].sort(
             (a, b) => a.posizione - b.posizione
           );
+          const isFinaleCol = round === 1;
+          const isOttaviCol = idx === 0; // first column = stacked
+          const isBig = !isOttaviCol;
+
+          if (isFinaleCol) {
+            return (
+              <div
+                key={round}
+                className="flex items-center justify-center"
+              >
+                <div
+                  style={{
+                    padding: 4,
+                    background: `linear-gradient(135deg, ${accent}, var(--color-yellow))`,
+                    width: "100%",
+                  }}
+                >
+                  <div
+                    style={{
+                      background: "oklch(0.20 0.04 255)",
+                      padding: 14,
+                    }}
+                  >
+                    <div
+                      className="cc-mono text-center mb-1.5"
+                      style={{ fontSize: 10, color: "var(--color-yellow)" }}
+                    >
+                      ★ FINALE
+                    </div>
+                    {matches[0] && (
+                      <BracketMatch
+                        match={matches[0]}
+                        big
+                        accent={accent}
+                        focused={focused === buildCode(matches[0])}
+                        onFocus={onFocus}
+                        code={buildCode(matches[0])}
+                      />
+                    )}
+                    <div
+                      className="cc-display text-center mt-2"
+                      style={{
+                        fontSize: 14,
+                        color: "var(--color-yellow)",
+                        letterSpacing: "0.05em",
+                      }}
+                    >
+                      Trofeo Chanteclair
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          }
 
           return (
             <div
               key={round}
               className="flex flex-col"
-              style={{ minWidth: 252 }}
+              style={{
+                gap: 4,
+                justifyContent: isOttaviCol ? "flex-start" : "space-around",
+              }}
             >
-              <div className="mb-8 flex items-baseline justify-between border-b border-cream/15 pb-3">
-                <div>
-                  <div className="text-eyebrow text-cream/40 mb-1">
-                    {label.secondary}
-                  </div>
-                  <div className="font-display text-2xl text-cream leading-none">
-                    {label.primary}
-                  </div>
-                </div>
-                <span className="text-stat text-xs text-cream/40">
-                  {matches.length}/
-                  <span className="text-cream/20">
-                    {Math.pow(2, maxRound - round)}
-                  </span>
-                </span>
-              </div>
-              <div
-                className="flex flex-col"
-                style={{
-                  gap: `${Math.pow(2, maxRound - round) * 1.1}rem`,
-                  paddingTop:
-                    roundIdx === 0
-                      ? 0
-                      : `${(Math.pow(2, maxRound - round) - 1) * 0.55}rem`,
-                }}
-              >
-                {matches.map((match) => (
-                  <BracketMatch key={match.id} match={match} />
-                ))}
-              </div>
+              {matches.map((m) => (
+                <BracketMatch
+                  key={m.id}
+                  match={m}
+                  big={isBig}
+                  accent={accent}
+                  focused={focused === buildCode(m)}
+                  onFocus={onFocus}
+                  code={buildCode(m)}
+                />
+              ))}
             </div>
           );
         })}
       </div>
-    </div>
+    </section>
   );
+}
+
+export function buildCode(m: MatchWithTeams): string {
+  return `R${m.round}-P${m.posizione}`;
 }
