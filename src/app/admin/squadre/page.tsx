@@ -216,11 +216,25 @@ export default function SquadrePage() {
   const [genereAttivo, setGenereAttivo] = useState<Genere>("MASCHILE");
   const [players, setPlayers] = useState<Player[]>([]);
   const [squadre, setSquadre] = useState<TeamWithPlayers[]>([]);
+  const [filter, setFilter] = useState("");
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<TeamWithPlayers | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
+
+  const filteredSquadre = useMemo(() => {
+    if (!filter.trim()) return squadre;
+    const q = normalize(filter.trim());
+    return squadre.filter((s) => {
+      if (normalize(s.nome).includes(q)) return true;
+      const players = [s.player1, s.player2];
+      return players.some(
+        (p) =>
+          normalize(p.nome).includes(q) || normalize(p.cognome).includes(q)
+      );
+    });
+  }, [squadre, filter]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -350,7 +364,7 @@ export default function SquadrePage() {
       <Tabs
         value={genereAttivo}
         onValueChange={(v) => setGenereAttivo(v as Genere)}
-        className="mb-6"
+        className="mb-4"
       >
         <TabsList className="bg-court-deep w-full sm:w-auto">
           <TabsTrigger
@@ -368,15 +382,45 @@ export default function SquadrePage() {
         </TabsList>
       </Tabs>
 
+      <div className="mb-6 relative">
+        <Input
+          type="search"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          placeholder="Filtra per nome squadra o giocatore…"
+          className="bg-court-deep border-cream/15 text-cream pl-10 h-11"
+        />
+        <span
+          aria-hidden
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-cream/40 cc-mono text-xs"
+        >
+          ⌕
+        </span>
+        {filter && (
+          <button
+            type="button"
+            onClick={() => setFilter("")}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-cream/50 hover:text-cream px-2 text-sm"
+            aria-label="Pulisci filtro"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
       {loading ? (
         <p className="text-cream/60">Caricamento...</p>
       ) : squadre.length === 0 ? (
         <p className="text-cream/60">
           Nessuna squadra {genereAttivo.toLowerCase()}. Crea la prima sopra.
         </p>
+      ) : filteredSquadre.length === 0 ? (
+        <p className="text-cream/60">
+          Nessuna squadra per &quot;{filter}&quot;.
+        </p>
       ) : (
         <div className="grid md:grid-cols-2 gap-3">
-          {squadre.map((s) => (
+          {filteredSquadre.map((s) => (
             <div
               key={s.id}
               className="rounded-sm border border-line bg-court-deep p-4 md:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-4"

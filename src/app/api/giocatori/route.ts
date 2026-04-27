@@ -19,7 +19,6 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const unauthorized = await requireAdmin();
   if (unauthorized) return unauthorized;
-  await ensureUploadsDir();
   const formData = await request.formData();
 
   const nome = (formData.get("nome") as string | null)?.trim();
@@ -34,7 +33,16 @@ export async function POST(request: NextRequest) {
 
   let fotoUrl: string | null = null;
   if (foto && foto.size > 0) {
-    fotoUrl = await savePhoto(foto);
+    try {
+      fotoUrl = await savePhoto(foto);
+    } catch (err) {
+      const e = err as Error;
+      console.error("[giocatori POST] photo error", e);
+      return NextResponse.json(
+        { error: `Caricamento foto fallito: ${e.message}` },
+        { status: 500 }
+      );
+    }
   }
 
   const player = await prisma.player.create({
