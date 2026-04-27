@@ -42,6 +42,10 @@ export function TabelloneClient({
   const [focused, setFocused] = useState<string | null>(null);
   const [userMode, setUserMode] = useState<BracketViewMode | null>(null);
   const [activeBracket, setActiveBracket] = useState<BracketTipo>("GOLD");
+  const [activePhase, setActivePhase] = useState<"GIRONI" | "BRACKET">(
+    torneoIniziale.fase
+  );
+  const [autoCycle, setAutoCycle] = useState(false);
 
   const accent = genere === "MASCHILE" ? "var(--color-blue)" : "var(--color-pink)";
 
@@ -70,7 +74,9 @@ export function TabelloneClient({
 
   useSSE(handleSSEEvent);
 
-  const isFaseGironi = torneo.fase === "GIRONI";
+  const hasGroups = torneo.groups.length > 0;
+  const hasBracket = torneo.fase === "BRACKET";
+  const isFaseGironi = activePhase === "GIRONI" || !hasBracket;
 
   const bracketMatchesByTipo = useMemo(() => {
     const map = new Map<BracketTipo, typeof torneo.matches>();
@@ -108,12 +114,30 @@ export function TabelloneClient({
     return Math.min(...lm.map((m) => m.round));
   }, [liveMatches, isFaseGironi, activeBracket]);
 
-  const autoMode: BracketViewMode = liveMatches.length > 0 ? "live" : "full";
-  const viewMode: BracketViewMode = userMode ?? autoMode;
+  // Zoom Live disabilitato — viewMode forzato a "full"
+  const viewMode: BracketViewMode = "full";
 
   useEffect(() => {
     setUserMode(null);
   }, [liveRound]);
+
+  useEffect(() => {
+    setActivePhase(torneo.fase);
+  }, [torneo.fase]);
+
+  useEffect(() => {
+    if (!autoCycle) return;
+    if (isFaseGironi) return;
+    if (bracketsConPartite.length < 2) return;
+    const id = setInterval(() => {
+      setActiveBracket((curr) => {
+        const idx = bracketsConPartite.indexOf(curr);
+        const next = bracketsConPartite[(idx + 1) % bracketsConPartite.length];
+        return next ?? curr;
+      });
+    }, 45000);
+    return () => clearInterval(id);
+  }, [autoCycle, isFaseGironi, bracketsConPartite]);
 
   // Default tab to first bracket with live match
   useEffect(() => {
@@ -159,25 +183,47 @@ export function TabelloneClient({
         accent={accent}
       />
 
-      {!isFaseGironi && (
-        <ViewModeToggle
-          mode={viewMode}
-          canLive={canToggleLive}
-          onChange={setUserMode}
-        />
-      )}
-
-      {isFaseGironi ? (
-        <GironiView groups={torneo.groups} matches={torneo.matches} accent={accent} />
-      ) : (
-        <>
-          {bracketsConPartite.length > 1 && (
+      {(hasBracket && hasGroups) || !isFaseGironi ? (
+        <div
+          className="relative z-[3] flex flex-wrap items-center gap-3 px-4 md:px-8 py-2 border-b"
+          style={{ borderColor: "oklch(0.3 0.04 255)" }}
+        >
+          {hasBracket && hasGroups && (
+            <PhaseToggle
+              active={activePhase}
+              onChange={setActivePhase}
+              accent={accent}
+            />
+          )}
+          {!isFaseGironi && bracketsConPartite.length > 1 && (
             <BracketTabs
               brackets={bracketsConPartite}
               active={activeBracket}
               onChange={setActiveBracket}
             />
           )}
+          {!isFaseGironi && (
+            <div className="ml-auto flex items-center gap-3 flex-wrap">
+              {bracketsConPartite.length > 1 && (
+                <AutoToggle
+                  active={autoCycle}
+                  onChange={setAutoCycle}
+                />
+              )}
+              <ViewModeToggle
+                mode={viewMode}
+                canLive={canToggleLive}
+                onChange={setUserMode}
+              />
+            </div>
+          )}
+        </div>
+      ) : null}
+
+      {isFaseGironi ? (
+        <GironiView groups={torneo.groups} matches={torneo.matches} accent={accent} />
+      ) : (
+        <>
           <RoundLabels rounds={visibleRoundsSummary} maxRound={maxRound} />
           <Bracket
             torneo={torneoActiveBracket}
@@ -195,6 +241,79 @@ export function TabelloneClient({
   );
 }
 
+function AutoToggle({
+  active,
+  onChange,
+}: {
+  active: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <span
+        className="cc-mono mr-1 hidden sm:inline"
+        style={{ fontSize: 10, color: "oklch(0.7 0.02 255)" }}
+      >
+        Auto
+      </span>
+      <button
+        type="button"
+        onClick={() => onChange(!active)}
+        className="cc-mono uppercase transition-colors"
+        title={active ? "Cambio bracket ogni 45s — clicca per fermare" : "Cambio bracket automatico ogni 45s"}
+        style={{
+          fontSize: 11,
+          padding: "6px 12px",
+          background: active ? "var(--color-yellow)" : "oklch(0.24 0.05 255)",
+          color: active ? "var(--color-night-deep)" : "var(--color-paper)",
+          border: "1px solid oklch(0.32 0.05 255)",
+        }}
+      >
+        {active ? "ON" : "OFF"}
+      </button>
+    </div>
+  );
+}
+
+function PhaseToggle({
+  active,
+  onChange,
+  accent,
+}: {
+  active: "GIRONI" | "BRACKET";
+  onChange: (p: "GIRONI" | "BRACKET") => void;
+  accent: string;
+}) {
+  const phases: { value: "GIRONI" | "BRACKET"; label: string }[] = [
+    { value: "GIRONI", label: "Gironi" },
+    { value: "BRACKET", label: "Bracket" },
+  ];
+  return (
+    <div className="flex items-center gap-2">
+      {phases.map((p) => (
+        <button
+          key={p.value}
+          type="button"
+          onClick={() => onChange(p.value)}
+          className="cc-mono uppercase transition-colors"
+          style={{
+            fontSize: 11,
+            padding: "6px 16px",
+            background: active === p.value ? accent : "oklch(0.24 0.05 255)",
+            color:
+              active === p.value
+                ? "var(--color-night-deep)"
+                : "var(--color-paper)",
+            border: `1px solid ${accent}`,
+          }}
+        >
+          {p.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function BracketTabs({
   brackets,
   active,
@@ -205,10 +324,7 @@ function BracketTabs({
   onChange: (b: BracketTipo) => void;
 }) {
   return (
-    <div
-      className="relative z-[3] flex items-center justify-center gap-2 px-4 md:px-8 py-2 border-b"
-      style={{ borderColor: "oklch(0.3 0.04 255)" }}
-    >
+    <div className="flex items-center gap-2">
       {brackets.map((b) => (
         <button
           key={b}
@@ -240,12 +356,9 @@ function ViewModeToggle({
   onChange: (m: BracketViewMode) => void;
 }) {
   return (
-    <div
-      className="relative z-[3] flex items-center justify-center md:justify-end gap-2 px-4 md:px-8 py-2 border-b"
-      style={{ borderColor: "oklch(0.3 0.04 255)" }}
-    >
+    <div className="flex items-center gap-2">
       <span
-        className="cc-mono mr-2 hidden sm:inline"
+        className="cc-mono mr-1 hidden sm:inline"
         style={{ fontSize: 10, color: "oklch(0.7 0.02 255)" }}
       >
         Vista
@@ -265,6 +378,7 @@ function ViewModeToggle({
       >
         Completo
       </button>
+      {/* Zoom Live disabilitato — feature in pausa
       <button
         type="button"
         onClick={() => onChange("live")}
@@ -282,6 +396,7 @@ function ViewModeToggle({
       >
         Zoom Live
       </button>
+      */}
     </div>
   );
 }

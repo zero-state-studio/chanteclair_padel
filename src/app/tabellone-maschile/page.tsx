@@ -32,7 +32,7 @@ export default async function TabelloneMaschilePage() {
 
   return (
     <div
-      className="relative bg-night-deep text-paper flex flex-col min-h-screen w-screen md:grid md:h-screen md:overflow-hidden md:grid-rows-[auto_auto_auto_auto_1fr]"
+      className="relative bg-night-deep text-paper flex flex-col min-h-screen w-screen md:h-screen md:overflow-hidden"
     >
       <div
         aria-hidden
@@ -56,10 +56,7 @@ export default async function TabelloneMaschilePage() {
 
 function EmptyState() {
   return (
-    <div
-      className="relative z-[2] flex flex-col items-center justify-center text-center px-6"
-      style={{ gridRow: "2 / span 4" }}
-    >
+    <div className="relative z-[2] flex-1 flex flex-col items-center justify-center text-center px-6">
       <div
         className="cc-display"
         style={{ fontSize: 80, color: "var(--color-paper)" }}
