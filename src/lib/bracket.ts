@@ -1,7 +1,10 @@
 import type { Team } from "@prisma/client";
 
+export type BracketTipo = "GOLD" | "SILVER" | "BRONZE";
+
 export type BracketMatchInput = {
   tournamentId: string;
+  bracketTipo: BracketTipo | null;
   round: number;
   posizione: number;
   team1Id: string | null;
@@ -45,7 +48,8 @@ export function getSeedPositions(size: number): number[] {
 
 export function generaBracket(
   squadre: Team[],
-  torneoId: string
+  torneoId: string,
+  bracketTipo: BracketTipo | null = null
 ): BracketMatchInput[] {
   if (squadre.length < 2) {
     throw new Error("Servono almeno 2 squadre per generare un bracket");
@@ -82,6 +86,7 @@ export function generaBracket(
   for (let i = 0; i < firstRoundSize; i++) {
     matches.push({
       tournamentId: torneoId,
+      bracketTipo,
       round: numRound,
       posizione: i,
       team1Id: slots[i * 2]?.id ?? null,
@@ -99,6 +104,7 @@ export function generaBracket(
     for (let i = 0; i < numPartite; i++) {
       matches.push({
         tournamentId: torneoId,
+        bracketTipo,
         round: r,
         posizione: i,
         team1Id: null,

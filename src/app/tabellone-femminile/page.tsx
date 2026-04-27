@@ -17,6 +17,16 @@ export default async function TabelloneFemminilePage() {
         },
         orderBy: [{ round: "desc" }, { posizione: "asc" }],
       },
+      groups: {
+        include: {
+          groupTeams: {
+            include: {
+              team: { include: { player1: true, player2: true } },
+            },
+          },
+        },
+        orderBy: { posizione: "asc" },
+      },
     },
   });
 

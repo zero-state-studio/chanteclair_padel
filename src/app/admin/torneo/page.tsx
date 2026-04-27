@@ -1,21 +1,22 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Bracket } from "@/components/Bracket";
 import { toast } from "sonner";
-import { prossimaPotenzaDi2 } from "@/lib/bracket";
+import { calcolaSizesGironi } from "@/lib/gironi";
+import { GENERE_COLOR, genereChipStyle } from "@/lib/genere-style";
 import type { Genere, StatoTorneo, TournamentWithMatches } from "@/types";
+
+const GENERI_OPZIONI: { value: Genere; label: string; disabled?: boolean }[] = [
+  { value: "MASCHILE", label: "Maschile" },
+  { value: "FEMMINILE", label: "Femminile" },
+  { value: "MISTO", label: "Misto", disabled: true },
+];
 
 type TorneoListItem = TournamentWithMatches;
 
@@ -31,15 +32,19 @@ export default function TorneoPage() {
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [drawing, setDrawing] = useState<string | null>(null);
-  const [previewTorneoId, setPreviewTorneoId] = useState<string | null>(null);
   const [counts, setCounts] = useState<Record<Genere, number>>({
     MASCHILE: 0,
     FEMMINILE: 0,
+    MISTO: 0,
   });
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    nome: string;
+    generi: Genere[];
+    anno: number;
+  }>({
     nome: "",
-    genere: "MASCHILE" as Genere,
+    generi: ["MASCHILE"],
     anno: annoCorrente,
   });
 
@@ -54,7 +59,7 @@ export default function TorneoPage() {
       if (tRes.ok) setTornei(await tRes.json());
       const mList = mRes.ok ? ((await mRes.json()) as unknown[]) : [];
       const fList = fRes.ok ? ((await fRes.json()) as unknown[]) : [];
-      setCounts({ MASCHILE: mList.length, FEMMINILE: fList.length });
+      setCounts({ MASCHILE: mList.length, FEMMINILE: fList.length, MISTO: 0 });
     } finally {
       setLoading(false);
     }
@@ -70,6 +75,10 @@ export default function TorneoPage() {
       toast.error("Nome richiesto");
       return;
     }
+    if (form.generi.length === 0) {
+      toast.error("Seleziona almeno un tabellone");
+      return;
+    }
     setCreating(true);
     try {
       const res = await fetch("/api/tornei", {
@@ -81,8 +90,10 @@ export default function TorneoPage() {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error ?? "Errore creazione");
       }
-      toast.success("Torneo creato");
-      setForm({ nome: "", genere: "MASCHILE", anno: annoCorrente });
+      toast.success(
+        form.generi.length === 1 ? "Torneo creato" : `${form.generi.length} tornei creati`
+      );
+      setForm({ nome: "", generi: ["MASCHILE"], anno: annoCorrente });
       await loadAll();
     } catch (err) {
       toast.error((err as Error).message);
@@ -91,17 +102,25 @@ export default function TorneoPage() {
     }
   };
 
+  const toggleGenere = (g: Genere) => {
+    setForm((f) => ({
+      ...f,
+      generi: f.generi.includes(g)
+        ? f.generi.filter((x) => x !== g)
+        : [...f.generi, g],
+    }));
+  };
+
   const handleDelete = async (t: TorneoListItem) => {
     if (
       !confirm(
-        `Eliminare il torneo "${t.nome}"? Tutte le partite verranno cancellate.`
+        `Eliminare il torneo "${t.nome}"? Verranno cancellate solo le partite. Squadre e giocatori restano.`
       )
     )
       return;
     const res = await fetch(`/api/tornei/${t.id}`, { method: "DELETE" });
     if (res.ok) {
       toast.success("Torneo eliminato");
-      if (previewTorneoId === t.id) setPreviewTorneoId(null);
       await loadAll();
     } else {
       toast.error("Errore eliminazione");
@@ -114,15 +133,16 @@ export default function TorneoPage() {
       toast.error(`Servono almeno 2 squadre (${t.genere})`);
       return;
     }
-    const totale = prossimaPotenzaDi2(numSquadre);
-    const numBye = totale - numSquadre;
+    const sizes = calcolaSizesGironi(numSquadre);
+    const da3 = sizes.filter((s) => s === 3).length;
+    const da2 = sizes.filter((s) => s === 2).length;
     const haPartite = t.matches?.length > 0;
 
     const msg = [
-      `Sorteggio per ${numSquadre} squadre${
-        numBye > 0 ? ` + ${numBye} BYE` : ""
-      }.`,
-      haPartite ? "ATTENZIONE: le partite esistenti verranno cancellate." : "",
+      `Sorteggio gironi: ${sizes.length} gironi (${da3} da 3${
+        da2 > 0 ? `, ${da2} da 2` : ""
+      }).`,
+      haPartite ? "ATTENZIONE: gironi e partite esistenti verranno cancellati." : "",
       "Confermi?",
     ]
       .filter(Boolean)
@@ -138,12 +158,33 @@ export default function TorneoPage() {
         throw new Error(err.error ?? "Errore sorteggio");
       }
       toast.success("Sorteggio completato");
-      setPreviewTorneoId(t.id);
       await loadAll();
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
       setDrawing(null);
+    }
+  };
+
+  const handleGeneraBracket = async (t: TorneoListItem) => {
+    if (
+      !confirm(
+        `Generare bracket GOLD/SILVER/BRONZE per "${t.nome}"? Le partite girone non potranno più essere modificate.`
+      )
+    )
+      return;
+    try {
+      const res = await fetch(`/api/tornei/${t.id}/genera-bracket`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? "Errore");
+      }
+      toast.success("Bracket generato");
+      await loadAll();
+    } catch (err) {
+      toast.error((err as Error).message);
     }
   };
 
@@ -160,8 +201,6 @@ export default function TorneoPage() {
       toast.error("Errore aggiornamento");
     }
   };
-
-  const previewTorneo = tornei.find((t) => t.id === previewTorneoId);
 
   return (
     <div className="mx-auto max-w-[1400px] px-4 md:px-12 py-6 md:py-12 space-y-8 md:space-y-12">
@@ -196,20 +235,35 @@ export default function TorneoPage() {
               required
             />
           </div>
-          <div className="space-y-2">
-            <Label>Genere</Label>
-            <Select
-              value={form.genere}
-              onValueChange={(v) => setForm({ ...form, genere: v as Genere })}
-            >
-              <SelectTrigger className="bg-cream/5 border-cream/15 text-cream">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-court-deep border-cream/15 text-cream">
-                <SelectItem value="MASCHILE">Maschile</SelectItem>
-                <SelectItem value="FEMMINILE">Femminile</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="space-y-2 md:col-span-2">
+            <Label>Tabelloni da generare</Label>
+            <div className="flex flex-wrap gap-3">
+              {GENERI_OPZIONI.map((opt) => {
+                const checked = form.generi.includes(opt.value);
+                return (
+                  <label
+                    key={opt.value}
+                    className={`flex items-center gap-2 px-3 py-2 rounded border text-sm ${
+                      opt.disabled
+                        ? "border-cream/10 text-cream/40 cursor-not-allowed"
+                        : "border-cream/15 text-cream cursor-pointer hover:bg-cream/5"
+                    } ${checked && !opt.disabled ? "bg-court-line/10 border-court-line" : ""}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={opt.disabled}
+                      onChange={() => !opt.disabled && toggleGenere(opt.value)}
+                      className="accent-court-line"
+                    />
+                    {opt.label}
+                    {opt.disabled && (
+                      <span className="text-[10px] text-cream/40">(prossimamente)</span>
+                    )}
+                  </label>
+                );
+              })}
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="anno-t">Anno</Label>
@@ -247,17 +301,37 @@ export default function TorneoPage() {
             {tornei.map((t) => {
               const partite = t.matches?.length ?? 0;
               const squadreDisp = counts[t.genere as Genere];
+              const groupMatches = t.matches?.filter((m) => m.groupId !== null) ?? [];
+              const groupComplete =
+                t.fase === "GIRONI" &&
+                groupMatches.length > 0 &&
+                groupMatches.every((m) => m.stato === "COMPLETATA");
+              const generaLabel =
+                t.genere === "MASCHILE" ? "Maschile" : t.genere === "FEMMINILE" ? "Femminile" : "Misto";
+              const accent = GENERE_COLOR[t.genere as Genere];
               return (
                 <div
                   key={t.id}
-                  className="rounded-lg border border-line bg-court-deep p-4 md:p-5 space-y-4"
+                  className="rounded-lg border bg-court-deep p-4 md:p-5 space-y-4"
+                  style={{
+                    borderColor: "var(--color-line)",
+                    borderLeftWidth: 5,
+                    borderLeftColor: accent,
+                  }}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <h3 className="text-base md:text-lg font-semibold truncate">{t.nome}</h3>
-                      <p className="text-xs md:text-sm text-cream/60 mt-0.5">
-                        {t.genere === "MASCHILE" ? "Maschile" : "Femminile"} ·{" "}
-                        {t.anno} · {partite} partite
+                      <p className="text-xs md:text-sm text-cream/60 mt-1 flex items-center gap-2 flex-wrap">
+                        <span
+                          className="cc-mono text-[10px] tracking-wider px-1.5 py-0.5 rounded-sm uppercase"
+                          style={genereChipStyle(t.genere as Genere)}
+                        >
+                          {generaLabel}
+                        </span>
+                        <span>· {t.anno} · {partite} partite · fase{" "}
+                          <span className="text-court-line">{t.fase}</span>
+                        </span>
                       </p>
                     </div>
                     <Badge
@@ -268,7 +342,12 @@ export default function TorneoPage() {
                   </div>
 
                   <p className="text-xs md:text-sm text-cream/60">
-                    Squadre {t.genere === "MASCHILE" ? "maschili" : "femminili"}{" "}
+                    Squadre{" "}
+                    {t.genere === "MASCHILE"
+                      ? "maschili"
+                      : t.genere === "FEMMINILE"
+                      ? "femminili"
+                      : "miste"}{" "}
                     disponibili: <strong className="text-white">{squadreDisp}</strong>
                   </p>
 
@@ -279,17 +358,37 @@ export default function TorneoPage() {
                       disabled={drawing === t.id || squadreDisp < 2}
                       className="bg-court-line text-court hover:bg-[#e7ff75] h-10 col-span-2 sm:col-span-1"
                     >
-                      {drawing === t.id ? "Sorteggio..." : "Esegui Sorteggio"}
+                      {drawing === t.id ? "Sorteggio..." : "Sorteggia Gironi"}
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setPreviewTorneoId(t.id)}
-                      className="bg-transparent border-cream/20 hover:bg-cream/5 text-cream h-10"
-                      disabled={partite === 0}
-                    >
-                      Anteprima
-                    </Button>
+                    {groupComplete && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleGeneraBracket(t)}
+                        className="bg-court-line text-court hover:bg-[#e7ff75] h-10"
+                      >
+                        Genera Bracket
+                      </Button>
+                    )}
+                    {partite > 0 ? (
+                      <Link
+                        href={`/admin/tabelloni?id=${t.id}`}
+                        className={cn(
+                          buttonVariants({ size: "sm", variant: "outline" }),
+                          "bg-transparent border-cream/20 hover:bg-cream/5 text-cream h-10"
+                        )}
+                      >
+                        Anteprima
+                      </Link>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled
+                        className="bg-transparent border-cream/20 text-cream h-10"
+                      >
+                        Anteprima
+                      </Button>
+                    )}
                     {t.stato !== "CONCLUSO" && partite > 0 && (
                       <Button
                         size="sm"
@@ -300,16 +399,14 @@ export default function TorneoPage() {
                         Concludi
                       </Button>
                     )}
-                    {t.stato === "BOZZA" && (
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDelete(t)}
-                        className="h-10"
-                      >
-                        Elimina
-                      </Button>
-                    )}
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleDelete(t)}
+                      className="h-10"
+                    >
+                      Elimina
+                    </Button>
                   </div>
                 </div>
               );
@@ -318,27 +415,6 @@ export default function TorneoPage() {
         )}
       </section>
 
-      {previewTorneo && previewTorneo.matches.length > 0 && (
-        <section className="rounded-lg border border-line bg-court-deep p-3 md:p-4">
-          <div className="flex items-center justify-between mb-2 px-2 gap-2">
-            <h2 className="text-base md:text-xl font-semibold truncate">
-              <span className="hidden sm:inline">Anteprima Bracket — </span>
-              {previewTorneo.nome}
-            </h2>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setPreviewTorneoId(null)}
-              className="text-cream/60 shrink-0"
-            >
-              Chiudi
-            </Button>
-          </div>
-          <div className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0">
-            <Bracket torneo={previewTorneo} />
-          </div>
-        </section>
-      )}
     </div>
   );
 }

@@ -24,6 +24,16 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
         include: matchInclude,
         orderBy: [{ round: "desc" }, { posizione: "asc" }],
       },
+      groups: {
+        include: {
+          groupTeams: {
+            include: {
+              team: { include: { player1: true, player2: true } },
+            },
+          },
+        },
+        orderBy: { posizione: "asc" },
+      },
     },
   });
   if (!torneo) return NextResponse.json({ error: "Not found" }, { status: 404 });

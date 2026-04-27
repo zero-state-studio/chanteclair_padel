@@ -48,3 +48,7 @@ next-env.d.ts
 # database
 /prisma/*.db
 /prisma/*.db-journal
+
+# claude code skills
+/.claude/skills/
+/skills-lock.json

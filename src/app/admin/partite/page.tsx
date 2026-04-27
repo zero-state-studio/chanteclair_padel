@@ -4,15 +4,50 @@ import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import {
+  GENERE_COLOR,
+  GENERE_LABEL,
+  genereChipStyle,
+} from "@/lib/genere-style";
 import type {
+  BracketTipo,
   Genere,
+  GroupWithTeams,
   MatchWithTeams,
   TeamWithPlayers,
   TournamentWithMatches,
 } from "@/types";
+
+function normalizeStr(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
+}
+
+function matchPassesFilter(
+  m: MatchWithTeams,
+  groupNome: string | null,
+  q: string
+): boolean {
+  if (!q) return true;
+  const nq = normalizeStr(q);
+  if (groupNome && normalizeStr(groupNome).includes(nq)) return true;
+  const players = [
+    m.team1?.player1,
+    m.team1?.player2,
+    m.team2?.player1,
+    m.team2?.player2,
+  ];
+  return players.some(
+    (p) =>
+      !!p &&
+      (normalizeStr(p.nome).includes(nq) ||
+        normalizeStr(p.cognome).includes(nq))
+  );
+}
 
 function getRoundLabel(round: number, maxRound: number): string {
   if (round === 1) return "🏆 Finale";
@@ -55,13 +90,17 @@ function TeamLabel({ team }: { team: TeamWithPlayers | null }) {
 function PartitaCard({
   match,
   onAction,
+  genere,
 }: {
   match: MatchWithTeams;
   onAction: () => Promise<void>;
+  genere: Genere;
 }) {
   const [showForm, setShowForm] = useState(false);
-  const [winnerId, setWinnerId] = useState("");
-  const [punteggio, setPunteggio] = useState("");
+  const [s1, setS1] = useState<string>("");
+  const [s2, setS2] = useState<string>("");
+  const [tb1, setTb1] = useState<string>("");
+  const [tb2, setTb2] = useState<string>("");
   const [busy, setBusy] = useState(false);
 
   const canStart = !!(match.team1 && match.team2);
@@ -85,10 +124,19 @@ function PartitaCard({
   };
 
   const termina = async () => {
-    if (!winnerId || !punteggio.trim()) {
-      toast.error("Vincitore e punteggio richiesti");
+    const set1Team1 = parseInt(s1, 10);
+    const set1Team2 = parseInt(s2, 10);
+    if (Number.isNaN(set1Team1) || Number.isNaN(set1Team2)) {
+      toast.error("Punteggio set richiesto");
       return;
     }
+    const tieBreakTeam1 = tb1 === "" ? null : parseInt(tb1, 10);
+    const tieBreakTeam2 = tb2 === "" ? null : parseInt(tb2, 10);
+    if ((tieBreakTeam1 == null) !== (tieBreakTeam2 == null)) {
+      toast.error("Tie-break: inserisci entrambi i punteggi");
+      return;
+    }
+
     setBusy(true);
     try {
       const res = await fetch(`/api/partite/${match.id}`, {
@@ -96,15 +144,19 @@ function PartitaCard({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           azione: "TERMINA",
-          winnerId,
-          punteggio: punteggio.trim(),
+          set1Team1,
+          set1Team2,
+          tieBreakTeam1,
+          tieBreakTeam2,
         }),
       });
       if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
       toast.success("Risultato salvato e notificato");
       setShowForm(false);
-      setWinnerId("");
-      setPunteggio("");
+      setS1("");
+      setS2("");
+      setTb1("");
+      setTb2("");
       await onAction();
     } catch (err) {
       toast.error((err as Error).message);
@@ -114,7 +166,14 @@ function PartitaCard({
   };
 
   return (
-    <div className="rounded-md border border-line bg-court-deep p-3 sm:p-4 space-y-3">
+    <div
+      className="rounded-md border bg-court-deep p-3 sm:p-4 space-y-3"
+      style={{
+        borderColor: "var(--color-line)",
+        borderLeftWidth: 4,
+        borderLeftColor: GENERE_COLOR[genere],
+      }}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1.5 min-w-0">
           <TeamLabel team={match.team1} />
@@ -177,42 +236,71 @@ function PartitaCard({
       {match.stato === "IN_CORSO" && showForm && (
         <div className="space-y-3 p-3 rounded-md bg-court-deep/60">
           <div className="space-y-2">
-            <Label className="text-xs">Punteggio</Label>
-            <Input
-              value={punteggio}
-              onChange={(e) => setPunteggio(e.target.value)}
-              placeholder="Es. 6-3, 7-5"
-              className="bg-court-deep border-cream/15"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-xs">Vincitore</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {[match.team1, match.team2].filter(Boolean).map((team) => (
-                <button
-                  key={team!.id}
-                  type="button"
-                  onClick={() => setWinnerId(team!.id)}
-                  className={cn(
-                    "flex items-center gap-2 p-3 rounded-md border-2 transition-colors text-left min-h-[48px]",
-                    winnerId === team!.id
-                      ? "border-court-line bg-court-line/10"
-                      : "border-cream/15 hover:border-cream/40 bg-court"
-                  )}
-                >
-                  <TeamLabel team={team} />
-                </button>
-              ))}
+            <Label className="text-xs">Set (1 set a 6 game)</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <span className="text-[10px] text-cream/50 truncate block">
+                  {match.team1?.nome ?? "—"}
+                </span>
+                <Input
+                  type="number"
+                  min={0}
+                  max={7}
+                  value={s1}
+                  onChange={(e) => setS1(e.target.value)}
+                  placeholder="6"
+                  className="bg-court-deep border-cream/15"
+                />
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] text-cream/50 truncate block">
+                  {match.team2?.nome ?? "—"}
+                </span>
+                <Input
+                  type="number"
+                  min={0}
+                  max={7}
+                  value={s2}
+                  onChange={(e) => setS2(e.target.value)}
+                  placeholder="4"
+                  className="bg-court-deep border-cream/15"
+                />
+              </div>
             </div>
           </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs">Tie-break (solo se 5-5)</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                type="number"
+                min={0}
+                value={tb1}
+                onChange={(e) => setTb1(e.target.value)}
+                placeholder="TB casa"
+                className="bg-court-deep border-cream/15"
+              />
+              <Input
+                type="number"
+                min={0}
+                value={tb2}
+                onChange={(e) => setTb2(e.target.value)}
+                placeholder="TB ospiti"
+                className="bg-court-deep border-cream/15"
+              />
+            </div>
+          </div>
+
           <div className="flex flex-col-reverse sm:flex-row gap-2">
             <Button
               size="sm"
               variant="ghost"
               onClick={() => {
                 setShowForm(false);
-                setWinnerId("");
-                setPunteggio("");
+                setS1("");
+                setS2("");
+                setTb1("");
+                setTb2("");
               }}
               className="h-10 sm:flex-none"
             >
@@ -221,7 +309,7 @@ function PartitaCard({
             <Button
               size="sm"
               onClick={termina}
-              disabled={busy || !winnerId || !punteggio.trim()}
+              disabled={busy || !s1 || !s2}
               className="bg-court-line text-court hover:bg-[#e7ff75] flex-1 h-10"
             >
               {busy ? "Salvataggio..." : "✓ Conferma e Notifica"}
@@ -233,10 +321,13 @@ function PartitaCard({
   );
 }
 
+const BRACKETS: BracketTipo[] = ["GOLD", "SILVER", "BRONZE"];
+
 export default function PartitePage() {
   const [genereAttivo, setGenereAttivo] = useState<Genere>("MASCHILE");
   const [torneo, setTorneo] = useState<TournamentWithMatches | null>(null);
   const [loading, setLoading] = useState(false);
+  const [filter, setFilter] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -262,21 +353,11 @@ export default function PartitePage() {
     load();
   }, [load]);
 
-  const matchesByRound = (torneo?.matches ?? []).reduce<
-    Record<number, MatchWithTeams[]>
-  >((acc, m) => {
-    (acc[m.round] ??= []).push(m);
-    return acc;
-  }, {});
-
-  const rounds = Object.keys(matchesByRound)
-    .map(Number)
-    .sort((a, b) => b - a);
-  const maxRound = rounds[0] ?? 0;
+  const accent = GENERE_COLOR[genereAttivo];
 
   return (
     <div className="mx-auto max-w-[1400px] px-4 md:px-12 py-6 md:py-12">
-      <div className="grid grid-cols-12 gap-4 md:gap-6 items-end mb-6 md:mb-12">
+      <div className="grid grid-cols-12 gap-4 md:gap-6 items-end mb-6 md:mb-8">
         <div className="col-span-12 md:col-span-7">
           <div className="text-eyebrow text-cream/50 mb-2 md:mb-3">04 / Diretta</div>
           <h1 className="text-display-jumbo text-cream text-[14vw] sm:text-[10vw] md:text-[6vw] leading-[0.85]">
@@ -287,29 +368,89 @@ export default function PartitePage() {
           <p className="text-cream/70 text-sm md:text-base leading-relaxed">
             Ogni azione qui invia un overlay sui tabelloni del club. Click su{" "}
             <em className="font-display italic text-court-line">Inizia</em> per
-            partire, poi inserisci punteggio e vincitore quando il match si
-            chiude.
+            partire, poi inserisci punteggio quando il match si chiude.
           </p>
         </div>
       </div>
 
-      <Tabs
-        value={genereAttivo}
-        onValueChange={(v) => setGenereAttivo(v as Genere)}
-        className="mb-6"
+      <div
+        className="mb-6 rounded-md border-2 p-3 md:p-4 flex items-center gap-3 md:gap-4"
+        style={{
+          borderColor: accent,
+          background: `color-mix(in oklch, ${accent} 10%, transparent)`,
+        }}
       >
-        <TabsList className="bg-court-deep w-full sm:w-auto">
-          <TabsTrigger value="MASCHILE" className="flex-1 sm:flex-none">Maschile</TabsTrigger>
-          <TabsTrigger value="FEMMINILE" className="flex-1 sm:flex-none">Femminile</TabsTrigger>
-        </TabsList>
-      </Tabs>
+        <div
+          className="text-eyebrow shrink-0 hidden sm:block"
+          style={{ color: accent }}
+        >
+          — tabellone
+        </div>
+        <div className="flex gap-2 flex-1">
+          {(["MASCHILE", "FEMMINILE"] as const).map((g) => {
+            const active = genereAttivo === g;
+            const c = GENERE_COLOR[g];
+            return (
+              <button
+                key={g}
+                type="button"
+                onClick={() => setGenereAttivo(g)}
+                className="flex-1 sm:flex-none px-5 md:px-8 py-2.5 md:py-3 rounded-sm border-2 font-display uppercase tracking-widest text-base md:text-lg transition-colors"
+                style={
+                  active
+                    ? {
+                        background: c,
+                        borderColor: c,
+                        color: "var(--color-night-deep)",
+                      }
+                    : {
+                        background: "transparent",
+                        borderColor: `color-mix(in oklch, ${c} 50%, transparent)`,
+                        color: c,
+                      }
+                }
+              >
+                {GENERE_LABEL[g]}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {torneo && torneo.matches.length > 0 && (
+        <div className="mb-6 relative">
+          <Input
+            type="search"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Filtra per nome, cognome o girone (es. 'Rossi', 'A')"
+            className="bg-court-deep border-cream/15 text-cream pl-10 h-11"
+          />
+          <span
+            aria-hidden
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-cream/40 cc-mono text-xs"
+          >
+            ⌕
+          </span>
+          {filter && (
+            <button
+              type="button"
+              onClick={() => setFilter("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-cream/50 hover:text-cream px-2 text-sm"
+              aria-label="Pulisci filtro"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      )}
 
       {loading ? (
         <p className="text-cream/60">Caricamento...</p>
       ) : !torneo ? (
         <p className="text-cream/60">
           Nessun torneo {genereAttivo.toLowerCase()} disponibile. Creane uno e
-          sorteggia il bracket dalla pagina Tornei.
+          sorteggia i gironi dalla pagina Tornei.
         </p>
       ) : !torneo.matches.length ? (
         <p className="text-cream/60">
@@ -317,26 +458,208 @@ export default function PartitePage() {
           Tornei.
         </p>
       ) : (
-        <div className="space-y-8">
-          <p className="text-sm text-cream/60">
-            Torneo: <strong className="text-white">{torneo.nome}</strong> · {torneo.anno}
-          </p>
-          {rounds.map((round) => (
-            <section key={round}>
-              <h2 className="text-lg font-semibold mb-3 uppercase tracking-widest text-cream/80">
-                {getRoundLabel(round, maxRound)}
-              </h2>
-              <div className="grid md:grid-cols-2 gap-3">
-                {matchesByRound[round]
-                  .sort((a, b) => a.posizione - b.posizione)
-                  .map((m) => (
-                    <PartitaCard key={m.id} match={m} onAction={load} />
-                  ))}
-              </div>
-            </section>
-          ))}
-        </div>
+        <PartiteSezioni torneo={torneo} onChange={load} filter={filter} />
       )}
     </div>
+  );
+}
+
+function PartiteSezioni({
+  torneo,
+  onChange,
+  filter,
+}: {
+  torneo: TournamentWithMatches;
+  onChange: () => Promise<void>;
+  filter: string;
+}) {
+  const groupMatches = torneo.matches.filter((m) => m.groupId !== null);
+  const bracketMatches = torneo.matches.filter((m) => m.bracketTipo !== null);
+  const accent = GENERE_COLOR[torneo.genere];
+
+  const filteredGroupMatchesCount = filter
+    ? groupMatches.filter((m) => {
+        const grp = torneo.groups.find((g) => g.id === m.groupId);
+        return matchPassesFilter(m, grp?.nome ?? null, filter);
+      }).length
+    : groupMatches.length;
+  const filteredBracketMatchesCount = filter
+    ? bracketMatches.filter((m) => matchPassesFilter(m, null, filter)).length
+    : bracketMatches.length;
+  const noResults =
+    filter &&
+    filteredGroupMatchesCount === 0 &&
+    filteredBracketMatchesCount === 0;
+
+  return (
+    <div className="space-y-10">
+      <p className="text-sm text-cream/60 flex items-center gap-2 flex-wrap">
+        <span
+          className="cc-mono text-[10px] tracking-wider px-1.5 py-0.5 rounded-sm uppercase"
+          style={genereChipStyle(torneo.genere)}
+        >
+          {GENERE_LABEL[torneo.genere]}
+        </span>
+        Torneo: <strong className="text-white">{torneo.nome}</strong> · {torneo.anno}{" "}
+        · fase <span style={{ color: accent }}>{torneo.fase}</span>
+      </p>
+
+      {noResults && (
+        <p className="text-cream/60 text-sm">
+          Nessun match per &quot;{filter}&quot;.
+        </p>
+      )}
+
+      {groupMatches.length > 0 && (
+        <SezioneGironi
+          groups={torneo.groups}
+          matches={groupMatches}
+          onChange={onChange}
+          genere={torneo.genere}
+          filter={filter}
+        />
+      )}
+
+      {BRACKETS.map((tipo) => {
+        const matches = bracketMatches.filter((m) => m.bracketTipo === tipo);
+        if (matches.length === 0) return null;
+        return (
+          <SezioneBracket
+            key={tipo}
+            tipo={tipo}
+            matches={matches}
+            onChange={onChange}
+            genere={torneo.genere}
+            filter={filter}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function SezioneGironi({
+  groups,
+  matches,
+  onChange,
+  genere,
+  filter,
+}: {
+  groups: GroupWithTeams[];
+  matches: MatchWithTeams[];
+  onChange: () => Promise<void>;
+  genere: Genere;
+  filter: string;
+}) {
+  const accent = GENERE_COLOR[genere];
+  const visibleGroups = groups
+    .map((g) => {
+      const gm = matches
+        .filter((m) => m.groupId === g.id)
+        .filter((m) => matchPassesFilter(m, g.nome, filter));
+      return { g, gm };
+    })
+    .filter(({ gm }) => gm.length > 0 || !filter);
+  if (filter && visibleGroups.length === 0) return null;
+  return (
+    <section>
+      <h2
+        className="text-lg font-semibold mb-4 uppercase tracking-widest border-l-4 pl-3"
+        style={{ borderColor: accent, color: accent }}
+      >
+        Fase Gironi
+      </h2>
+      <div className="grid md:grid-cols-2 gap-6">
+        {visibleGroups.map(({ g, gm }) => (
+          <div
+            key={g.id}
+            className={cn(
+              "rounded-md border p-3 md:p-4 space-y-3",
+              "border-cream/10 bg-court-deep/40"
+            )}
+          >
+            <div className="flex items-baseline justify-between">
+              <h3 className="font-semibold">Girone {g.nome}</h3>
+              <span className="text-xs text-cream/50">
+                {g.groupTeams.length} squadre · {gm.length} partite
+              </span>
+            </div>
+            <div className="space-y-2">
+              {gm
+                .sort((a, b) => a.posizione - b.posizione)
+                .map((m) => (
+                  <PartitaCard
+                    key={m.id}
+                    match={m}
+                    onAction={onChange}
+                    genere={genere}
+                  />
+                ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function SezioneBracket({
+  tipo,
+  matches,
+  onChange,
+  genere,
+  filter,
+}: {
+  tipo: BracketTipo;
+  matches: MatchWithTeams[];
+  onChange: () => Promise<void>;
+  genere: Genere;
+  filter: string;
+}) {
+  const filtered = matches.filter((m) => matchPassesFilter(m, null, filter));
+  if (filter && filtered.length === 0) return null;
+  const matchesByRound = filtered.reduce<Record<number, MatchWithTeams[]>>(
+    (acc, m) => {
+      (acc[m.round] ??= []).push(m);
+      return acc;
+    },
+    {}
+  );
+  const rounds = Object.keys(matchesByRound)
+    .map(Number)
+    .sort((a, b) => b - a);
+  const maxRound = rounds[0] ?? 0;
+  const accent = GENERE_COLOR[genere];
+
+  return (
+    <section>
+      <h2
+        className="text-lg font-semibold mb-4 uppercase tracking-widest border-l-4 pl-3"
+        style={{ borderColor: accent, color: accent }}
+      >
+        Bracket {tipo}
+      </h2>
+      <div className="space-y-6">
+        {rounds.map((round) => (
+          <div key={round}>
+            <h3 className="text-sm font-semibold mb-3 text-cream/60">
+              {getRoundLabel(round, maxRound)}
+            </h3>
+            <div className="grid md:grid-cols-2 gap-3">
+              {matchesByRound[round]
+                .sort((a, b) => a.posizione - b.posizione)
+                .map((m) => (
+                  <PartitaCard
+                    key={m.id}
+                    match={m}
+                    onAction={onChange}
+                    genere={genere}
+                  />
+                ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
