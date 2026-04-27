@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { computeStandings } from "@/lib/gironi";
 import type { GroupWithTeams, MatchWithTeams } from "@/types";
 
@@ -7,6 +8,16 @@ interface GironiViewProps {
   groups: GroupWithTeams[];
   matches: MatchWithTeams[];
   accent?: string;
+}
+
+function colsFor(n: number): number {
+  if (n <= 1) return 1;
+  if (n <= 2) return 2;
+  if (n <= 4) return 2;
+  if (n <= 6) return 3;
+  if (n <= 8) return 4;
+  if (n <= 12) return 4;
+  return 5;
 }
 
 export function GironiView({
@@ -29,9 +40,17 @@ export function GironiView({
     );
   }
 
+  const cols = colsFor(groups.length);
+  const gridStyle: CSSProperties = {
+    ["--cols-md" as string]: `repeat(${cols}, minmax(0, 1fr))`,
+  };
+
   return (
-    <section className="relative z-[2] flex-1 px-3 md:px-8 py-3 overflow-auto">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <section className="relative z-[2] flex-1 min-h-0 px-3 md:px-6 py-3 overflow-auto md:overflow-hidden">
+      <div
+        className="grid grid-cols-1 md:[grid-template-columns:var(--cols-md)] gap-2 md:gap-3 md:h-full md:auto-rows-fr"
+        style={gridStyle}
+      >
         {groups.map((g) => {
           const groupMatches = matches.filter((m) => m.groupId === g.id);
           const standings = computeStandings(
@@ -53,20 +72,22 @@ export function GironiView({
           return (
             <div
               key={g.id}
-              className="rounded-md border bg-court-deep/60 p-3 md:p-4"
+              className="rounded-md border bg-court-deep/60 p-2 md:p-3 flex flex-col min-h-0 overflow-hidden"
               style={{ borderColor: "oklch(0.32 0.05 255)" }}
             >
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="cc-display text-xl text-paper">Girone {g.nome}</h3>
+              <div className="flex items-center justify-between mb-2 shrink-0">
+                <h3 className="cc-display text-base md:text-lg text-paper leading-tight">
+                  Girone {g.nome}
+                </h3>
                 <span
-                  className="cc-mono text-[10px]"
+                  className="cc-mono text-[9px]"
                   style={{ color: "oklch(0.7 0.02 255)" }}
                 >
-                  {g.groupTeams.length} squadre
+                  {g.groupTeams.length} sq
                 </span>
               </div>
 
-              <table className="w-full text-sm border-collapse">
+              <table className="w-full text-xs md:text-sm border-collapse shrink-0">
                 <thead>
                   <tr
                     className="cc-mono"
@@ -76,11 +97,11 @@ export function GironiView({
                       borderBottom: "1px solid oklch(0.32 0.05 255)",
                     }}
                   >
-                    <th className="text-left py-1.5">#</th>
+                    <th className="text-left py-1">#</th>
                     <th className="text-left">Squadra</th>
-                    <th className="text-center w-8">PG</th>
-                    <th className="text-center w-8">PT</th>
-                    <th className="text-center w-12">Game</th>
+                    <th className="text-center w-7">PG</th>
+                    <th className="text-center w-7">PT</th>
+                    <th className="text-center w-10">Game</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -100,7 +121,7 @@ export function GironiView({
                         }}
                       >
                         <td
-                          className="py-1.5 cc-mono font-semibold"
+                          className="py-1 cc-mono font-semibold"
                           style={{ color: medalColor }}
                         >
                           {s.posizione}
@@ -135,13 +156,13 @@ export function GironiView({
               </table>
 
               {groupMatches.length > 0 && (
-                <div className="mt-4 pt-3 border-t border-cream/10 space-y-1.5">
+                <div className="mt-2 pt-2 border-t border-cream/10 space-y-1 flex-1 min-h-0 overflow-y-auto">
                   {groupMatches
                     .sort((a, b) => a.posizione - b.posizione)
                     .map((m) => (
                       <div
                         key={m.id}
-                        className="flex items-center justify-between text-xs gap-2"
+                        className="flex items-center justify-between text-[11px] md:text-xs gap-2"
                       >
                         <span className="text-paper/70 truncate flex-1">
                           {m.team1?.nome ?? "—"} vs {m.team2?.nome ?? "—"}
