@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,6 +43,7 @@ const empty = {
 
 export default function GiocatoriPage() {
   const [players, setPlayers] = useState<Player[]>([]);
+  const [filter, setFilter] = useState("");
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Player | null>(null);
@@ -52,6 +53,20 @@ export default function GiocatoriPage() {
   const [submitting, setSubmitting] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  const normalize = (s: string) =>
+    s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+
+  const filteredPlayers = useMemo(() => {
+    if (!filter.trim()) return players;
+    const q = normalize(filter.trim());
+    return players.filter(
+      (p) =>
+        normalize(p.nome).includes(q) ||
+        normalize(p.cognome).includes(q) ||
+        normalize(`${p.cognome} ${p.nome}`).includes(q)
+    );
+  }, [players, filter]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadPlayers = useCallback(async () => {
@@ -80,7 +95,9 @@ export default function GiocatoriPage() {
 
   const toggleAll = () => {
     setSelected((prev) =>
-      prev.size === players.length ? new Set() : new Set(players.map((p) => p.id))
+      prev.size === filteredPlayers.length
+        ? new Set()
+        : new Set(filteredPlayers.map((p) => p.id))
     );
   };
 
@@ -300,9 +317,37 @@ export default function GiocatoriPage() {
           </DialogContent>
         </Dialog>
 
+      <div className="mb-4 relative">
+        <Input
+          type="search"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          placeholder="Filtra per nome o cognome…"
+          className="bg-court-deep border-cream/15 text-cream pl-10 h-11"
+        />
+        <span
+          aria-hidden
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-cream/40 cc-mono text-xs"
+        >
+          ⌕
+        </span>
+        {filter && (
+          <button
+            type="button"
+            onClick={() => setFilter("")}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-cream/50 hover:text-cream px-2 text-sm"
+            aria-label="Pulisci filtro"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
       <div className="flex flex-wrap items-center justify-between mb-4 gap-3">
         <p className="text-eyebrow text-cream/50">
-          {players.length} {players.length === 1 ? "giocatore" : "giocatori"}
+          {filter
+            ? `${filteredPlayers.length} di ${players.length} giocatori`
+            : `${players.length} ${players.length === 1 ? "giocatore" : "giocatori"}`}
         </p>
 
         {selected.size > 0 && (
@@ -341,18 +386,24 @@ export default function GiocatoriPage() {
           <p className="text-cream/60 text-center py-8">
             Nessun giocatore. Aggiungine uno con il pulsante sopra.
           </p>
+        ) : filteredPlayers.length === 0 ? (
+          <p className="text-cream/60 text-center py-8">
+            Nessun giocatore per &quot;{filter}&quot;.
+          </p>
         ) : (
           <>
             <label className="flex items-center gap-2 px-3 py-2 text-eyebrow text-cream/60">
               <input
                 type="checkbox"
                 checked={
-                  players.length > 0 && selected.size === players.length
+                  filteredPlayers.length > 0 &&
+                  selected.size === filteredPlayers.length
                 }
                 ref={(el) => {
                   if (el)
                     el.indeterminate =
-                      selected.size > 0 && selected.size < players.length;
+                      selected.size > 0 &&
+                      selected.size < filteredPlayers.length;
                 }}
                 onChange={toggleAll}
                 className="h-4 w-4 accent-court-line cursor-pointer"
@@ -360,7 +411,7 @@ export default function GiocatoriPage() {
               />
               Seleziona tutti
             </label>
-            {players.map((p) => {
+            {filteredPlayers.map((p) => {
               const team = p.teamAsPlayer1 ?? p.teamAsPlayer2;
               return (
                 <div
@@ -439,12 +490,14 @@ export default function GiocatoriPage() {
                 <input
                   type="checkbox"
                   checked={
-                    players.length > 0 && selected.size === players.length
+                    filteredPlayers.length > 0 &&
+                    selected.size === filteredPlayers.length
                   }
                   ref={(el) => {
                     if (el)
                       el.indeterminate =
-                        selected.size > 0 && selected.size < players.length;
+                        selected.size > 0 &&
+                        selected.size < filteredPlayers.length;
                   }}
                   onChange={toggleAll}
                   className="h-4 w-4 accent-court-line cursor-pointer"
@@ -472,8 +525,14 @@ export default function GiocatoriPage() {
                   Nessun giocatore. Aggiungine uno con il pulsante a destra.
                 </TableCell>
               </TableRow>
+            ) : filteredPlayers.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center text-cream/60 py-8">
+                  Nessun giocatore per &quot;{filter}&quot;.
+                </TableCell>
+              </TableRow>
             ) : (
-              players.map((p) => (
+              filteredPlayers.map((p) => (
                 <TableRow
                   key={p.id}
                   className={`border-line ${
