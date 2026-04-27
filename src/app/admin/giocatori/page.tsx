@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -376,10 +377,11 @@ export default function GiocatoriPage() {
                     aria-label={`Seleziona ${p.nome} ${p.cognome}`}
                   />
                   {p.fotoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <Image
                       src={p.fotoUrl}
                       alt=""
+                      width={48}
+                      height={48}
                       className="h-12 w-12 rounded-full object-cover bg-cream/10 shrink-0"
                     />
                   ) : (
@@ -489,10 +491,11 @@ export default function GiocatoriPage() {
                   </TableCell>
                   <TableCell>
                     {p.fotoUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <Image
                         src={p.fotoUrl}
                         alt=""
+                        width={40}
+                        height={40}
                         className="h-10 w-10 rounded-full object-cover bg-cream/10"
                       />
                     ) : (

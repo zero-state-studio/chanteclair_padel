@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/api-auth";
 import type { Genere } from "@/types";
-
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 const GENERI: Genere[] = ["MASCHILE", "FEMMINILE"];
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(_request: NextRequest, { params }: RouteContext) {
+  const unauthorized = await requireAdmin();
+  if (unauthorized) return unauthorized;
   const { id } = await params;
   const team = await prisma.team.findUnique({
     where: { id },
@@ -20,6 +20,8 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 }
 
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
+  const unauthorized = await requireAdmin();
+  if (unauthorized) return unauthorized;
   const { id } = await params;
   const existing = await prisma.team.findUnique({
     where: { id },
@@ -85,6 +87,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 }
 
 export async function DELETE(_request: NextRequest, { params }: RouteContext) {
+  const unauthorized = await requireAdmin();
+  if (unauthorized) return unauthorized;
   const { id } = await params;
   await prisma.team.delete({ where: { id } });
   return NextResponse.json({ success: true });

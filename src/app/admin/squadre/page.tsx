@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { GENERE_COLOR } from "@/lib/genere-style";
 import type { Genere, TeamWithPlayers } from "@/types";
@@ -180,10 +181,11 @@ function PlayerCombobox({
                 )}
               >
                 {p.fotoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={p.fotoUrl}
                     alt=""
+                    width={24}
+                    height={24}
                     className="h-6 w-6 rounded-full object-cover bg-cream/10 shrink-0"
                   />
                 ) : (
@@ -387,11 +389,12 @@ export default function SquadrePage() {
                 <div className="flex -space-x-3 shrink-0">
                   {[s.player1, s.player2].map((p) =>
                     p.fotoUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <Image
                         key={p.id}
                         src={p.fotoUrl}
                         alt=""
+                        width={40}
+                        height={40}
                         className="h-10 w-10 rounded-full object-cover bg-cream/10 ring-2 ring-court-deep"
                       />
                     ) : (

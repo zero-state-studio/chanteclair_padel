@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import type { MatchWithTeams, TeamWithPlayers, PlayerWithMatches } from "@/types";
 
@@ -44,14 +45,13 @@ function MiniAvatar({
 }) {
   const initials = `${player.nome[0] ?? ""}${player.cognome[0] ?? ""}`.toUpperCase();
   return player.fotoUrl ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <Image
       src={player.fotoUrl}
       alt=""
+      width={size}
+      height={size}
       className="rounded-full object-cover shrink-0"
       style={{
-        width: size,
-        height: size,
         background: "oklch(0.4 0.04 255)",
         boxShadow: "0 0 0 1px oklch(0.32 0.05 255)",
       }}

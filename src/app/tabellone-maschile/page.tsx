@@ -3,7 +3,7 @@ import { TabelloneClient } from "@/components/TabelloneClient";
 import { TabelloneHeader } from "@/components/TabelloneHeader";
 import type { TournamentWithMatches } from "@/types";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 export default async function TabelloneMaschilePage() {
   const torneo = await prisma.tournament.findFirst({

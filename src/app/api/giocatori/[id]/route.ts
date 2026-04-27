@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { savePhoto, deletePhoto } from "@/lib/uploads";
-
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+import { requireAdmin } from "@/lib/api-auth";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(_request: NextRequest, { params }: RouteContext) {
+  const unauthorized = await requireAdmin();
+  if (unauthorized) return unauthorized;
   const { id } = await params;
   const player = await prisma.player.findUnique({ where: { id } });
   if (!player) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -15,6 +15,8 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 }
 
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
+  const unauthorized = await requireAdmin();
+  if (unauthorized) return unauthorized;
   const { id } = await params;
   const existing = await prisma.player.findUnique({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -49,6 +51,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 }
 
 export async function DELETE(_request: NextRequest, { params }: RouteContext) {
+  const unauthorized = await requireAdmin();
+  if (unauthorized) return unauthorized;
   const { id } = await params;
   const existing = await prisma.player.findUnique({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
