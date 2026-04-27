@@ -42,8 +42,17 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
   const foto = formData.get("foto") as File | null;
   if (foto && foto.size > 0) {
-    if (existing.fotoUrl) await deletePhoto(existing.fotoUrl);
-    data.fotoUrl = await savePhoto(foto);
+    try {
+      if (existing.fotoUrl) await deletePhoto(existing.fotoUrl);
+      data.fotoUrl = await savePhoto(foto);
+    } catch (err) {
+      const e = err as Error;
+      console.error("[giocatori PATCH] photo error", e);
+      return NextResponse.json(
+        { error: `Caricamento foto fallito: ${e.message}` },
+        { status: 500 }
+      );
+    }
   }
 
   const updated = await prisma.player.update({ where: { id }, data });

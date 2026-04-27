@@ -38,7 +38,7 @@ export function TabelloneClient({
   genere,
 }: TabelloneClientProps) {
   const [torneo, setTorneo] = useState(torneoIniziale);
-  const [liveEvent, setLiveEvent] = useState<LiveEvent | null>(null);
+  const [eventQueue, setEventQueue] = useState<LiveEvent[]>([]);
   const [focused, setFocused] = useState<string | null>(null);
   const [userMode, setUserMode] = useState<BracketViewMode | null>(null);
   const [activeBracket, setActiveBracket] = useState<BracketTipo>("GOLD");
@@ -53,7 +53,7 @@ export function TabelloneClient({
     (event: LiveEvent) => {
       if (event.genere !== genere) return;
 
-      setLiveEvent(event);
+      setEventQueue((q) => [...q, event]);
 
       setTimeout(async () => {
         try {
@@ -71,6 +71,11 @@ export function TabelloneClient({
     },
     [torneo.id, genere]
   );
+
+  const currentEvent = eventQueue[0] ?? null;
+  const dismissCurrentEvent = useCallback(() => {
+    setEventQueue((q) => q.slice(1));
+  }, []);
 
   useSSE(handleSSEEvent);
 
@@ -236,7 +241,7 @@ export function TabelloneClient({
         </>
       )}
 
-      <LiveMatchOverlay event={liveEvent} onClose={() => setLiveEvent(null)} />
+      <LiveMatchOverlay event={currentEvent} onClose={dismissCurrentEvent} />
     </>
   );
 }
