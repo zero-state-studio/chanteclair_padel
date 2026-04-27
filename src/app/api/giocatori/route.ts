@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ensureUploadsDir, savePhoto } from "@/lib/uploads";
+import { savePhoto } from "@/lib/uploads";
 import { requireAdmin } from "@/lib/api-auth";
 
 export async function GET() {
@@ -31,10 +31,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "nome e cognome sono richiesti" }, { status: 400 });
   }
 
-  let fotoUrl: string | null = null;
+  const player = await prisma.player.create({
+    data: { nome, cognome, email, telefono },
+  });
+
   if (foto && foto.size > 0) {
     try {
-      fotoUrl = await savePhoto(foto);
+      const fotoUrl = await savePhoto(foto, player.id);
+      const updated = await prisma.player.update({
+        where: { id: player.id },
+        data: { fotoUrl },
+      });
+      return NextResponse.json(updated, { status: 201 });
     } catch (err) {
       const e = err as Error;
       console.error("[giocatori POST] photo error", e);
@@ -44,10 +52,6 @@ export async function POST(request: NextRequest) {
       );
     }
   }
-
-  const player = await prisma.player.create({
-    data: { nome, cognome, email, telefono, fotoUrl },
-  });
 
   return NextResponse.json(player, { status: 201 });
 }

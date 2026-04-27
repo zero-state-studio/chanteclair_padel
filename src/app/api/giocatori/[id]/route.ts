@@ -43,8 +43,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const foto = formData.get("foto") as File | null;
   if (foto && foto.size > 0) {
     try {
-      if (existing.fotoUrl) await deletePhoto(existing.fotoUrl);
-      data.fotoUrl = await savePhoto(foto);
+      data.fotoUrl = await savePhoto(foto, id);
     } catch (err) {
       const e = err as Error;
       console.error("[giocatori PATCH] photo error", e);
@@ -66,7 +65,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
   const existing = await prisma.player.findUnique({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if (existing.fotoUrl) await deletePhoto(existing.fotoUrl);
+  await deletePhoto(id);
   await prisma.player.delete({ where: { id } });
 
   return NextResponse.json({ success: true });

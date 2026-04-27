@@ -1,15 +1,20 @@
-import { randomUUID } from "crypto";
 import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const BUCKET = "player-photos";
 
-const ALLOWED_EXT = new Set(["jpg", "jpeg", "png", "webp", "gif", "avif"]);
+const ALLOWED_MIME = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+]);
 
-function safeExt(filename: string): string {
-  const raw = filename.split(".").pop()?.toLowerCase() ?? "";
-  return ALLOWED_EXT.has(raw) ? raw : "jpg";
+function safeMime(file: File): string {
+  const t = file.type?.toLowerCase() ?? "";
+  return ALLOWED_MIME.has(t) ? t : "image/jpeg";
 }
 
 let supabaseAdminCache: ReturnType<typeof createClient> | null = null;
@@ -45,40 +50,37 @@ async function ensureBucket() {
   bucketEnsured = true;
 }
 
-// Compat: chiamato in vecchio codice. Ora ensureBucket lazy.
-export async function ensureUploadsDir() {
-  await ensureBucket();
-}
-
-export async function savePhoto(file: File): Promise<string> {
+export async function savePhoto(file: File, playerId: string): Promise<string> {
   await ensureBucket();
   const supabase = getSupabaseAdmin();
-  const ext = safeExt(file.name);
-  const filename = `${randomUUID()}.${ext}`;
+  const mime = safeMime(file);
+  const filename = playerId;
   const buffer = Buffer.from(await file.arrayBuffer());
 
   const { error } = await supabase.storage
     .from(BUCKET)
     .upload(filename, buffer, {
-      contentType: file.type || `image/${ext}`,
-      upsert: false,
+      contentType: mime,
+      upsert: true,
     });
   if (error) throw new Error(`Upload fallito: ${error.message}`);
 
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(filename);
-  return data.publicUrl;
+  return `${data.publicUrl}?v=${Date.now()}`;
 }
 
-export async function deletePhoto(fotoUrl: string | null | undefined) {
-  if (!fotoUrl) return;
-  // Estrai filename da URL pubblico Supabase Storage o legacy /uploads/
-  const supabaseMatch = fotoUrl.match(
-    new RegExp(`/storage/v1/object/public/${BUCKET}/(.+)$`)
+export async function deletePhoto(playerIdOrUrl: string | null | undefined) {
+  if (!playerIdOrUrl) return;
+  let filename: string | null = null;
+  const supabaseMatch = playerIdOrUrl.match(
+    new RegExp(`/storage/v1/object/public/${BUCKET}/([^?]+)`)
   );
-  const legacyMatch = fotoUrl.match(/^\/uploads\/(.+)$/);
-  const filename = supabaseMatch?.[1] ?? legacyMatch?.[1];
+  const legacyMatch = playerIdOrUrl.match(/^\/uploads\/(.+)$/);
+  if (supabaseMatch) filename = supabaseMatch[1];
+  else if (legacyMatch) return; // legacy locale: ignora
+  else filename = playerIdOrUrl; // assume playerId nudo
+
   if (!filename) return;
-  if (legacyMatch) return; // legacy locale: ignora, file non più gestiti
   try {
     const supabase = getSupabaseAdmin();
     await supabase.storage.from(BUCKET).remove([filename]);
