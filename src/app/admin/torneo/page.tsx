@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Bracket } from "@/components/Bracket";
 import { toast } from "sonner";
 import { calcolaSizesGironi } from "@/lib/gironi";
 import { GENERE_COLOR, genereChipStyle } from "@/lib/genere-style";
@@ -31,7 +32,6 @@ export default function TorneoPage() {
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [drawing, setDrawing] = useState<string | null>(null);
-  const [previewTorneoId, setPreviewTorneoId] = useState<string | null>(null);
   const [counts, setCounts] = useState<Record<Genere, number>>({
     MASCHILE: 0,
     FEMMINILE: 0,
@@ -121,7 +121,6 @@ export default function TorneoPage() {
     const res = await fetch(`/api/tornei/${t.id}`, { method: "DELETE" });
     if (res.ok) {
       toast.success("Torneo eliminato");
-      if (previewTorneoId === t.id) setPreviewTorneoId(null);
       await loadAll();
     } else {
       toast.error("Errore eliminazione");
@@ -159,7 +158,6 @@ export default function TorneoPage() {
         throw new Error(err.error ?? "Errore sorteggio");
       }
       toast.success("Sorteggio completato");
-      setPreviewTorneoId(t.id);
       await loadAll();
     } catch (err) {
       toast.error((err as Error).message);
@@ -203,8 +201,6 @@ export default function TorneoPage() {
       toast.error("Errore aggiornamento");
     }
   };
-
-  const previewTorneo = tornei.find((t) => t.id === previewTorneoId);
 
   return (
     <div className="mx-auto max-w-[1400px] px-4 md:px-12 py-6 md:py-12 space-y-8 md:space-y-12">
@@ -373,15 +369,26 @@ export default function TorneoPage() {
                         Genera Bracket
                       </Button>
                     )}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setPreviewTorneoId(t.id)}
-                      className="bg-transparent border-cream/20 hover:bg-cream/5 text-cream h-10"
-                      disabled={partite === 0}
-                    >
-                      Anteprima
-                    </Button>
+                    {partite > 0 ? (
+                      <Link
+                        href={`/admin/tabelloni?id=${t.id}`}
+                        className={cn(
+                          buttonVariants({ size: "sm", variant: "outline" }),
+                          "bg-transparent border-cream/20 hover:bg-cream/5 text-cream h-10"
+                        )}
+                      >
+                        Anteprima
+                      </Link>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled
+                        className="bg-transparent border-cream/20 text-cream h-10"
+                      >
+                        Anteprima
+                      </Button>
+                    )}
                     {t.stato !== "CONCLUSO" && partite > 0 && (
                       <Button
                         size="sm"
@@ -408,51 +415,6 @@ export default function TorneoPage() {
         )}
       </section>
 
-      {previewTorneo && previewTorneo.matches.length > 0 && (
-        <section className="rounded-lg border border-line bg-court-deep p-3 md:p-4">
-          <div className="flex items-center justify-between mb-2 px-2 gap-2">
-            <h2 className="text-base md:text-xl font-semibold truncate">
-              <span className="hidden sm:inline">Anteprima — </span>
-              {previewTorneo.nome}{" "}
-              <span className="text-court-line">({previewTorneo.fase})</span>
-            </h2>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setPreviewTorneoId(null)}
-              className="text-cream/60 shrink-0"
-            >
-              Chiudi
-            </Button>
-          </div>
-          {previewTorneo.fase === "GIRONI" ? (
-            <div className="text-cream/60 text-sm px-2 py-1">
-              {previewTorneo.groups.length} gironi sorteggiati ·{" "}
-              {previewTorneo.matches.filter((m) => m.groupId !== null).length} partite
-              girone. Visibili nel tabellone live.
-            </div>
-          ) : (
-            <div className="overflow-x-auto -mx-3 md:mx-0 px-3 md:px-0 space-y-6">
-              {(["GOLD", "SILVER", "BRONZE"] as const).map((tipo) => {
-                const matches = previewTorneo.matches.filter(
-                  (m) => m.bracketTipo === tipo
-                );
-                if (matches.length === 0) return null;
-                return (
-                  <div key={tipo}>
-                    <div className="text-eyebrow text-court-line mb-2 px-2">
-                      — {tipo}
-                    </div>
-                    <Bracket
-                      torneo={{ ...previewTorneo, matches }}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
-      )}
     </div>
   );
 }

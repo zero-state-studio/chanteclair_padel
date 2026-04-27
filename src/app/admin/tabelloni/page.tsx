@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { Suspense, useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { TabelloneClient } from "@/components/TabelloneClient";
 import { toast } from "sonner";
@@ -18,6 +19,16 @@ const STATO_BADGE: Record<StatoTorneo, string> = {
 };
 
 export default function TabelloniPage() {
+  return (
+    <Suspense fallback={null}>
+      <TabelloniInner />
+    </Suspense>
+  );
+}
+
+function TabelloniInner() {
+  const searchParams = useSearchParams();
+  const queryId = searchParams.get("id");
   const [tornei, setTornei] = useState<TournamentWithMatches[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -30,6 +41,7 @@ export default function TabelloniPage() {
       const data = (await res.json()) as TournamentWithMatches[];
       setTornei(data);
       setSelectedId((prev) => {
+        if (queryId && data.some((t) => t.id === queryId)) return queryId;
         if (prev && data.some((t) => t.id === prev)) return prev;
         const attivo = data.find((t) => t.stato === "ATTIVO");
         return attivo?.id ?? data[0]?.id ?? null;
@@ -39,11 +51,17 @@ export default function TabelloniPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [queryId]);
 
   useEffect(() => {
     loadTornei();
   }, [loadTornei]);
+
+  useEffect(() => {
+    if (queryId && tornei.some((t) => t.id === queryId)) {
+      setSelectedId(queryId);
+    }
+  }, [queryId, tornei]);
 
   const selected = tornei.find((t) => t.id === selectedId) ?? null;
 
