@@ -94,7 +94,7 @@ export default function TorneoPage() {
   const handleDelete = async (t: TorneoListItem) => {
     if (
       !confirm(
-        `Eliminare il torneo "${t.nome}"? Tutte le partite verranno cancellate.`
+        `Eliminare il torneo "${t.nome}"? Verranno cancellate solo le partite. Squadre e giocatori restano.`
       )
     )
       return;
@@ -300,16 +300,14 @@ export default function TorneoPage() {
                         Concludi
                       </Button>
                     )}
-                    {t.stato === "BOZZA" && (
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDelete(t)}
-                        className="h-10"
-                      >
-                        Elimina
-                      </Button>
-                    )}
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleDelete(t)}
+                      className="h-10"
+                    >
+                      Elimina
+                    </Button>
                   </div>
                 </div>
               );
