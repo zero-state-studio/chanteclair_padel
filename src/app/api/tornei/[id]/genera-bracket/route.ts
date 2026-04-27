@@ -106,34 +106,43 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
     BRONZE: teamsPerPosition.get(3) ?? [],
   };
 
-  const result = await prisma.$transaction(async (tx) => {
-    // Persisti posizioneFinale + genera match bracket in parallelo
-    const allBracketMatches = (["GOLD", "SILVER", "BRONZE"] as const).flatMap(
-      (tipo) => {
-        const teams = bracketTeams[tipo];
-        if (teams.length < 2) return [];
-        return generaBracket(teams, torneo.id, tipo);
-      }
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      // Persisti posizioneFinale + genera match bracket in parallelo
+      const allBracketMatches = (["GOLD", "SILVER", "BRONZE"] as const).flatMap(
+        (tipo) => {
+          const teams = bracketTeams[tipo];
+          if (teams.length < 2) return [];
+          return generaBracket(teams, torneo.id, tipo);
+        }
+      );
+
+      await Promise.all([
+        ...standingsUpdates.map((u) =>
+          tx.groupTeam.update({
+            where: { id: u.id },
+            data: { posizioneFinale: u.posizioneFinale },
+          })
+        ),
+        allBracketMatches.length > 0
+          ? tx.match.createMany({ data: allBracketMatches })
+          : Promise.resolve(),
+      ]);
+
+      return tx.tournament.update({
+        where: { id: torneo.id },
+        data: { fase: "BRACKET" },
+        include: tournamentInclude,
+      });
+    }, { maxWait: 10000, timeout: 30000 });
+
+    return NextResponse.json(result);
+  } catch (err) {
+    const e = err as Error & { code?: string; meta?: unknown };
+    console.error("[genera-bracket] error", { id, message: e.message, code: e.code, meta: e.meta });
+    return NextResponse.json(
+      { error: e.message, code: e.code, meta: e.meta },
+      { status: 500 }
     );
-
-    await Promise.all([
-      ...standingsUpdates.map((u) =>
-        tx.groupTeam.update({
-          where: { id: u.id },
-          data: { posizioneFinale: u.posizioneFinale },
-        })
-      ),
-      allBracketMatches.length > 0
-        ? tx.match.createMany({ data: allBracketMatches })
-        : Promise.resolve(),
-    ]);
-
-    return tx.tournament.update({
-      where: { id: torneo.id },
-      data: { fase: "BRACKET" },
-      include: tournamentInclude,
-    });
-  });
-
-  return NextResponse.json(result);
+  }
 }

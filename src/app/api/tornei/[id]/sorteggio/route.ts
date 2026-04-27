@@ -48,54 +48,63 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
   const gironi = distribuisciGironi(squadre);
   const matchDrafts = generaMatchGironi(gironi);
 
-  const result = await prisma.$transaction(async (tx) => {
-    await tx.match.deleteMany({ where: { tournamentId: torneo.id } });
-    await tx.group.deleteMany({ where: { tournamentId: torneo.id } });
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      await tx.match.deleteMany({ where: { tournamentId: torneo.id } });
+      await tx.group.deleteMany({ where: { tournamentId: torneo.id } });
 
-    // Crea gironi + groupTeams in parallelo
-    const createdGroups = await Promise.all(
-      gironi.map((g) =>
-        tx.group.create({
-          data: {
-            tournamentId: torneo.id,
-            nome: g.nome,
-            posizione: g.posizione,
-            groupTeams: {
-              create: g.teams.map((t) => ({
-                teamId: t.teamId,
-                seed: t.seed,
-              })),
+      // Crea gironi + groupTeams in parallelo
+      const createdGroups = await Promise.all(
+        gironi.map((g) =>
+          tx.group.create({
+            data: {
+              tournamentId: torneo.id,
+              nome: g.nome,
+              posizione: g.posizione,
+              groupTeams: {
+                create: g.teams.map((t) => ({
+                  teamId: t.teamId,
+                  seed: t.seed,
+                })),
+              },
             },
-          },
-          select: { id: true, posizione: true },
-        })
-      )
-    );
-    const groupIdByPos = new Map<number, string>(
-      createdGroups.map((g) => [g.posizione, g.id])
-    );
+            select: { id: true, posizione: true },
+          })
+        )
+      );
+      const groupIdByPos = new Map<number, string>(
+        createdGroups.map((g) => [g.posizione, g.id])
+      );
 
-    // Crea match girone (round 0, identifica fase via groupId)
-    if (matchDrafts.length > 0) {
-      await tx.match.createMany({
-        data: matchDrafts.map((m) => ({
-          tournamentId: torneo.id,
-          groupId: groupIdByPos.get(m.groupPosizione)!,
-          round: 0,
-          posizione: m.posizione,
-          team1Id: m.team1Id,
-          team2Id: m.team2Id,
-          stato: "ATTESA",
-        })),
+      // Crea match girone (round 0, identifica fase via groupId)
+      if (matchDrafts.length > 0) {
+        await tx.match.createMany({
+          data: matchDrafts.map((m) => ({
+            tournamentId: torneo.id,
+            groupId: groupIdByPos.get(m.groupPosizione)!,
+            round: 0,
+            posizione: m.posizione,
+            team1Id: m.team1Id,
+            team2Id: m.team2Id,
+            stato: "ATTESA",
+          })),
+        });
+      }
+
+      return tx.tournament.update({
+        where: { id: torneo.id },
+        data: { stato: "ATTIVO", fase: "GIRONI" },
+        include: tournamentInclude,
       });
-    }
+    }, { maxWait: 10000, timeout: 30000 });
 
-    return tx.tournament.update({
-      where: { id: torneo.id },
-      data: { stato: "ATTIVO", fase: "GIRONI" },
-      include: tournamentInclude,
-    });
-  });
-
-  return NextResponse.json(result);
+    return NextResponse.json(result);
+  } catch (err) {
+    const e = err as Error & { code?: string; meta?: unknown };
+    console.error("[sorteggio] error", { id, message: e.message, code: e.code, meta: e.meta });
+    return NextResponse.json(
+      { error: e.message, code: e.code, meta: e.meta },
+      { status: 500 }
+    );
+  }
 }
