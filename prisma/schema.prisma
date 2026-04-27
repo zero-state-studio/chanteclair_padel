@@ -35,9 +35,10 @@ model Team {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  matchesAsTeam1 Match[] @relation("Team1")
-  matchesAsTeam2 Match[] @relation("Team2")
-  matchesWon     Match[] @relation("Winner")
+  matchesAsTeam1 Match[]     @relation("Team1")
+  matchesAsTeam2 Match[]     @relation("Team2")
+  matchesWon     Match[]     @relation("Winner")
+  groupTeams     GroupTeam[]
 }
 
 model Tournament {
@@ -45,17 +46,55 @@ model Tournament {
   nome      String
   genere    String
   stato     String   @default("BOZZA")
+  fase      String   @default("GIRONI")
   anno      Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   matches Match[]
+  groups  Group[]
+}
+
+model Group {
+  id           String     @id @default(cuid())
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  nome         String
+  posizione    Int
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  groupTeams GroupTeam[]
+  matches    Match[]
+}
+
+model GroupTeam {
+  id              String   @id @default(cuid())
+  groupId         String
+  group           Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  teamId          String
+  team            Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  seed            Int?
+  punti           Int      @default(0)
+  gameVinti       Int      @default(0)
+  gamePersi       Int      @default(0)
+  matchGiocate    Int      @default(0)
+  posizioneFinale Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([groupId, teamId])
 }
 
 model Match {
   id           String     @id @default(cuid())
   tournamentId String
   tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  groupId String?
+  group   Group?  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  bracketTipo String?
 
   round     Int
   posizione Int
@@ -68,7 +107,11 @@ model Match {
   winnerId String?
   winner   Team?   @relation("Winner", fields: [winnerId], references: [id], onDelete: SetNull)
 
-  punteggio String?
+  punteggio     String?
+  set1Team1     Int?
+  set1Team2     Int?
+  tieBreakTeam1 Int?
+  tieBreakTeam2 Int?
 
   stato      String    @default("ATTESA")
   iniziataAt DateTime?

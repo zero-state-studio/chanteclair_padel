@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { GENERE_COLOR } from "@/lib/genere-style";
 import type { Genere, TeamWithPlayers } from "@/types";
 
 type Player = {
@@ -350,8 +351,18 @@ export default function SquadrePage() {
         className="mb-6"
       >
         <TabsList className="bg-court-deep w-full sm:w-auto">
-          <TabsTrigger value="MASCHILE" className="flex-1 sm:flex-none">Maschile</TabsTrigger>
-          <TabsTrigger value="FEMMINILE" className="flex-1 sm:flex-none">Femminile</TabsTrigger>
+          <TabsTrigger
+            value="MASCHILE"
+            className="flex-1 sm:flex-none data-active:!text-[color:var(--color-blue)] data-active:!bg-[color:color-mix(in_oklch,var(--color-blue)_18%,transparent)] data-active:!border-[color:var(--color-blue)]"
+          >
+            Maschile
+          </TabsTrigger>
+          <TabsTrigger
+            value="FEMMINILE"
+            className="flex-1 sm:flex-none data-active:!text-[color:var(--color-pink)] data-active:!bg-[color:color-mix(in_oklch,var(--color-pink)_18%,transparent)] data-active:!border-[color:var(--color-pink)]"
+          >
+            Femminile
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -367,6 +378,10 @@ export default function SquadrePage() {
             <div
               key={s.id}
               className="rounded-sm border border-line bg-court-deep p-4 md:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-4"
+              style={{
+                borderLeftWidth: 4,
+                borderLeftColor: GENERE_COLOR[s.genere],
+              }}
             >
               <div className="flex items-center gap-3 md:gap-4 min-w-0">
                 <div className="flex -space-x-3 shrink-0">
@@ -432,21 +447,29 @@ export default function SquadrePage() {
             <div className="space-y-2">
               <Label>Tabellone *</Label>
               <div className="grid grid-cols-2 gap-2">
-                {(["MASCHILE", "FEMMINILE"] as const).map((g) => (
-                  <button
-                    key={g}
-                    type="button"
-                    onClick={() => setForm({ ...form, genere: g })}
-                    className={cn(
-                      "px-3 py-2 rounded-sm border-2 text-sm font-semibold uppercase tracking-wider transition-colors",
-                      form.genere === g
-                        ? "border-court-line bg-court-line/10 text-cream"
-                        : "border-cream/15 text-cream/70 hover:border-cream/40"
-                    )}
-                  >
-                    {g === "MASCHILE" ? "Maschile" : "Femminile"}
-                  </button>
-                ))}
+                {(["MASCHILE", "FEMMINILE"] as const).map((g) => {
+                  const active = form.genere === g;
+                  const color = GENERE_COLOR[g];
+                  return (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => setForm({ ...form, genere: g })}
+                      className="px-3 py-2 rounded-sm border-2 text-sm font-semibold uppercase tracking-wider transition-colors"
+                      style={
+                        active
+                          ? {
+                              borderColor: color,
+                              background: `color-mix(in oklch, ${color} 18%, transparent)`,
+                              color: color,
+                            }
+                          : undefined
+                      }
+                    >
+                      {g === "MASCHILE" ? "Maschile" : "Femminile"}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
