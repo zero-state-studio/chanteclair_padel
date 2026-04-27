@@ -2,10 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { computeStandings } from "@/lib/gironi";
 import { generaBracket } from "@/lib/bracket";
+import { requireAdmin } from "@/lib/api-auth";
 import type { Team } from "@prisma/client";
-
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -29,6 +27,8 @@ const tournamentInclude = {
 } satisfies import("@prisma/client").Prisma.TournamentInclude;
 
 export async function POST(_request: NextRequest, { params }: RouteContext) {
+  const unauthorized = await requireAdmin();
+  if (unauthorized) return unauthorized;
   const { id } = await params;
 
   const torneo = await prisma.tournament.findUnique({
@@ -107,21 +107,26 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
   };
 
   const result = await prisma.$transaction(async (tx) => {
-    // Persisti posizioneFinale
-    for (const u of standingsUpdates) {
-      await tx.groupTeam.update({
-        where: { id: u.id },
-        data: { posizioneFinale: u.posizioneFinale },
-      });
-    }
+    // Persisti posizioneFinale + genera match bracket in parallelo
+    const allBracketMatches = (["GOLD", "SILVER", "BRONZE"] as const).flatMap(
+      (tipo) => {
+        const teams = bracketTeams[tipo];
+        if (teams.length < 2) return [];
+        return generaBracket(teams, torneo.id, tipo);
+      }
+    );
 
-    // Genera match bracket
-    for (const tipo of ["GOLD", "SILVER", "BRONZE"] as const) {
-      const teams = bracketTeams[tipo];
-      if (teams.length < 2) continue;
-      const matches = generaBracket(teams, torneo.id, tipo);
-      await tx.match.createMany({ data: matches });
-    }
+    await Promise.all([
+      ...standingsUpdates.map((u) =>
+        tx.groupTeam.update({
+          where: { id: u.id },
+          data: { posizioneFinale: u.posizioneFinale },
+        })
+      ),
+      allBracketMatches.length > 0
+        ? tx.match.createMany({ data: allBracketMatches })
+        : Promise.resolve(),
+    ]);
 
     return tx.tournament.update({
       where: { id: torneo.id },

@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { distribuisciGironi, generaMatchGironi } from "@/lib/gironi";
-
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+import { requireAdmin } from "@/lib/api-auth";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -27,6 +25,8 @@ const tournamentInclude = {
 } satisfies import("@prisma/client").Prisma.TournamentInclude;
 
 export async function POST(_request: NextRequest, { params }: RouteContext) {
+  const unauthorized = await requireAdmin();
+  if (unauthorized) return unauthorized;
   const { id } = await params;
 
   const torneo = await prisma.tournament.findUnique({ where: { id } });
@@ -52,24 +52,28 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
     await tx.match.deleteMany({ where: { tournamentId: torneo.id } });
     await tx.group.deleteMany({ where: { tournamentId: torneo.id } });
 
-    // Crea gironi + groupTeams
-    const groupIdByPos = new Map<number, string>();
-    for (const g of gironi) {
-      const created = await tx.group.create({
-        data: {
-          tournamentId: torneo.id,
-          nome: g.nome,
-          posizione: g.posizione,
-          groupTeams: {
-            create: g.teams.map((t) => ({
-              teamId: t.teamId,
-              seed: t.seed,
-            })),
+    // Crea gironi + groupTeams in parallelo
+    const createdGroups = await Promise.all(
+      gironi.map((g) =>
+        tx.group.create({
+          data: {
+            tournamentId: torneo.id,
+            nome: g.nome,
+            posizione: g.posizione,
+            groupTeams: {
+              create: g.teams.map((t) => ({
+                teamId: t.teamId,
+                seed: t.seed,
+              })),
+            },
           },
-        },
-      });
-      groupIdByPos.set(g.posizione, created.id);
-    }
+          select: { id: true, posizione: true },
+        })
+      )
+    );
+    const groupIdByPos = new Map<number, string>(
+      createdGroups.map((g) => [g.posizione, g.id])
+    );
 
     // Crea match girone (round 0, identifica fase via groupId)
     if (matchDrafts.length > 0) {

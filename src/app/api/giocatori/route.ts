@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ensureUploadsDir, savePhoto } from "@/lib/uploads";
-
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+import { requireAdmin } from "@/lib/api-auth";
 
 export async function GET() {
+  const unauthorized = await requireAdmin();
+  if (unauthorized) return unauthorized;
   const players = await prisma.player.findMany({
     orderBy: [{ cognome: "asc" }, { nome: "asc" }],
     include: {
@@ -17,6 +17,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const unauthorized = await requireAdmin();
+  if (unauthorized) return unauthorized;
   await ensureUploadsDir();
   const formData = await request.formData();
 

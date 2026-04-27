@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,11 +65,12 @@ function TeamLabel({ team }: { team: TeamWithPlayers | null }) {
       <span className="flex -space-x-2 shrink-0">
         {[team.player1, team.player2].map((p) =>
           p.fotoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               key={p.id}
               src={p.fotoUrl}
               alt=""
+              width={28}
+              height={28}
               className="h-7 w-7 rounded-full object-cover bg-cream/10 ring-2 ring-court-deep"
             />
           ) : (

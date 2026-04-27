@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/api-auth";
 import type { Genere, StatoTorneo } from "@/types";
 
-export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const GENERI: Genere[] = ["MASCHILE", "FEMMINILE", "MISTO"];
@@ -48,6 +48,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const unauthorized = await requireAdmin();
+  if (unauthorized) return unauthorized;
   const body = await request.json().catch(() => null);
   if (!body) {
     return NextResponse.json({ error: "JSON body richiesto" }, { status: 400 });

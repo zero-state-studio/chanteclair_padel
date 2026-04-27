@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import Image from "next/image";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 const STATS: { v: string; l: string }[] = [
   { v: "64", l: "Coppie iscritte" },

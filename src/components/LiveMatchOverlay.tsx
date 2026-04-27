@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import type { LiveEvent, TeamWithPlayers, PlayerWithMatches } from "@/types";
 
@@ -23,17 +24,22 @@ function MiniAvatar({
   size: string;
 }) {
   return player.fotoUrl ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={player.fotoUrl}
-      alt={`${player.nome} ${player.cognome}`}
-      className="rounded-full object-cover bg-paper/10"
+    <div
+      className="rounded-full overflow-hidden bg-paper/10 relative"
       style={{
         width: size,
         height: size,
         boxShadow: "0 0 0 1px rgba(251, 250, 246, 0.2)",
       }}
-    />
+    >
+      <Image
+        src={player.fotoUrl}
+        alt={`${player.nome} ${player.cognome}`}
+        fill
+        sizes="(max-width: 768px) 100px, 220px"
+        className="object-cover"
+      />
+    </div>
   ) : (
     <div
       className="rounded-full bg-paper/10 flex items-center justify-center"

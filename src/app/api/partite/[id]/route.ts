@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sseEmitter } from "@/lib/sse";
+import { requireAdmin } from "@/lib/api-auth";
 import type { Genere, LiveEvent, PlayerWithMatches, TeamWithPlayers } from "@/types";
-
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -84,6 +82,8 @@ function inferWinner(
 }
 
 export async function GET(_request: NextRequest, { params }: RouteContext) {
+  const unauthorized = await requireAdmin();
+  if (unauthorized) return unauthorized;
   const { id } = await params;
   const match = await prisma.match.findUnique({
     where: { id },
@@ -94,6 +94,8 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 }
 
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
+  const unauthorized = await requireAdmin();
+  if (unauthorized) return unauthorized;
   const { id } = await params;
   const body = await request.json().catch(() => null);
   if (!body) return NextResponse.json({ error: "JSON body richiesto" }, { status: 400 });

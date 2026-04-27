@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/api-auth";
 import type { Genere, StatoPartita } from "@/types";
-
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 const GENERI: Genere[] = ["MASCHILE", "FEMMINILE"];
 const STATI: StatoPartita[] = ["ATTESA", "IN_CORSO", "COMPLETATA"];
@@ -16,6 +14,8 @@ const matchInclude = {
 } as const;
 
 export async function GET(request: NextRequest) {
+  const unauthorized = await requireAdmin();
+  if (unauthorized) return unauthorized;
   const { searchParams } = new URL(request.url);
   const genere = searchParams.get("genere") ?? undefined;
   const stato = searchParams.get("stato") ?? undefined;
