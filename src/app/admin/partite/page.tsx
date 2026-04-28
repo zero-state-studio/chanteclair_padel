@@ -124,6 +124,18 @@ function PartitaCard({
 
   const canStart = !!(match.team1 && match.team2);
 
+  useEffect(() => {
+    setS1(match.set1Team1 != null ? String(match.set1Team1) : "");
+    setS2(match.set1Team2 != null ? String(match.set1Team2) : "");
+    setTb1(match.tieBreakTeam1 != null ? String(match.tieBreakTeam1) : "");
+    setTb2(match.tieBreakTeam2 != null ? String(match.tieBreakTeam2) : "");
+  }, [
+    match.set1Team1,
+    match.set1Team2,
+    match.tieBreakTeam1,
+    match.tieBreakTeam2,
+  ]);
+
   const inizia = async () => {
     setBusy(true);
     try {
@@ -134,6 +146,43 @@ function PartitaCard({
       });
       if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
       toast.success("Partita iniziata e notificata");
+      await onAction();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const aggiornaParziale = async () => {
+    const set1Team1 = parseInt(s1, 10);
+    const set1Team2 = parseInt(s2, 10);
+    if (Number.isNaN(set1Team1) || Number.isNaN(set1Team2)) {
+      toast.error("Punteggio set richiesto");
+      return;
+    }
+    const tieBreakTeam1 = tb1 === "" ? null : parseInt(tb1, 10);
+    const tieBreakTeam2 = tb2 === "" ? null : parseInt(tb2, 10);
+    if ((tieBreakTeam1 == null) !== (tieBreakTeam2 == null)) {
+      toast.error("Tie-break: inserisci entrambi i punteggi");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/partite/${match.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          azione: "AGGIORNA_PARZIALE",
+          set1Team1,
+          set1Team2,
+          tieBreakTeam1,
+          tieBreakTeam2,
+        }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
+      toast.success("Parziale aggiornato");
       await onAction();
     } catch (err) {
       toast.error((err as Error).message);
@@ -356,16 +405,19 @@ function PartitaCard({
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => {
-                setShowForm(false);
-                setS1("");
-                setS2("");
-                setTb1("");
-                setTb2("");
-              }}
+              onClick={() => setShowForm(false)}
               className="h-10 sm:flex-none"
             >
               Annulla
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={aggiornaParziale}
+              disabled={busy || !s1 || !s2}
+              className="bg-transparent border-cream/30 text-cream hover:bg-cream/5 h-10 flex-1 sm:flex-none"
+            >
+              {busy ? "…" : "↻ Aggiorna parziale"}
             </Button>
             <Button
               size="sm"

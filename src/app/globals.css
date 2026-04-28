@@ -276,7 +276,7 @@
     animation: cc-marquee 40s linear infinite;
   }
   .cc-ticker.fast > div {
-    animation-duration: 50s;
+    animation-duration: 160s;
   }
 
   /* Legacy editorial helpers (admin pages) */

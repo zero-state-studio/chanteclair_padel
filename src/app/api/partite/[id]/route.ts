@@ -147,6 +147,64 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json(updated);
   }
 
+  if (azione === "AGGIORNA_PARZIALE") {
+    if (match.stato !== "IN_CORSO") {
+      return NextResponse.json(
+        { error: "Parziale aggiornabile solo su partite IN_CORSO" },
+        { status: 400 }
+      );
+    }
+    if (
+      typeof set1Team1 !== "number" ||
+      typeof set1Team2 !== "number" ||
+      set1Team1 < 0 ||
+      set1Team2 < 0 ||
+      set1Team1 > 7 ||
+      set1Team2 > 7
+    ) {
+      return NextResponse.json(
+        { error: "set1Team1 e set1Team2 richiesti (0-7)" },
+        { status: 400 }
+      );
+    }
+
+    const tb1 = typeof tieBreakTeam1 === "number" ? tieBreakTeam1 : null;
+    const tb2 = typeof tieBreakTeam2 === "number" ? tieBreakTeam2 : null;
+    if ((tb1 != null) !== (tb2 != null)) {
+      return NextResponse.json(
+        { error: "tieBreak deve avere entrambi i punteggi" },
+        { status: 400 }
+      );
+    }
+
+    const punteggio = buildPunteggioString(set1Team1, set1Team2, tb1, tb2);
+
+    const updated = await prisma.match.update({
+      where: { id },
+      data: {
+        set1Team1,
+        set1Team2,
+        tieBreakTeam1: tb1,
+        tieBreakTeam2: tb2,
+        punteggio,
+      },
+      include: matchInclude,
+    });
+
+    const event: LiveEvent = {
+      tipo: "PARTITA_PARZIALE",
+      matchId: updated.id,
+      team1: toTeam(updated.team1 as DbTeam | null)!,
+      team2: toTeam(updated.team2 as DbTeam | null)!,
+      punteggio: updated.punteggio ?? undefined,
+      genere: updated.tournament.genere as Genere,
+      sponsor: updated.sponsor ?? null,
+    };
+    sseEmitter.emit("live-event", event);
+
+    return NextResponse.json(updated);
+  }
+
   if (azione === "TERMINA") {
     if (
       typeof set1Team1 !== "number" ||

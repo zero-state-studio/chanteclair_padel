@@ -82,8 +82,8 @@ export interface TournamentWithMatches {
   groups: GroupWithTeams[];
 }
 
-export interface LiveEvent {
-  tipo: "PARTITA_INIZIATA" | "PARTITA_FINITA";
+export interface MatchLiveEvent {
+  tipo: "PARTITA_INIZIATA" | "PARTITA_FINITA" | "PARTITA_PARZIALE";
   matchId: string;
   team1: TeamWithPlayers;
   team2: TeamWithPlayers;
@@ -92,3 +92,10 @@ export interface LiveEvent {
   genere: Genere;
   sponsor?: SponsorLite | null;
 }
+
+export interface SponsorShowcaseEvent {
+  tipo: "SPONSOR_SHOWCASE";
+  sponsors: SponsorLite[];
+}
+
+export type LiveEvent = MatchLiveEvent | SponsorShowcaseEvent;

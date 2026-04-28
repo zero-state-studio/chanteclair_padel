@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import type { LiveEvent, TeamWithPlayers, PlayerWithMatches } from "@/types";
+import type { MatchLiveEvent, TeamWithPlayers, PlayerWithMatches } from "@/types";
 
 interface LiveMatchOverlayProps {
-  event: LiveEvent | null;
+  event: MatchLiveEvent | null;
   onClose: () => void;
 }
 
