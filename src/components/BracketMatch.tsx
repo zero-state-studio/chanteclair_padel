@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { MatchWithTeams, TeamWithPlayers, PlayerWithMatches } from "@/types";
 
@@ -98,11 +99,11 @@ export function BracketMatch({
   const orario = formatOrario(match.iniziataAt);
 
   return (
-    <div
+    <Link
+      href={`/partita/${match.id}`}
       onMouseEnter={() => onFocus(code)}
       onMouseLeave={() => onFocus(null)}
-      onClick={() => onFocus(focused ? null : code)}
-      className="cursor-pointer transition-all"
+      className="block cursor-pointer transition-all hover:brightness-110"
       style={{
         background: isLive
           ? "oklch(0.30 0.05 255)"
@@ -125,11 +126,28 @@ export function BracketMatch({
         style={{ marginBottom: Math.max(2, Math.round(spec.padY * 0.3)) }}
       >
         <span
-          className="cc-mono"
+          className="cc-mono inline-flex items-center gap-1.5 min-w-0"
           style={{ fontSize: spec.metaFont, color: "oklch(0.7 0.02 255)" }}
         >
-          {code}
-          {match.team1 || match.team2 ? "" : " · —"}
+          <span className="shrink-0">
+            {code}
+            {match.team1 || match.team2 ? "" : " · —"}
+          </span>
+          {match.field && (
+            <span
+              className="cc-mono inline-flex items-center gap-1 truncate"
+              style={{
+                fontSize: Math.max(8, spec.metaFont - 1),
+                color: "var(--color-paper)",
+                letterSpacing: "0.08em",
+                opacity: 0.85,
+              }}
+              title={match.field.nome}
+            >
+              <span aria-hidden>◆</span>
+              <span className="truncate">{match.field.nome}</span>
+            </span>
+          )}
         </span>
         {isLive && (
           <span
@@ -192,7 +210,7 @@ export function BracketMatch({
         oppScores={sets.map((s) => s[0])}
         isLive={isLive}
       />
-    </div>
+    </Link>
   );
 }
 

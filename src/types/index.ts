@@ -28,6 +28,12 @@ export interface SponsorLite {
   logoUrl: string | null;
 }
 
+export interface FieldLite {
+  id: string;
+  nome: string;
+  descrizione: string | null;
+}
+
 export interface MatchWithTeams {
   id: string;
   tournamentId: string;
@@ -48,6 +54,8 @@ export interface MatchWithTeams {
   finitaAt: string | null;
   sponsorId: string | null;
   sponsor: SponsorLite | null;
+  fieldId: string | null;
+  field: FieldLite | null;
 }
 
 export interface GroupTeamWithStats {
@@ -91,6 +99,7 @@ export interface MatchLiveEvent {
   winner?: TeamWithPlayers;
   genere: Genere;
   sponsor?: SponsorLite | null;
+  field?: FieldLite | null;
 }
 
 export interface SponsorShowcaseEvent {

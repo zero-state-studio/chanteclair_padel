@@ -370,8 +370,20 @@ export function LiveMatchOverlay({ event, onClose }: LiveMatchOverlayProps) {
               transition={{ delay: 0.3 }}
               className="flex items-center justify-between"
             >
-              <div className="text-eyebrow text-paper/60">
-                Chanteclair · {event.genere}
+              <div className="text-eyebrow text-paper/60 flex items-center gap-3 flex-wrap">
+                <span>Chanteclair · {event.genere}</span>
+                {event.field && (
+                  <span
+                    className="inline-flex items-center gap-1.5 px-2 py-1 border border-paper/20"
+                    style={{
+                      letterSpacing: "0.28em",
+                      color: "var(--color-yellow)",
+                    }}
+                  >
+                    <span aria-hidden>◆</span>
+                    <span>Campo {event.field.nome}</span>
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 {event.tipo === "PARTITA_INIZIATA" && (

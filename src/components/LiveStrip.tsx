@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { BracketTipo, MatchWithTeams } from "@/types";
 
 interface LiveStripProps {
@@ -88,12 +89,12 @@ export function LiveStrip({
             const score = m.punteggio ?? "—";
             const isFocus = focused === code;
             return (
-              <button
+              <Link
                 key={m.id}
+                href={`/partita/${m.id}`}
                 onMouseEnter={() => onFocus(code)}
                 onMouseLeave={() => onFocus(null)}
-                onClick={() => onFocus(isFocus ? null : code)}
-                className="text-left grid items-center gap-3 cursor-pointer transition-all"
+                className="text-left grid items-center gap-3 cursor-pointer transition-all hover:brightness-110"
                 style={{
                   gridTemplateColumns: "1fr auto",
                   background: isFocus
@@ -129,6 +130,19 @@ export function LiveStrip({
                         {m.bracketTipo}
                       </span>
                     )}
+                    {m.field && (
+                      <span
+                        className="cc-mono inline-flex items-center gap-1 truncate"
+                        style={{
+                          fontSize: 9,
+                          color: "var(--color-paper)",
+                          letterSpacing: "0.1em",
+                        }}
+                      >
+                        <span aria-hidden>◆</span>
+                        <span className="truncate">{m.field.nome}</span>
+                      </span>
+                    )}
                   </div>
                   <div
                     className="cc-display truncate"
@@ -161,7 +175,7 @@ export function LiveStrip({
                     ● LIVE
                   </div>
                 </div>
-              </button>
+              </Link>
             );
           })
         )}
