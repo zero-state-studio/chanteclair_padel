@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useCallback, useMemo, useEffect } from "react";
+import Image from "next/image";
+import { AnimatePresence, motion } from "framer-motion";
 import { Bracket, buildCode, type BracketViewMode } from "@/components/Bracket";
 import { GironiView } from "@/components/GironiView";
 import { LiveStrip } from "@/components/LiveStrip";
@@ -39,6 +41,7 @@ export function TabelloneClient({
 }: TabelloneClientProps) {
   const [torneo, setTorneo] = useState(torneoIniziale);
   const [eventQueue, setEventQueue] = useState<LiveEvent[]>([]);
+  const [parzialeNotice, setParzialeNotice] = useState<LiveEvent | null>(null);
   const [focused, setFocused] = useState<string | null>(null);
   const [userMode, setUserMode] = useState<BracketViewMode | null>(null);
   const [activeBracket, setActiveBracket] = useState<BracketTipo>("GOLD");
@@ -53,7 +56,11 @@ export function TabelloneClient({
     (event: LiveEvent) => {
       if (event.genere !== genere) return;
 
-      setEventQueue((q) => [...q, event]);
+      if (event.tipo === "PARTITA_PARZIALE") {
+        setParzialeNotice(event);
+      } else {
+        setEventQueue((q) => [...q, event]);
+      }
 
       setTimeout(async () => {
         try {
@@ -71,6 +78,12 @@ export function TabelloneClient({
     },
     [torneo.id, genere]
   );
+
+  useEffect(() => {
+    if (!parzialeNotice) return;
+    const t = setTimeout(() => setParzialeNotice(null), 6000);
+    return () => clearTimeout(t);
+  }, [parzialeNotice]);
 
   const currentEvent = eventQueue[0] ?? null;
   const dismissCurrentEvent = useCallback(() => {
@@ -242,6 +255,93 @@ export function TabelloneClient({
       )}
 
       <LiveMatchOverlay event={currentEvent} onClose={dismissCurrentEvent} />
+
+      <AnimatePresence>
+        {parzialeNotice && (
+          <motion.button
+            type="button"
+            key={parzialeNotice.matchId + (parzialeNotice.punteggio ?? "")}
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.4, ease: [0.22, 0.9, 0.34, 1] }}
+            onClick={() => setParzialeNotice(null)}
+            className="fixed bottom-6 right-6 z-40 w-[440px] max-w-[calc(100vw-3rem)] text-left rounded-md border border-paper/15 bg-court-deep/95 backdrop-blur shadow-2xl p-5 cursor-pointer hover:border-paper/30 transition-colors"
+            aria-label="Chiudi notifica parziale"
+          >
+            <div className="flex items-center justify-between gap-2 mb-3 text-eyebrow text-yellow">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span
+                    className="absolute inline-flex h-full w-full rounded-full opacity-60"
+                    style={{
+                      background: "var(--color-yellow)",
+                      animation: "cc-live-pulse 1.4s ease-in-out infinite",
+                    }}
+                  />
+                  <span
+                    className="relative inline-flex rounded-full h-2 w-2"
+                    style={{ background: "var(--color-yellow)" }}
+                  />
+                </span>
+                Parziale aggiornato
+              </div>
+              {parzialeNotice.punteggio && (
+                <div
+                  className="text-stat tabular-nums"
+                  style={{
+                    color: "var(--color-yellow)",
+                    fontSize: 22,
+                    lineHeight: 1,
+                  }}
+                >
+                  {parzialeNotice.punteggio}
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
+              {([parzialeNotice.team1, parzialeNotice.team2] as const).map(
+                (team, idx) => (
+                  <div key={team.id} className="flex items-center gap-3">
+                    <div className="flex -space-x-2 shrink-0">
+                      {[team.player1, team.player2].map((p) =>
+                        p.fotoUrl ? (
+                          <Image
+                            key={p.id}
+                            src={p.fotoUrl}
+                            alt=""
+                            width={36}
+                            height={36}
+                            className="h-9 w-9 rounded-full object-cover bg-paper/10 ring-2 ring-court-deep"
+                          />
+                        ) : (
+                          <span
+                            key={p.id}
+                            className="h-9 w-9 rounded-full bg-paper/10 ring-2 ring-court-deep flex items-center justify-center text-[10px] font-mono text-paper/80"
+                          >
+                            {p.nome[0]}
+                            {p.cognome[0]}
+                          </span>
+                        )
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-paper text-sm font-semibold truncate">
+                        {team.player1.cognome} / {team.player2.cognome}
+                      </div>
+                    </div>
+                    {idx === 0 && (
+                      <span className="text-eyebrow text-paper/35 shrink-0">
+                        vs
+                      </span>
+                    )}
+                  </div>
+                )
+              )}
+            </div>
+          </motion.button>
+        )}
+      </AnimatePresence>
     </>
   );
 }

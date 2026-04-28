@@ -83,7 +83,7 @@ export interface TournamentWithMatches {
 }
 
 export interface LiveEvent {
-  tipo: "PARTITA_INIZIATA" | "PARTITA_FINITA";
+  tipo: "PARTITA_INIZIATA" | "PARTITA_FINITA" | "PARTITA_PARZIALE";
   matchId: string;
   team1: TeamWithPlayers;
   team2: TeamWithPlayers;
