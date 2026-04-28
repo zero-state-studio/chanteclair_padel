@@ -356,7 +356,7 @@ export default function CampiPage() {
                     href={`/campo/${f.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center bg-court-line text-court hover:bg-[#e7ff75] h-8 px-3 text-xs rounded-sm font-semibold"
+                    className="inline-flex items-center justify-center gap-1 bg-court-line text-court hover:bg-[#e7ff75] h-7 px-2.5 text-[0.8rem] font-medium rounded-md"
                   >
                     ↗ Apri
                   </a>
@@ -457,7 +457,7 @@ export default function CampiPage() {
                         href={`/campo/${f.id}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center bg-court-line text-court hover:bg-[#e7ff75] h-8 px-3 text-xs rounded-sm font-semibold"
+                        className="inline-flex items-center justify-center gap-1 bg-court-line text-court hover:bg-[#e7ff75] h-7 px-2.5 text-[0.8rem] font-medium rounded-md"
                         title="Apri pagina campo in nuova scheda"
                       >
                         ↗ Apri
