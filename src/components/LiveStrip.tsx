@@ -91,7 +91,7 @@ export function LiveStrip({
             return (
               <Link
                 key={m.id}
-                href={`/partita/${m.id}`}
+                href={m.fieldId ? `/campo/${m.fieldId}` : `/partita/${m.id}`}
                 onMouseEnter={() => onFocus(code)}
                 onMouseLeave={() => onFocus(null)}
                 className="text-left grid items-center gap-3 cursor-pointer transition-all hover:brightness-110"

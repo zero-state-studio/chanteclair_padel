@@ -163,7 +163,7 @@ export function GironiView({
                     .map((m) => (
                       <Link
                         key={m.id}
-                        href={`/partita/${m.id}`}
+                        href={m.fieldId ? `/campo/${m.fieldId}` : `/partita/${m.id}`}
                         className="flex items-center justify-between text-[11px] md:text-xs gap-2 hover:bg-paper/5 -mx-1 px-1 rounded transition-colors"
                       >
                         <span className="text-paper/70 truncate flex-1">
