@@ -100,7 +100,7 @@ export function BracketMatch({
 
   return (
     <Link
-      href={`/partita/${match.id}`}
+      href={match.fieldId ? `/campo/${match.fieldId}` : `/partita/${match.id}`}
       onMouseEnter={() => onFocus(code)}
       onMouseLeave={() => onFocus(null)}
       className="block cursor-pointer transition-all hover:brightness-110"

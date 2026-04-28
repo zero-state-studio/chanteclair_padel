@@ -11,6 +11,7 @@ import type {
   PlayerWithMatches,
   TeamWithPlayers,
   StatoPartita,
+  BracketTipo,
 } from "@/types";
 
 interface Props {
@@ -36,6 +37,20 @@ interface AnimState {
 
 const HIGHLIGHT_DURATION_MS = 2200;
 const FLIP_DELAY_MS = 450;
+
+const BRACKET_ACCENT: Record<BracketTipo, string> = {
+  GOLD: "var(--color-yellow)",
+  SILVER: "oklch(0.85 0.02 255)",
+  BRONZE: "oklch(0.65 0.08 30)",
+};
+
+const BRACKET_LABEL: Record<BracketTipo, string> = {
+  GOLD: "GOLD",
+  SILVER: "SILVER",
+  BRONZE: "BRONZE",
+};
+
+const GIRONE_ACCENT = "oklch(0.7 0.14 195)";
 
 function parseScore(p: string | null | undefined): Score {
   if (!p) return { s1: 0, s2: 0, tb1: null, tb2: null };
@@ -158,9 +173,24 @@ export function MatchLiveClient({
 
   const winnerId = match.winner?.id ?? null;
   const showcaseSponsor = !!anim;
+  const bracket = match.bracketTipo as BracketTipo | null;
+  const isGirone = !bracket && match.groupId !== null;
+  const accentColor = bracket
+    ? BRACKET_ACCENT[bracket]
+    : isGirone
+    ? GIRONE_ACCENT
+    : "var(--color-yellow)";
 
   return (
-    <div className="relative z-[1] flex flex-col min-h-screen w-full max-w-[1600px] mx-auto px-5 md:px-10 py-6 md:py-10 gap-6 md:gap-10">
+    <>
+      {bracket && <BracketDecor bracket={bracket} />}
+      {isGirone && <GironeDecor />}
+    <div
+      className="relative z-[1] flex flex-col min-h-screen w-full max-w-[1600px] mx-auto px-5 md:px-10 py-6 md:py-10 gap-6 md:gap-10"
+      style={{
+        borderTop: `3px solid ${accentColor}`,
+      }}
+    >
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="text-eyebrow text-paper/60 flex items-center gap-3 flex-wrap min-w-0">
           <span className="truncate">
@@ -219,6 +249,152 @@ export function MatchLiveClient({
         <SponsorStrip sponsor={match.sponsor} showcase={showcaseSponsor} />
       )}
     </div>
+    </>
+  );
+}
+
+function BracketDecor({ bracket }: { bracket: BracketTipo }) {
+  const color = BRACKET_ACCENT[bracket];
+  const label = BRACKET_LABEL[bracket];
+  return (
+    <>
+      {/* Vertical watermark — right edge */}
+      <span
+        aria-hidden
+        className="cc-display fixed pointer-events-none select-none z-0"
+        style={{
+          right: "-3vw",
+          top: "8vh",
+          fontSize: "clamp(220px, 30vw, 540px)",
+          color,
+          opacity: 0.07,
+          letterSpacing: "0.06em",
+          lineHeight: 0.85,
+          whiteSpace: "nowrap",
+          transform: "rotate(-90deg)",
+          transformOrigin: "right top",
+        }}
+      >
+        {label}
+      </span>
+
+      {/* Right edge glow strip */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed top-0 bottom-0 right-0 z-0"
+        style={{
+          width: 6,
+          background: color,
+          boxShadow: `0 0 32px ${color}`,
+          opacity: 0.85,
+        }}
+      />
+
+      {/* Left edge glow strip */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed top-0 bottom-0 left-0 z-0"
+        style={{
+          width: 6,
+          background: color,
+          boxShadow: `0 0 32px ${color}`,
+          opacity: 0.85,
+        }}
+      />
+
+      {/* Corner chevron top-right */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed top-0 right-0 z-[2] flex items-center"
+        style={{
+          background: color,
+          color: "var(--color-night-deep)",
+          fontFamily: "var(--font-bebas), Impact, sans-serif",
+          letterSpacing: "0.3em",
+          fontSize: 16,
+          padding: "8px 18px 6px 28px",
+          clipPath: "polygon(14px 0, 100% 0, 100% 100%, 0 100%)",
+        }}
+      >
+        ★ {label}
+      </div>
+
+      {/* Soft radial glow background */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          background: `radial-gradient(ellipse 60% 50% at 100% 0%, ${color}1f, transparent 60%), radial-gradient(ellipse 60% 50% at 0% 100%, ${color}14, transparent 60%)`,
+        }}
+      />
+    </>
+  );
+}
+
+function GironeDecor() {
+  const color = GIRONE_ACCENT;
+  return (
+    <>
+      {/* Subtle grid pattern */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          backgroundImage: `linear-gradient(${color}10 1px, transparent 1px), linear-gradient(90deg, ${color}10 1px, transparent 1px)`,
+          backgroundSize: "48px 48px",
+          opacity: 0.6,
+        }}
+      />
+
+      {/* Watermark */}
+      <span
+        aria-hidden
+        className="cc-display fixed pointer-events-none select-none z-0"
+        style={{
+          right: "-2vw",
+          top: "10vh",
+          fontSize: "clamp(180px, 24vw, 420px)",
+          color,
+          opacity: 0.08,
+          letterSpacing: "0.06em",
+          lineHeight: 0.85,
+          whiteSpace: "nowrap",
+          transform: "rotate(-90deg)",
+          transformOrigin: "right top",
+        }}
+      >
+        GIRONI
+      </span>
+
+      {/* Corner chevron */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed top-0 right-0 z-[2] flex items-center"
+        style={{
+          background: color,
+          color: "var(--color-night-deep)",
+          fontFamily: "var(--font-bebas), Impact, sans-serif",
+          letterSpacing: "0.3em",
+          fontSize: 14,
+          padding: "6px 14px 4px 22px",
+          clipPath: "polygon(12px 0, 100% 0, 100% 100%, 0 100%)",
+        }}
+      >
+        ◇ GIRONE
+      </div>
+
+      {/* Edge strip left */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed top-0 bottom-0 left-0 z-0"
+        style={{
+          width: 4,
+          background: color,
+          boxShadow: `0 0 24px ${color}`,
+          opacity: 0.6,
+        }}
+      />
+    </>
   );
 }
 
