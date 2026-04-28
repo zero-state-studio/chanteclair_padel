@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "mcp__plugin_linear_linear__get_issue",
-      "mcp__plugin_linear_linear__list_projects"
+      "mcp__plugin_linear_linear__list_projects",
+      "mcp__plugin_supabase_supabase__list_projects",
+      "Bash(git -C /Users/gianlucaricaldone/Progetti/chanteclair_padel log --oneline)",
+      "Bash(git *)"
     ]
   },
   "enabledPlugins": {

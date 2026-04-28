@@ -534,6 +534,73 @@ export function LiveMatchOverlay({ event, onClose }: LiveMatchOverlayProps) {
               <span>match #{event.matchId.slice(-6)}</span>
             </motion.div>
           </div>
+
+          {/* Sponsor strip — centered during intro, bottom-right during winner reveal */}
+          {event.sponsor && (
+            <AnimatePresence mode="wait">
+              {(() => {
+                const isCorner =
+                  event.tipo === "PARTITA_FINITA" && phase === "reveal";
+                return (
+                  <motion.div
+                    key={isCorner ? "corner" : "center"}
+                    initial={{ opacity: 0, y: 18, scale: 0.92 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.92 }}
+                    transition={{
+                      duration: 0.5,
+                      ease: [0.22, 0.9, 0.34, 1],
+                      delay: isCorner ? 0 : 1.2,
+                    }}
+                    className={
+                      isCorner
+                        ? "absolute z-20 bottom-16 right-6 md:right-10 flex items-center gap-2 py-1.5 px-2.5 rounded-sm border border-paper/15 bg-paper/[0.05] backdrop-blur-sm"
+                        : "absolute z-20 left-1/2 -translate-x-1/2 bottom-20 md:bottom-24 flex items-center gap-2.5 md:gap-3 py-2 px-3.5 rounded-sm border border-paper/15 bg-paper/[0.04] backdrop-blur-sm"
+                    }
+                    style={{ maxWidth: "min(560px, 90%)" }}
+                  >
+                    <span
+                      className="cc-mono uppercase tracking-[0.28em] text-paper/55 shrink-0"
+                      style={{
+                        fontSize: isCorner
+                          ? "clamp(8px, 0.65vw, 10px)"
+                          : "clamp(9px, 0.75vw, 11px)",
+                      }}
+                    >
+                      Partita offerta da
+                    </span>
+                    {event.sponsor!.logoUrl && (
+                      <Image
+                        src={event.sponsor!.logoUrl}
+                        alt={event.sponsor!.nome}
+                        width={48}
+                        height={48}
+                        className="object-contain bg-paper/10 rounded-sm p-0.5 shrink-0"
+                        style={{
+                          height: isCorner
+                            ? "clamp(20px, 2vw, 26px)"
+                            : "clamp(26px, 2.6vw, 34px)",
+                          width: "auto",
+                        }}
+                      />
+                    )}
+                    <span
+                      className="cc-display text-paper truncate"
+                      style={{
+                        fontSize: isCorner
+                          ? "clamp(13px, 1.1vw, 18px)"
+                          : "clamp(16px, 1.6vw, 24px)",
+                        lineHeight: 1,
+                        letterSpacing: "0.02em",
+                      }}
+                    >
+                      {event.sponsor!.nome}
+                    </span>
+                  </motion.div>
+                );
+              })()}
+            </AnimatePresence>
+          )}
         </motion.div>
       )}
     </AnimatePresence>

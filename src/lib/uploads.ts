@@ -1,15 +1,22 @@
-import { randomUUID } from "crypto";
 import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const BUCKET = "player-photos";
+const PLAYER_BUCKET = "player-photos";
+const SPONSOR_BUCKET = "sponsor-logos";
 
-const ALLOWED_EXT = new Set(["jpg", "jpeg", "png", "webp", "gif", "avif"]);
+const ALLOWED_MIME = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+  "image/svg+xml",
+]);
 
-function safeExt(filename: string): string {
-  const raw = filename.split(".").pop()?.toLowerCase() ?? "";
-  return ALLOWED_EXT.has(raw) ? raw : "jpg";
+function safeMime(file: File): string {
+  const t = file.type?.toLowerCase() ?? "";
+  return ALLOWED_MIME.has(t) ? t : "image/jpeg";
 }
 
 let supabaseAdminCache: ReturnType<typeof createClient> | null = null;
@@ -27,62 +34,82 @@ function getSupabaseAdmin() {
   return supabaseAdminCache;
 }
 
-let bucketEnsured = false;
-async function ensureBucket() {
-  if (bucketEnsured) return;
+const ensuredBuckets = new Set<string>();
+async function ensureBucket(bucket: string) {
+  if (ensuredBuckets.has(bucket)) return;
   const supabase = getSupabaseAdmin();
-  const { data: existing } = await supabase.storage.getBucket(BUCKET);
+  const { data: existing } = await supabase.storage.getBucket(bucket);
   if (!existing) {
-    const { error } = await supabase.storage.createBucket(BUCKET, {
+    const { error } = await supabase.storage.createBucket(bucket, {
       public: true,
       fileSizeLimit: 5 * 1024 * 1024,
-      allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"],
+      allowedMimeTypes: [
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "image/gif",
+        "image/avif",
+        "image/svg+xml",
+      ],
     });
     if (error && !error.message.includes("already exists")) {
       throw new Error(`Errore creazione bucket: ${error.message}`);
     }
   }
-  bucketEnsured = true;
+  ensuredBuckets.add(bucket);
 }
 
-// Compat: chiamato in vecchio codice. Ora ensureBucket lazy.
-export async function ensureUploadsDir() {
-  await ensureBucket();
-}
-
-export async function savePhoto(file: File): Promise<string> {
-  await ensureBucket();
+async function uploadToBucket(file: File, id: string, bucket: string): Promise<string> {
+  await ensureBucket(bucket);
   const supabase = getSupabaseAdmin();
-  const ext = safeExt(file.name);
-  const filename = `${randomUUID()}.${ext}`;
+  const mime = safeMime(file);
+  const filename = id;
   const buffer = Buffer.from(await file.arrayBuffer());
 
   const { error } = await supabase.storage
-    .from(BUCKET)
+    .from(bucket)
     .upload(filename, buffer, {
-      contentType: file.type || `image/${ext}`,
-      upsert: false,
+      contentType: mime,
+      upsert: true,
     });
   if (error) throw new Error(`Upload fallito: ${error.message}`);
 
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(filename);
-  return data.publicUrl;
+  const { data } = supabase.storage.from(bucket).getPublicUrl(filename);
+  return `${data.publicUrl}?v=${Date.now()}`;
 }
 
-export async function deletePhoto(fotoUrl: string | null | undefined) {
-  if (!fotoUrl) return;
-  // Estrai filename da URL pubblico Supabase Storage o legacy /uploads/
-  const supabaseMatch = fotoUrl.match(
-    new RegExp(`/storage/v1/object/public/${BUCKET}/(.+)$`)
+async function removeFromBucket(idOrUrl: string | null | undefined, bucket: string) {
+  if (!idOrUrl) return;
+  let filename: string | null = null;
+  const supabaseMatch = idOrUrl.match(
+    new RegExp(`/storage/v1/object/public/${bucket}/([^?]+)`)
   );
-  const legacyMatch = fotoUrl.match(/^\/uploads\/(.+)$/);
-  const filename = supabaseMatch?.[1] ?? legacyMatch?.[1];
+  const legacyMatch = idOrUrl.match(/^\/uploads\/(.+)$/);
+  if (supabaseMatch) filename = supabaseMatch[1];
+  else if (legacyMatch) return; // legacy locale: ignora
+  else filename = idOrUrl; // assume id nudo
+
   if (!filename) return;
-  if (legacyMatch) return; // legacy locale: ignora, file non più gestiti
   try {
     const supabase = getSupabaseAdmin();
-    await supabase.storage.from(BUCKET).remove([filename]);
+    await supabase.storage.from(bucket).remove([filename]);
   } catch {
     // ignora errori di rimozione
   }
+}
+
+export function savePhoto(file: File, playerId: string): Promise<string> {
+  return uploadToBucket(file, playerId, PLAYER_BUCKET);
+}
+
+export function deletePhoto(playerIdOrUrl: string | null | undefined) {
+  return removeFromBucket(playerIdOrUrl, PLAYER_BUCKET);
+}
+
+export function saveSponsorLogo(file: File, sponsorId: string): Promise<string> {
+  return uploadToBucket(file, sponsorId, SPONSOR_BUCKET);
+}
+
+export function deleteSponsorLogo(sponsorIdOrUrl: string | null | undefined) {
+  return removeFromBucket(sponsorIdOrUrl, SPONSOR_BUCKET);
 }
