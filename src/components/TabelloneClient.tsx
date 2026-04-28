@@ -166,7 +166,7 @@ export function TabelloneClient({
         const next = bracketsConPartite[(idx + 1) % bracketsConPartite.length];
         return next ?? curr;
       });
-    }, 45000);
+    }, 20000);
     return () => clearInterval(id);
   }, [autoCycle, isFaseGironi, bracketsConPartite]);
 

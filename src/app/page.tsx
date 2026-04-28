@@ -11,6 +11,19 @@ const STATS: { v: string; l: string }[] = [
   { v: "2K€", l: "Montepremi totale" },
 ];
 
+const PROGRAMMA: { time: string; label: string; note: string; tag?: string }[] = [
+  { time: "08:30", label: "Apertura iscrizioni", note: "Reception · registrazione atleti", tag: "Check-in" },
+  { time: "09:30", label: "Riscaldamento campi", note: "Tutti i campi · briefing arbitri" },
+  { time: "10:00", label: "Inizio gironi maschile", note: "Gironi A–H · 4 campi attivi", tag: "Live" },
+  { time: "12:30", label: "Pausa pranzo", note: "Buffet · area lounge sponsor" },
+  { time: "13:30", label: "Inizio gironi femminile", note: "Gironi A–D · 4 campi attivi", tag: "Live" },
+  { time: "16:00", label: "Quarti di finale", note: "Bracket Gold / Silver / Bronze" },
+  { time: "17:30", label: "Semifinali", note: "Tabelloni live · campo centrale" },
+  { time: "18:30", label: "DJ set & aperitivo", note: "Area centrale · open bar", tag: "Festa" },
+  { time: "19:30", label: "Finali", note: "Tabellone Gold maschile + femminile", tag: "Finale" },
+  { time: "20:30", label: "Premiazione", note: "Palco · trofei + montepremi", tag: "Premi" },
+];
+
 const TICKER_TOP = "★ Chanteclair Padel Cup · 13.06.2026 · Sant'Agata Bolognese ★";
 const TICKER_BOTTOM = "★ Sport · Divertimento · Musica · 13.06.2026 · ";
 
@@ -47,18 +60,12 @@ export default async function HomePage() {
           <a href="#tornei" className="hover:text-yellow transition-colors">
             Tornei
           </a>
-          <a href="#premi" className="hover:text-yellow transition-colors">
-            Premi
+          <a href="#tornei" className="hover:text-yellow transition-colors">
+            Tabelloni
           </a>
           <a href="#programma" className="hover:text-yellow transition-colors">
             Programma
           </a>
-          <Link
-            href="/tabellone-maschile"
-            className="hover:text-yellow transition-colors"
-          >
-            Tabelloni
-          </Link>
         </nav>
         <Link
           href="/tabellone-maschile"
@@ -222,6 +229,115 @@ export default async function HomePage() {
           href="/tabellone-femminile"
           coppieCount={countTeams(torneoF)}
         />
+      </section>
+
+      {/* Programma */}
+      <section
+        id="programma"
+        className="relative bg-paper text-night-deep px-6 md:px-10 py-14 md:py-24 overflow-hidden"
+      >
+        <div
+          aria-hidden
+          className="absolute pointer-events-none -right-20 -top-10 select-none"
+          style={{
+            fontFamily: "var(--font-bebas), Impact, sans-serif",
+            fontSize: "clamp(180px, 28vw, 460px)",
+            lineHeight: 0.85,
+            color: "oklch(0.94 0.01 95)",
+            letterSpacing: "-0.02em",
+          }}
+        >
+          13.06
+        </div>
+
+        <div className="relative grid grid-cols-12 gap-4 md:gap-8 items-end mb-10 md:mb-16">
+          <div className="col-span-12 md:col-span-7">
+            <div className="cc-mono text-night-deep/55 mb-3">
+              03 / Programma · sabato 13 giugno 2026
+            </div>
+            <h2
+              className="cc-display text-night-deep"
+              style={{
+                fontSize: "clamp(64px, 10vw, 180px)",
+                lineHeight: 0.85,
+              }}
+            >
+              Una giornata,
+              <br />
+              <span className="text-red">10 momenti.</span>
+            </h2>
+          </div>
+          <div className="col-span-12 md:col-span-5 md:pl-8 md:border-l border-line">
+            <p className="text-base md:text-lg leading-relaxed text-night-deep/80">
+              Dal check-in alle premiazioni, ogni ora ha il suo capitolo. Tieni
+              d&apos;occhio i tabelloni live: ai picchi orari i campi vanno in
+              parallelo.
+            </p>
+          </div>
+        </div>
+
+        <div className="relative">
+          <ol className="divide-y divide-line border-y border-line">
+            {PROGRAMMA.map((p) => (
+              <li
+                key={p.time + p.label}
+                className="grid grid-cols-12 gap-3 md:gap-6 py-4 md:py-5 items-baseline"
+              >
+                <div
+                  className="col-span-3 md:col-span-2 cc-display text-night-deep cc-num"
+                  style={{
+                    fontSize: "clamp(28px, 3.4vw, 56px)",
+                    lineHeight: 1,
+                    letterSpacing: "0.01em",
+                  }}
+                >
+                  {p.time}
+                </div>
+                <div className="col-span-9 md:col-span-7">
+                  <div
+                    className="cc-display text-night-deep"
+                    style={{
+                      fontSize: "clamp(20px, 2.4vw, 36px)",
+                      lineHeight: 1.05,
+                    }}
+                  >
+                    {p.label}
+                  </div>
+                  <div className="cc-mono text-night-deep/55 mt-1.5">
+                    {p.note}
+                  </div>
+                </div>
+                <div className="col-span-12 md:col-span-3 md:text-right">
+                  {p.tag && (
+                    <span
+                      className="cc-mono inline-block px-2.5 py-1"
+                      style={{
+                        background:
+                          p.tag === "Live"
+                            ? "var(--color-yellow)"
+                            : p.tag === "Finale"
+                            ? "var(--color-red)"
+                            : p.tag === "Premi"
+                            ? "var(--color-blue)"
+                            : "var(--color-night-deep)",
+                        color:
+                          p.tag === "Live"
+                            ? "var(--color-night-deep)"
+                            : "var(--color-paper)",
+                      }}
+                    >
+                      ◆ {p.tag}
+                    </span>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ol>
+
+          <p className="cc-mono text-night-deep/40 mt-6">
+            * orari indicativi · variazioni comunicate via tabellone live
+          </p>
+        </div>
       </section>
 
       <Marquee text={TICKER_BOTTOM} />

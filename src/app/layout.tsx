@@ -37,7 +37,7 @@ export default function RootLayout({
   return (
     <html
       lang="it"
-      className={`${bebas.variable} ${inter.variable} ${jetbrains.variable} h-full antialiased`}
+      className={`${bebas.variable} ${inter.variable} ${jetbrains.variable} h-full antialiased scroll-smooth`}
     >
       <body className="min-h-full flex flex-col bg-night-deep text-paper font-body">
         {children}
