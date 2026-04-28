@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { CSSProperties } from "react";
 import { computeStandings } from "@/lib/gironi";
 import type { GroupWithTeams, MatchWithTeams } from "@/types";
@@ -160,9 +161,10 @@ export function GironiView({
                   {groupMatches
                     .sort((a, b) => a.posizione - b.posizione)
                     .map((m) => (
-                      <div
+                      <Link
                         key={m.id}
-                        className="flex items-center justify-between text-[11px] md:text-xs gap-2"
+                        href={`/partita/${m.id}`}
+                        className="flex items-center justify-between text-[11px] md:text-xs gap-2 hover:bg-paper/5 -mx-1 px-1 rounded transition-colors"
                       >
                         <span className="text-paper/70 truncate flex-1">
                           {m.team1?.nome ?? "—"} vs {m.team2?.nome ?? "—"}
@@ -181,7 +183,7 @@ export function GironiView({
                             ATTESA
                           </span>
                         )}
-                      </div>
+                      </Link>
                     ))}
                 </div>
               )}

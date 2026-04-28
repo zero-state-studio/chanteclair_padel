@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
-import { Trophy, Users, Swords, Volleyball, LayoutGrid, Tag, LogOut } from "lucide-react";
+import { Trophy, Users, Swords, Volleyball, LayoutGrid, Tag, MapPin, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -13,6 +13,7 @@ const navItems = [
   { href: "/admin/partite", label: "Partite", code: "04", Icon: Volleyball },
   { href: "/admin/tabelloni", label: "Tabelloni", code: "05", Icon: LayoutGrid },
   { href: "/admin/sponsor", label: "Sponsor", code: "06", Icon: Tag },
+  { href: "/admin/campi", label: "Campi", code: "07", Icon: MapPin },
 ];
 
 export function AdminNav() {
@@ -80,7 +81,7 @@ export function AdminNav() {
         className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-line bg-court-deep/95 backdrop-blur supports-backdrop-filter:bg-court-deep/80 pb-[env(safe-area-inset-bottom)]"
         aria-label="Navigazione admin"
       >
-        <ul className="grid grid-cols-6">
+        <ul className="grid grid-cols-7">
           {navItems.map((item) => {
             const active = pathname?.startsWith(item.href);
             const Icon = item.Icon;

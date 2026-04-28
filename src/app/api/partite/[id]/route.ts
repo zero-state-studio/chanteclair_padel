@@ -12,6 +12,7 @@ const matchInclude = {
   winner: { include: { player1: true, player2: true } },
   tournament: true,
   sponsor: { select: { id: true, nome: true, logoUrl: true } },
+  field: { select: { id: true, nome: true, descrizione: true } },
 } as const;
 
 type DbPlayer = {
@@ -108,6 +109,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     set1Team2,
     tieBreakTeam1,
     tieBreakTeam2,
+    fieldId,
   } = body as {
     azione?: string;
     winnerId?: string;
@@ -115,6 +117,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     set1Team2?: number;
     tieBreakTeam1?: number | null;
     tieBreakTeam2?: number | null;
+    fieldId?: string | null;
   };
 
   const match = await prisma.match.findUnique({ where: { id }, include: matchInclude });
@@ -128,9 +131,18 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       );
     }
 
+    const data: {
+      stato: string;
+      iniziataAt: Date;
+      fieldId?: string | null;
+    } = { stato: "IN_CORSO", iniziataAt: new Date() };
+    if (fieldId !== undefined) {
+      data.fieldId = fieldId && fieldId.length > 0 ? fieldId : null;
+    }
+
     const updated = await prisma.match.update({
       where: { id },
-      data: { stato: "IN_CORSO", iniziataAt: new Date() },
+      data,
       include: matchInclude,
     });
 
@@ -141,6 +153,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       team2: toTeam(updated.team2 as DbTeam | null)!,
       genere: updated.tournament.genere as Genere,
       sponsor: updated.sponsor ?? null,
+      field: updated.field ?? null,
     };
     sseEmitter.emit("live-event", event);
 
@@ -199,6 +212,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       punteggio: updated.punteggio ?? undefined,
       genere: updated.tournament.genere as Genere,
       sponsor: updated.sponsor ?? null,
+      field: updated.field ?? null,
     };
     sseEmitter.emit("live-event", event);
 
@@ -274,6 +288,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       punteggio: updated.punteggio ?? undefined,
       genere: updated.tournament.genere as Genere,
       sponsor: updated.sponsor ?? null,
+      field: updated.field ?? null,
     };
     sseEmitter.emit("live-event", event);
 

@@ -20,6 +20,7 @@ import {
 } from "@/lib/genere-style";
 import type {
   BracketTipo,
+  FieldLite,
   Genere,
   GroupWithTeams,
   MatchWithTeams,
@@ -34,6 +35,7 @@ type SelCtx = {
   toggle: (id: string) => void;
 };
 const SelectionContext = createContext<SelCtx | null>(null);
+const FieldsContext = createContext<FieldLite[]>([]);
 
 function normalizeStr(s: string): string {
   return s
@@ -118,8 +120,12 @@ function PartitaCard({
   const [tb1, setTb1] = useState<string>("");
   const [tb2, setTb2] = useState<string>("");
   const [busy, setBusy] = useState(false);
+  const [selectedFieldId, setSelectedFieldId] = useState<string>(
+    match.fieldId ?? ""
+  );
 
   const sel = useContext(SelectionContext);
+  const fieldsList = useContext(FieldsContext);
   const selected = sel?.isSelected(match.id) ?? false;
 
   const canStart = !!(match.team1 && match.team2);
@@ -142,7 +148,10 @@ function PartitaCard({
       const res = await fetch(`/api/partite/${match.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ azione: "INIZIA" }),
+        body: JSON.stringify({
+          azione: "INIZIA",
+          fieldId: selectedFieldId || null,
+        }),
       });
       if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
       toast.success("Partita iniziata e notificata");
@@ -323,14 +332,37 @@ function PartitaCard({
       </div>
 
       {match.stato === "ATTESA" && (
-        <Button
-          size="sm"
-          onClick={inizia}
-          disabled={!canStart || busy}
-          className="bg-court-line text-court hover:bg-[#e7ff75] w-full sm:w-auto h-10"
-        >
-          ▶ Inizia Partita
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={selectedFieldId}
+            onChange={(e) => setSelectedFieldId(e.target.value)}
+            disabled={busy || fieldsList.length === 0}
+            className="bg-court-deep border border-cream/15 text-cream rounded-sm h-10 px-2 text-sm flex-1 sm:flex-none sm:min-w-[180px] disabled:opacity-50"
+            aria-label="Campo"
+          >
+            <option value="">— Senza campo —</option>
+            {fieldsList.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.nome}
+              </option>
+            ))}
+          </select>
+          <Button
+            size="sm"
+            onClick={inizia}
+            disabled={!canStart || busy}
+            className="bg-court-line text-court hover:bg-[#e7ff75] w-full sm:w-auto h-10"
+          >
+            ▶ Inizia Partita
+          </Button>
+        </div>
+      )}
+
+      {match.stato !== "ATTESA" && match.field && (
+        <div className="flex items-center gap-2 text-xs text-cream/60">
+          <span className="cc-mono uppercase tracking-widest">Campo</span>
+          <span className="text-cream/85 font-semibold">{match.field.nome}</span>
+        </div>
       )}
 
       {match.stato === "IN_CORSO" && !showForm && (
@@ -445,6 +477,7 @@ export default function PartitePage() {
   const [onlyDaIniziare, setOnlyDaIniziare] = useState(false);
   const [onlyConcluse, setOnlyConcluse] = useState(false);
   const [sponsors, setSponsors] = useState<SponsorLite[]>([]);
+  const [fields, setFields] = useState<FieldLite[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkSponsorId, setBulkSponsorId] = useState<string>("");
   const [assigning, setAssigning] = useState(false);
@@ -478,6 +511,10 @@ export default function PartitePage() {
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => setSponsors(data as SponsorLite[]))
       .catch(() => setSponsors([]));
+    fetch(`/api/campi`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => setFields(data as FieldLite[]))
+      .catch(() => setFields([]));
   }, []);
 
   useEffect(() => {
@@ -535,6 +572,7 @@ export default function PartitePage() {
 
   return (
     <SelectionContext.Provider value={{ isSelected, toggle: toggleMatch }}>
+    <FieldsContext.Provider value={fields}>
     <div className="mx-auto max-w-[1400px] px-4 md:px-12 py-6 md:py-12">
       <div className="grid grid-cols-12 gap-4 md:gap-6 items-end mb-6 md:mb-8">
         <div className="col-span-12 md:col-span-7">
@@ -731,6 +769,7 @@ export default function PartitePage() {
         </>
       )}
     </div>
+    </FieldsContext.Provider>
     </SelectionContext.Provider>
   );
 }

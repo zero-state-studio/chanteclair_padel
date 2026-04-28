@@ -14,6 +14,8 @@ export default async function TabelloneMaschilePage() {
           team1: { include: { player1: true, player2: true } },
           team2: { include: { player1: true, player2: true } },
           winner: { include: { player1: true, player2: true } },
+          sponsor: { select: { id: true, nome: true, logoUrl: true } },
+          field: { select: { id: true, nome: true, descrizione: true } },
         },
         orderBy: [{ round: "desc" }, { posizione: "asc" }],
       },

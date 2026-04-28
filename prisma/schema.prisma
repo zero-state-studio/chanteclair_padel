@@ -19,6 +19,16 @@ model Sponsor {
   matches Match[]
 }
 
+model Field {
+  id           String   @id @default(cuid())
+  nome         String
+  descrizione  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  matches Match[]
+}
+
 model Player {
   id        String   @id @default(cuid())
   nome      String
@@ -125,6 +135,9 @@ model Match {
   sponsorId String?
   sponsor   Sponsor? @relation(fields: [sponsorId], references: [id], onDelete: SetNull)
 
+  fieldId String?
+  field   Field?  @relation(fields: [fieldId], references: [id], onDelete: SetNull)
+
   punteggio     String?
   set1Team1     Int?
   set1Team2     Int?
@@ -145,4 +158,5 @@ model Match {
   @@index([winnerId])
   @@index([stato])
   @@index([sponsorId])
+  @@index([fieldId])
 }
