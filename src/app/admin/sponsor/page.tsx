@@ -43,7 +43,31 @@ export default function SponsorPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [assigning, setAssigning] = useState(false);
+  const [showcasing, setShowcasing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const showcase = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    setShowcasing(true);
+    try {
+      const res = await fetch(`/api/sponsors/showcase`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sponsorIds: ids }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Errore");
+      toast.success(
+        ids.length === 1
+          ? "Sponsor mostrato sui tabelloni"
+          : `${data.count} sponsor mostrati sui tabelloni`
+      );
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setShowcasing(false);
+    }
+  };
 
   const assegnaSponsor = async () => {
     if (
@@ -340,6 +364,14 @@ export default function SponsorPage() {
               </Button>
               <Button
                 size="sm"
+                onClick={() => showcase(Array.from(selected))}
+                disabled={showcasing}
+                className="bg-court-line text-court hover:bg-[#e7ff75] h-8"
+              >
+                {showcasing ? "…" : `▶ Mostra ${selected.size}`}
+              </Button>
+              <Button
+                size="sm"
                 variant="destructive"
                 onClick={bulkDelete}
                 disabled={bulkDeleting}
@@ -416,6 +448,14 @@ export default function SponsorPage() {
                   <p className="font-semibold text-cream truncate">{s.nome}</p>
                 </div>
                 <div className="flex flex-col gap-1 shrink-0">
+                  <Button
+                    size="sm"
+                    onClick={() => showcase([s.id])}
+                    disabled={showcasing}
+                    className="bg-court-line text-court hover:bg-[#e7ff75] h-8 px-3 text-xs"
+                  >
+                    ▶ Mostra
+                  </Button>
                   <Button
                     size="sm"
                     variant="outline"
@@ -521,6 +561,14 @@ export default function SponsorPage() {
                   <TableCell>{s.nome}</TableCell>
                   <TableCell className="text-right">
                     <div className="inline-flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => showcase([s.id])}
+                        disabled={showcasing}
+                        className="bg-court-line text-court hover:bg-[#e7ff75]"
+                      >
+                        ▶ Mostra
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"

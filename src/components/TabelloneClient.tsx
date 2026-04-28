@@ -8,10 +8,13 @@ import { GironiView } from "@/components/GironiView";
 import { LiveStrip } from "@/components/LiveStrip";
 import { RoundLabels } from "@/components/RoundLabels";
 import { LiveMatchOverlay } from "@/components/LiveMatchOverlay";
+import { SponsorShowcaseOverlay } from "@/components/SponsorShowcaseOverlay";
 import { useSSE } from "@/hooks/useSSE";
 import type {
   TournamentWithMatches,
   LiveEvent,
+  MatchLiveEvent,
+  SponsorLite,
   Genere,
   BracketTipo,
 } from "@/types";
@@ -40,8 +43,13 @@ export function TabelloneClient({
   genere,
 }: TabelloneClientProps) {
   const [torneo, setTorneo] = useState(torneoIniziale);
-  const [eventQueue, setEventQueue] = useState<LiveEvent[]>([]);
-  const [parzialeNotice, setParzialeNotice] = useState<LiveEvent | null>(null);
+  const [eventQueue, setEventQueue] = useState<MatchLiveEvent[]>([]);
+  const [parzialeNotice, setParzialeNotice] = useState<MatchLiveEvent | null>(
+    null
+  );
+  const [showcaseSponsors, setShowcaseSponsors] = useState<SponsorLite[] | null>(
+    null
+  );
   const [focused, setFocused] = useState<string | null>(null);
   const [userMode, setUserMode] = useState<BracketViewMode | null>(null);
   const [activeBracket, setActiveBracket] = useState<BracketTipo>("GOLD");
@@ -54,6 +62,11 @@ export function TabelloneClient({
 
   const handleSSEEvent = useCallback(
     (event: LiveEvent) => {
+      if (event.tipo === "SPONSOR_SHOWCASE") {
+        setShowcaseSponsors(event.sponsors);
+        return;
+      }
+
       if (event.genere !== genere) return;
 
       if (event.tipo === "PARTITA_PARZIALE") {
@@ -255,6 +268,11 @@ export function TabelloneClient({
       )}
 
       <LiveMatchOverlay event={currentEvent} onClose={dismissCurrentEvent} />
+
+      <SponsorShowcaseOverlay
+        sponsors={showcaseSponsors}
+        onClose={() => setShowcaseSponsors(null)}
+      />
 
       <AnimatePresence>
         {parzialeNotice && (
