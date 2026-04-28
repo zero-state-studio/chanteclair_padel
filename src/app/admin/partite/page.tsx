@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import {
+  useEffect,
+  useState,
+  useCallback,
+  createContext,
+  useContext,
+} from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,9 +23,17 @@ import type {
   Genere,
   GroupWithTeams,
   MatchWithTeams,
+  SponsorLite,
+  StatoPartita,
   TeamWithPlayers,
   TournamentWithMatches,
 } from "@/types";
+
+type SelCtx = {
+  isSelected: (id: string) => boolean;
+  toggle: (id: string) => void;
+};
+const SelectionContext = createContext<SelCtx | null>(null);
 
 function normalizeStr(s: string): string {
   return s
@@ -105,6 +119,9 @@ function PartitaCard({
   const [tb2, setTb2] = useState<string>("");
   const [busy, setBusy] = useState(false);
 
+  const sel = useContext(SelectionContext);
+  const selected = sel?.isSelected(match.id) ?? false;
+
   const canStart = !!(match.team1 && match.team2);
 
   const inizia = async () => {
@@ -169,13 +186,55 @@ function PartitaCard({
 
   return (
     <div
-      className="rounded-md border bg-court-deep p-3 sm:p-4 space-y-3"
+      className={cn(
+        "rounded-md border bg-court-deep p-4 sm:p-5 space-y-4",
+        selected && "ring-2 ring-court-line"
+      )}
       style={{
         borderColor: "var(--color-line)",
         borderLeftWidth: 4,
         borderLeftColor: GENERE_COLOR[genere],
       }}
     >
+      {(sel || match.sponsor) && (
+        <div className="flex items-center gap-3 pb-3 border-b border-cream/10">
+          {sel && (
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={() => sel.toggle(match.id)}
+              className="h-4 w-4 accent-court-line cursor-pointer shrink-0"
+              aria-label="Seleziona partita"
+            />
+          )}
+          {match.sponsor ? (
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-[10px] uppercase tracking-widest text-cream/50 shrink-0">
+                Sponsor
+              </span>
+              {match.sponsor.logoUrl && (
+                <Image
+                  src={match.sponsor.logoUrl}
+                  alt=""
+                  width={20}
+                  height={20}
+                  className="h-5 w-5 rounded-sm object-contain bg-cream/10 p-0.5 shrink-0"
+                />
+              )}
+              <span className="text-cream/85 text-sm font-semibold truncate">
+                {match.sponsor.nome}
+              </span>
+            </div>
+          ) : (
+            sel && (
+              <span className="text-[10px] uppercase tracking-widest text-cream/30">
+                Nessuno sponsor
+              </span>
+            )
+          )}
+        </div>
+      )}
+
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1.5 min-w-0">
           <TeamLabel team={match.team1} />
@@ -330,6 +389,13 @@ export default function PartitePage() {
   const [torneo, setTorneo] = useState<TournamentWithMatches | null>(null);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState("");
+  const [onlyActive, setOnlyActive] = useState(false);
+  const [onlyDaIniziare, setOnlyDaIniziare] = useState(false);
+  const [onlyConcluse, setOnlyConcluse] = useState(false);
+  const [sponsors, setSponsors] = useState<SponsorLite[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkSponsorId, setBulkSponsorId] = useState<string>("");
+  const [assigning, setAssigning] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -355,9 +421,68 @@ export default function PartitePage() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    fetch(`/api/sponsors`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => setSponsors(data as SponsorLite[]))
+      .catch(() => setSponsors([]));
+  }, []);
+
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [genereAttivo]);
+
+  const toggleMatch = useCallback((id: string) => {
+    setSelectedIds((p) => {
+      const n = new Set(p);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  }, []);
+
+  const isSelected = useCallback(
+    (id: string) => selectedIds.has(id),
+    [selectedIds]
+  );
+
+  const selectAllVisible = () => {
+    if (!torneo) return;
+    setSelectedIds(new Set(torneo.matches.map((m) => m.id)));
+  };
+
+  const assignBulk = async () => {
+    if (selectedIds.size === 0) return;
+    setAssigning(true);
+    try {
+      const res = await fetch(`/api/partite/sponsor`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sponsorId: bulkSponsorId || null,
+          matchIds: Array.from(selectedIds),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Errore assegnazione");
+      toast.success(
+        bulkSponsorId
+          ? `Sponsor assegnato a ${data.count} partite`
+          : `Sponsor rimosso da ${data.count} partite`
+      );
+      setSelectedIds(new Set());
+      await load();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setAssigning(false);
+    }
+  };
+
   const accent = GENERE_COLOR[genereAttivo];
 
   return (
+    <SelectionContext.Provider value={{ isSelected, toggle: toggleMatch }}>
     <div className="mx-auto max-w-[1400px] px-4 md:px-12 py-6 md:py-12">
       <div className="grid grid-cols-12 gap-4 md:gap-6 items-end mb-6 md:mb-8">
         <div className="col-span-12 md:col-span-7">
@@ -420,30 +545,61 @@ export default function PartitePage() {
       </div>
 
       {torneo && torneo.matches.length > 0 && (
-        <div className="mb-6 relative">
-          <Input
-            type="search"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder="Filtra per nome, cognome o girone (es. 'Rossi', 'A')"
-            className="bg-court-deep border-cream/15 text-cream pl-10 h-11"
-          />
-          <span
-            aria-hidden
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-cream/40 cc-mono text-xs"
-          >
-            ⌕
-          </span>
-          {filter && (
-            <button
-              type="button"
-              onClick={() => setFilter("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-cream/50 hover:text-cream px-2 text-sm"
-              aria-label="Pulisci filtro"
+        <div className="mb-6 flex flex-col sm:flex-row gap-3 sm:items-center">
+          <div className="relative flex-1">
+            <Input
+              type="search"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder="Filtra per nome, cognome o girone (es. 'Rossi', 'A')"
+              className="bg-court-deep border-cream/15 text-cream pl-10 h-11"
+            />
+            <span
+              aria-hidden
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-cream/40 cc-mono text-xs"
             >
-              ✕
-            </button>
-          )}
+              ⌕
+            </span>
+            {filter && (
+              <button
+                type="button"
+                onClick={() => setFilter("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-cream/50 hover:text-cream px-2 text-sm"
+                aria-label="Pulisci filtro"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <label className="flex items-center gap-2 text-sm text-cream/80 cursor-pointer select-none px-3 h-11 rounded-sm border border-cream/15 bg-court-deep">
+              <input
+                type="checkbox"
+                checked={onlyActive}
+                onChange={(e) => setOnlyActive(e.target.checked)}
+                className="h-4 w-4 accent-court-line cursor-pointer"
+              />
+              Solo attive
+            </label>
+            <label className="flex items-center gap-2 text-sm text-cream/80 cursor-pointer select-none px-3 h-11 rounded-sm border border-cream/15 bg-court-deep">
+              <input
+                type="checkbox"
+                checked={onlyDaIniziare}
+                onChange={(e) => setOnlyDaIniziare(e.target.checked)}
+                className="h-4 w-4 accent-court-line cursor-pointer"
+              />
+              Da iniziare
+            </label>
+            <label className="flex items-center gap-2 text-sm text-cream/80 cursor-pointer select-none px-3 h-11 rounded-sm border border-cream/15 bg-court-deep">
+              <input
+                type="checkbox"
+                checked={onlyConcluse}
+                onChange={(e) => setOnlyConcluse(e.target.checked)}
+                className="h-4 w-4 accent-court-line cursor-pointer"
+              />
+              Concluse
+            </label>
+          </div>
         </div>
       )}
 
@@ -460,9 +616,70 @@ export default function PartitePage() {
           Tornei.
         </p>
       ) : (
-        <PartiteSezioni torneo={torneo} onChange={load} filter={filter} />
+        <>
+          <div className="sticky top-[56px] md:top-[68px] z-20 -mx-4 md:-mx-12 px-4 md:px-12 py-2 bg-court-deep/95 backdrop-blur border-y border-court-line/30 mb-4">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2 text-xs text-cream/80">
+                <span className="cc-mono text-[10px] tracking-widest text-cream/50">
+                  Sel
+                </span>
+                <strong className="text-court-line text-sm">
+                  {selectedIds.size}
+                </strong>
+                <button
+                  type="button"
+                  onClick={selectAllVisible}
+                  className="text-cream/60 hover:text-cream text-[11px] underline"
+                >
+                  tutte
+                </button>
+                {selectedIds.size > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedIds(new Set())}
+                    className="text-cream/60 hover:text-cream text-[11px] underline"
+                  >
+                    pulisci
+                  </button>
+                )}
+              </div>
+              <div className="flex-1 flex items-center gap-2 justify-end min-w-[260px]">
+                <select
+                  value={bulkSponsorId}
+                  onChange={(e) => setBulkSponsorId(e.target.value)}
+                  className="bg-court-deep border border-cream/15 text-cream rounded-sm h-8 px-2 text-xs min-w-[200px]"
+                  aria-label="Sponsor da assegnare"
+                >
+                  <option value="">— Rimuovi sponsor —</option>
+                  {sponsors.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.nome}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  size="sm"
+                  onClick={assignBulk}
+                  disabled={selectedIds.size === 0 || assigning}
+                  className="bg-court-line text-court hover:bg-[#e7ff75] h-8 px-3 text-xs"
+                >
+                  {assigning ? "…" : `Assegna a ${selectedIds.size}`}
+                </Button>
+              </div>
+            </div>
+          </div>
+          <PartiteSezioni
+            torneo={torneo}
+            onChange={load}
+            filter={filter}
+            onlyActive={onlyActive}
+            onlyDaIniziare={onlyDaIniziare}
+            onlyConcluse={onlyConcluse}
+          />
+        </>
       )}
     </div>
+    </SelectionContext.Provider>
   );
 }
 
@@ -470,13 +687,30 @@ function PartiteSezioni({
   torneo,
   onChange,
   filter,
+  onlyActive,
+  onlyDaIniziare,
+  onlyConcluse,
 }: {
   torneo: TournamentWithMatches;
   onChange: () => Promise<void>;
   filter: string;
+  onlyActive: boolean;
+  onlyDaIniziare: boolean;
+  onlyConcluse: boolean;
 }) {
-  const groupMatches = torneo.matches.filter((m) => m.groupId !== null);
-  const bracketMatches = torneo.matches.filter((m) => m.bracketTipo !== null);
+  const allowedStati = new Set<StatoPartita>();
+  if (onlyActive) {
+    allowedStati.add("ATTESA");
+    allowedStati.add("IN_CORSO");
+  }
+  if (onlyDaIniziare) allowedStati.add("ATTESA");
+  if (onlyConcluse) allowedStati.add("COMPLETATA");
+  const visibleMatches =
+    allowedStati.size > 0
+      ? torneo.matches.filter((m) => allowedStati.has(m.stato as StatoPartita))
+      : torneo.matches;
+  const groupMatches = visibleMatches.filter((m) => m.groupId !== null);
+  const bracketMatches = visibleMatches.filter((m) => m.bracketTipo !== null);
   const accent = GENERE_COLOR[torneo.genere];
 
   const filteredGroupMatchesCount = filter

@@ -11,6 +11,7 @@ const matchInclude = {
   team2: { include: { player1: true, player2: true } },
   winner: { include: { player1: true, player2: true } },
   tournament: true,
+  sponsor: { select: { id: true, nome: true, logoUrl: true } },
 } as const;
 
 export async function GET(request: NextRequest) {

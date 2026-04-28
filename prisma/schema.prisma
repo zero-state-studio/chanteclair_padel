@@ -9,6 +9,16 @@ datasource db {
   directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
+model Sponsor {
+  id        String   @id @default(cuid())
+  nome      String
+  logoUrl   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  matches Match[]
+}
+
 model Player {
   id        String   @id @default(cuid())
   nome      String
@@ -112,6 +122,9 @@ model Match {
   winnerId String?
   winner   Team?   @relation("Winner", fields: [winnerId], references: [id], onDelete: SetNull)
 
+  sponsorId String?
+  sponsor   Sponsor? @relation(fields: [sponsorId], references: [id], onDelete: SetNull)
+
   punteggio     String?
   set1Team1     Int?
   set1Team2     Int?
@@ -131,4 +144,5 @@ model Match {
   @@index([team2Id])
   @@index([winnerId])
   @@index([stato])
+  @@index([sponsorId])
 }

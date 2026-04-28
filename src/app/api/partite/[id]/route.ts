@@ -11,6 +11,7 @@ const matchInclude = {
   team2: { include: { player1: true, player2: true } },
   winner: { include: { player1: true, player2: true } },
   tournament: true,
+  sponsor: { select: { id: true, nome: true, logoUrl: true } },
 } as const;
 
 type DbPlayer = {
@@ -139,6 +140,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       team1: toTeam(updated.team1 as DbTeam | null)!,
       team2: toTeam(updated.team2 as DbTeam | null)!,
       genere: updated.tournament.genere as Genere,
+      sponsor: updated.sponsor ?? null,
     };
     sseEmitter.emit("live-event", event);
 
@@ -213,6 +215,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       winner: toTeam(updated.winner as DbTeam | null) ?? undefined,
       punteggio: updated.punteggio ?? undefined,
       genere: updated.tournament.genere as Genere,
+      sponsor: updated.sponsor ?? null,
     };
     sseEmitter.emit("live-event", event);
 

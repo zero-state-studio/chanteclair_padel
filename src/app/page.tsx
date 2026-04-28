@@ -11,21 +11,24 @@ const STATS: { v: string; l: string }[] = [
   { v: "2K€", l: "Montepremi totale" },
 ];
 
-const TICKER_TOP = "★ Chanteclair Padel Cup · 13.06.2026 · Sant'Agata Bolognese · ";
+const TICKER_TOP = "★ Chanteclair Padel Cup · 13.06.2026 · Sant'Agata Bolognese ★";
 const TICKER_BOTTOM = "★ Sport · Divertimento · Musica · 13.06.2026 · ";
 
 export default async function HomePage() {
-  const tornei = await prisma.tournament.findMany({
-    where: { stato: "ATTIVO" },
-    include: { matches: true },
-  });
+  const [tornei, sponsors] = await Promise.all([
+    prisma.tournament.findMany({
+      where: { stato: "ATTIVO" },
+      include: { matches: true },
+    }),
+    prisma.sponsor.findMany({ orderBy: { nome: "asc" } }),
+  ]);
 
   const torneoM = tornei.find((t) => t.genere === "MASCHILE");
   const torneoF = tornei.find((t) => t.genere === "FEMMINILE");
 
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-night-deep text-paper">
-      <Marquee text={TICKER_TOP} />
+      <Marquee text={TICKER_TOP} sponsors={sponsors} />
 
       {/* Header */}
       <header className="relative z-10 flex items-center justify-between gap-6 px-6 md:px-10 py-5">
@@ -235,7 +238,44 @@ export default async function HomePage() {
   );
 }
 
-function Marquee({ text }: { text: string }) {
+type SponsorLite = { id: string; nome: string; logoUrl: string | null };
+
+function Marquee({
+  text,
+  sponsors = [],
+}: {
+  text: string;
+  sponsors?: SponsorLite[];
+}) {
+  const renderSegment = (key: string) => (
+    <span key={key} className="inline-flex items-center gap-7 pr-7 align-middle">
+      <span>{text}</span>
+      {sponsors.length > 0 && (
+        <>
+          <span>I nostri sponsor:</span>
+          {sponsors.map((s) => (
+            <span
+              key={s.id}
+              className="inline-flex items-center gap-2 align-middle"
+            >
+              {s.logoUrl && (
+                <Image
+                  src={s.logoUrl}
+                  alt={s.nome}
+                  width={32}
+                  height={32}
+                  className="object-contain"
+                  style={{ height: 32, width: "auto" }}
+                />
+              )}
+              <span>{s.nome}</span>
+            </span>
+          ))}
+        </>
+      )}
+    </span>
+  );
+
   return (
     <div
       className="cc-ticker fast"
@@ -249,11 +289,7 @@ function Marquee({ text }: { text: string }) {
       }}
     >
       <div>
-        {Array.from({ length: 10 }).map((_, i) => (
-          <span key={i} className="pr-7">
-            {text}
-          </span>
-        ))}
+        {Array.from({ length: 10 }).map((_, i) => renderSegment(`s-${i}`))}
       </div>
     </div>
   );

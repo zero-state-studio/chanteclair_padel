@@ -13,6 +13,7 @@ const matchInclude = {
   team1: { include: { player1: true, player2: true } },
   team2: { include: { player1: true, player2: true } },
   winner: { include: { player1: true, player2: true } },
+  sponsor: { select: { id: true, nome: true, logoUrl: true } },
 } as const;
 
 export async function GET(_request: NextRequest, { params }: RouteContext) {

@@ -22,6 +22,12 @@ export interface TeamWithPlayers {
   player2: PlayerWithMatches;
 }
 
+export interface SponsorLite {
+  id: string;
+  nome: string;
+  logoUrl: string | null;
+}
+
 export interface MatchWithTeams {
   id: string;
   tournamentId: string;
@@ -40,6 +46,8 @@ export interface MatchWithTeams {
   stato: StatoPartita;
   iniziataAt: string | null;
   finitaAt: string | null;
+  sponsorId: string | null;
+  sponsor: SponsorLite | null;
 }
 
 export interface GroupTeamWithStats {
@@ -82,4 +90,5 @@ export interface LiveEvent {
   punteggio?: string;
   winner?: TeamWithPlayers;
   genere: Genere;
+  sponsor?: SponsorLite | null;
 }
