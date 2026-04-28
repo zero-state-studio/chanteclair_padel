@@ -254,17 +254,75 @@ export function TabelloneClient({
       {isFaseGironi ? (
         <GironiView groups={torneo.groups} matches={torneo.matches} accent={accent} />
       ) : (
-        <>
-          <RoundLabels rounds={visibleRoundsSummary} maxRound={maxRound} />
-          <Bracket
-            torneo={torneoActiveBracket}
-            accent={BRACKET_ACCENT[activeBracket]}
-            focused={autoFocus}
-            onFocus={setFocused}
-            viewMode={viewMode}
-            liveRound={liveRound}
+        <div
+          className="relative isolate overflow-hidden"
+          style={{
+            borderTop: `3px solid ${BRACKET_ACCENT[activeBracket]}`,
+          }}
+        >
+          {/* Watermark verticale — colore tabellone, ancorato a destra */}
+          <span
+            aria-hidden
+            className="cc-display absolute pointer-events-none select-none"
+            style={{
+              right: "-2vw",
+              top: "12vh",
+              fontSize: "clamp(180px, 26vw, 440px)",
+              color: BRACKET_ACCENT[activeBracket],
+              opacity: 0.08,
+              letterSpacing: "0.06em",
+              lineHeight: 0.85,
+              whiteSpace: "nowrap",
+              transform: "rotate(-90deg)",
+              transformOrigin: "right top",
+              zIndex: 0,
+            }}
+          >
+            {BRACKET_LABEL[activeBracket]}
+          </span>
+
+          {/* Striscia verticale edge destra con glow */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute top-0 bottom-0 right-0"
+            style={{
+              width: 6,
+              background: BRACKET_ACCENT[activeBracket],
+              boxShadow: `0 0 28px ${BRACKET_ACCENT[activeBracket]}`,
+              opacity: 0.85,
+              zIndex: 1,
+            }}
           />
-        </>
+
+          {/* Chevron label angolo top-right */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute top-0 right-0 z-[2] flex items-center"
+            style={{
+              background: BRACKET_ACCENT[activeBracket],
+              color: "var(--color-night-deep)",
+              fontFamily: "var(--font-bebas), Impact, sans-serif",
+              letterSpacing: "0.3em",
+              fontSize: 14,
+              padding: "6px 14px 4px 22px",
+              clipPath: "polygon(12px 0, 100% 0, 100% 100%, 0 100%)",
+            }}
+          >
+            ★ {BRACKET_LABEL[activeBracket]}
+          </div>
+
+          <div className="relative" style={{ zIndex: 1 }}>
+            <RoundLabels rounds={visibleRoundsSummary} maxRound={maxRound} />
+            <Bracket
+              torneo={torneoActiveBracket}
+              accent={BRACKET_ACCENT[activeBracket]}
+              focused={autoFocus}
+              onFocus={setFocused}
+              viewMode={viewMode}
+              liveRound={liveRound}
+            />
+          </div>
+        </div>
       )}
 
       <LiveMatchOverlay event={currentEvent} onClose={dismissCurrentEvent} />

@@ -109,10 +109,9 @@ export function BracketMatch({
           : focused
           ? "oklch(0.32 0.05 255)"
           : "oklch(0.24 0.05 255)",
-        border:
-          isLive || focused
-            ? `1.5px solid ${accent}`
-            : "1px solid oklch(0.32 0.05 255)",
+        border: `1.5px solid ${
+          isLive || focused ? accent : "oklch(0.32 0.05 255)"
+        }`,
         padding: `${spec.padY}px ${spec.padX}px`,
         opacity: isDone ? 0.65 : 1,
         boxShadow: isLive

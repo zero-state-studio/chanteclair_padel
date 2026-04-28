@@ -1,6 +1,6 @@
 "use client";
 
-import type { MatchWithTeams } from "@/types";
+import type { BracketTipo, MatchWithTeams } from "@/types";
 
 interface LiveStripProps {
   liveMatches: MatchWithTeams[];
@@ -8,6 +8,12 @@ interface LiveStripProps {
   onFocus: (code: string | null) => void;
   accent: string;
 }
+
+const BRACKET_COLOR: Record<BracketTipo, string> = {
+  GOLD: "var(--color-yellow)",
+  SILVER: "oklch(0.85 0.02 255)",
+  BRONZE: "oklch(0.65 0.08 30)",
+};
 
 export function LiveStrip({
   liveMatches,
@@ -101,13 +107,28 @@ export function LiveStrip({
               >
                 <div className="min-w-0">
                   <div
-                    className="cc-mono mb-1"
+                    className="cc-mono mb-1 flex items-center gap-1.5"
                     style={{
                       fontSize: 9,
                       color: "oklch(0.78 0.02 255)",
                     }}
                   >
-                    {code}
+                    <span>{code}</span>
+                    {m.bracketTipo && (
+                      <span
+                        className="cc-mono inline-block"
+                        style={{
+                          padding: "1px 5px 0px",
+                          background: BRACKET_COLOR[m.bracketTipo as BracketTipo],
+                          color: "var(--color-night-deep)",
+                          fontSize: 9,
+                          letterSpacing: "0.18em",
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        {m.bracketTipo}
+                      </span>
+                    )}
                   </div>
                   <div
                     className="cc-display truncate"
