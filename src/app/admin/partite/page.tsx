@@ -200,6 +200,35 @@ function PartitaCard({
     }
   };
 
+  const reset = async () => {
+    if (
+      !confirm(
+        "Resettare la partita? Punteggio, vincitore e promozioni verranno annullati."
+      )
+    )
+      return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/partite/${match.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ azione: "RESET" }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Errore");
+      toast.success("Partita resettata");
+      setShowForm(false);
+      setS1("");
+      setS2("");
+      setTb1("");
+      setTb2("");
+      await onAction();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const termina = async () => {
     const set1Team1 = parseInt(s1, 10);
     const set1Team2 = parseInt(s2, 10);
@@ -330,6 +359,18 @@ function PartitaCard({
           )}
         </div>
       </div>
+
+      {match.stato === "COMPLETATA" && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={reset}
+          disabled={busy}
+          className="bg-transparent border-clay/40 text-clay hover:bg-clay/10 hover:text-clay w-full sm:w-auto h-9"
+        >
+          ↺ Reset partita
+        </Button>
+      )}
 
       {match.stato === "ATTESA" && (
         <div className="flex flex-wrap items-center gap-2">
@@ -473,9 +514,10 @@ export default function PartitePage() {
   const [torneo, setTorneo] = useState<TournamentWithMatches | null>(null);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState("");
-  const [onlyActive, setOnlyActive] = useState(false);
-  const [onlyDaIniziare, setOnlyDaIniziare] = useState(false);
+  const [onlyActive, setOnlyActive] = useState(true);
+  const [onlyDaIniziare, setOnlyDaIniziare] = useState(true);
   const [onlyConcluse, setOnlyConcluse] = useState(false);
+  const [fieldFilter, setFieldFilter] = useState<string>("");
   const [sponsors, setSponsors] = useState<SponsorLite[]>([]);
   const [fields, setFields] = useState<FieldLite[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -689,6 +731,20 @@ export default function PartitePage() {
               />
               Concluse
             </label>
+            <select
+              value={fieldFilter}
+              onChange={(e) => setFieldFilter(e.target.value)}
+              className="bg-court-deep border border-cream/15 text-cream rounded-sm h-11 px-3 text-sm min-w-[180px]"
+              aria-label="Filtra per campo"
+            >
+              <option value="">Tutti i campi</option>
+              <option value="__none__">Senza campo</option>
+              {fields.map((f) => (
+                <option key={f.id} value={f.id}>
+                  ◆ {f.nome}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       )}
@@ -765,6 +821,7 @@ export default function PartitePage() {
             onlyActive={onlyActive}
             onlyDaIniziare={onlyDaIniziare}
             onlyConcluse={onlyConcluse}
+            fieldFilter={fieldFilter}
           />
         </>
       )}
@@ -781,6 +838,7 @@ function PartiteSezioni({
   onlyActive,
   onlyDaIniziare,
   onlyConcluse,
+  fieldFilter,
 }: {
   torneo: TournamentWithMatches;
   onChange: () => Promise<void>;
@@ -788,6 +846,7 @@ function PartiteSezioni({
   onlyActive: boolean;
   onlyDaIniziare: boolean;
   onlyConcluse: boolean;
+  fieldFilter: string;
 }) {
   const allowedStati = new Set<StatoPartita>();
   if (onlyActive) {
@@ -796,10 +855,15 @@ function PartiteSezioni({
   }
   if (onlyDaIniziare) allowedStati.add("ATTESA");
   if (onlyConcluse) allowedStati.add("COMPLETATA");
-  const visibleMatches =
+  const byStato =
     allowedStati.size > 0
       ? torneo.matches.filter((m) => allowedStati.has(m.stato as StatoPartita))
       : torneo.matches;
+  const visibleMatches = !fieldFilter
+    ? byStato
+    : fieldFilter === "__none__"
+    ? byStato.filter((m) => !m.fieldId)
+    : byStato.filter((m) => m.fieldId === fieldFilter);
   const groupMatches = visibleMatches.filter((m) => m.groupId !== null);
   const bracketMatches = visibleMatches.filter((m) => m.bracketTipo !== null);
   const accent = GENERE_COLOR[torneo.genere];

@@ -295,7 +295,81 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json(updated);
   }
 
+  if (azione === "RESET") {
+    if (match.stato !== "COMPLETATA" && match.stato !== "IN_CORSO") {
+      return NextResponse.json(
+        { error: "Reset disponibile solo per partite IN_CORSO o COMPLETATA" },
+        { status: 400 }
+      );
+    }
+
+    const wasWinnerId = match.winnerId;
+
+    const updated = await prisma.match.update({
+      where: { id },
+      data: {
+        stato: "ATTESA",
+        iniziataAt: null,
+        finitaAt: null,
+        winnerId: null,
+        punteggio: null,
+        set1Team1: null,
+        set1Team2: null,
+        tieBreakTeam1: null,
+        tieBreakTeam2: null,
+      },
+      include: matchInclude,
+    });
+
+    if (updated.groupId) {
+      await updateGroupStats(updated.groupId);
+    } else if (wasWinnerId) {
+      await unpromoteWinner({
+        tournamentId: updated.tournamentId,
+        bracketTipo: updated.bracketTipo,
+        round: updated.round,
+        posizione: updated.posizione,
+        winnerId: wasWinnerId,
+      });
+    }
+
+    return NextResponse.json(updated);
+  }
+
   return NextResponse.json({ error: "Azione non valida" }, { status: 400 });
+}
+
+async function unpromoteWinner(match: {
+  tournamentId: string;
+  bracketTipo: string | null;
+  round: number;
+  posizione: number;
+  winnerId: string;
+}) {
+  const nextRound = match.round - 1;
+  if (nextRound < 1) return;
+  const nextPosizione = Math.floor(match.posizione / 2);
+
+  const nextMatch = await prisma.match.findFirst({
+    where: {
+      tournamentId: match.tournamentId,
+      bracketTipo: match.bracketTipo,
+      round: nextRound,
+      posizione: nextPosizione,
+    },
+  });
+  if (!nextMatch) return;
+
+  const isTeam1 = match.posizione % 2 === 0;
+  const slotMatches = isTeam1
+    ? nextMatch.team1Id === match.winnerId
+    : nextMatch.team2Id === match.winnerId;
+  if (!slotMatches) return;
+
+  await prisma.match.update({
+    where: { id: nextMatch.id },
+    data: isTeam1 ? { team1Id: null } : { team2Id: null },
+  });
 }
 
 type MatchForPromotion = {
