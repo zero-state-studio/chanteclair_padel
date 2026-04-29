@@ -18,7 +18,8 @@ const GRID_HOLD_MS = 2500;
 const MERGE_DURATION_MS = 4500;
 const GROUPS_REVEAL_MS = 900;
 const TEAMS_FLY_TOTAL_MS = 4200;
-const FINAL_HOLD_MS = 10000;
+const FINAL_HOLD_MS = 5000;
+const GATHER_MS = 2400;
 const FADE_OUT_MS = 3000;
 const SKIP_FADE_MS = 350;
 
@@ -37,10 +38,7 @@ interface GironiAnimationProps {
   onClose: () => void;
 }
 
-function teamColor(idx: number, total: number): string {
-  const hue = (idx * (360 / Math.max(total, 1))) % 360;
-  return `oklch(0.72 0.2 ${hue})`;
-}
+const TEAM_COLOR = "var(--color-yellow)";
 
 function colsForPlayers(n: number): number {
   if (n <= 2) return 2;
@@ -127,8 +125,7 @@ export function GironiAnimation({
         });
       });
     }
-    const total = arr.length;
-    return arr.map((t, i) => ({ ...t, color: teamColor(i, total) }));
+    return arr.map((t) => ({ ...t, color: TEAM_COLOR }));
   }, [torneo.groups]);
 
   const orderedPlayers = useMemo(() => {
@@ -195,7 +192,7 @@ export function GironiAnimation({
       const t = setTimeout(() => setPhase("groups"), 0);
       return () => clearTimeout(t);
     }
-    const gatherDelay = 900;
+    const gatherDelay = GATHER_MS;
     const highlightStagger = Math.min(
       240,
       Math.max(120, MERGE_DURATION_MS / (teamsArr.length * 3))
@@ -477,7 +474,7 @@ function FlatGridPhase({
                   transition={{
                     duration: 0.55,
                     ease: [0.22, 0.9, 0.34, 1],
-                    layout: { duration: 0.7, ease: [0.22, 0.9, 0.34, 1] },
+                    layout: { duration: GATHER_MS / 1000, ease: [0.22, 0.9, 0.34, 1] },
                   }}
                   className="min-h-0"
                   style={{ gridColumn: "span 2" }}
@@ -496,7 +493,7 @@ function FlatGridPhase({
                 exit={{ opacity: 0, scale: 0.7 }}
                 transition={{
                   duration: 0.45,
-                  layout: { duration: 0.75, ease: [0.22, 0.9, 0.34, 1] },
+                  layout: { duration: GATHER_MS / 1000, ease: [0.22, 0.9, 0.34, 1] },
                 }}
                 className="min-h-0 relative"
               >

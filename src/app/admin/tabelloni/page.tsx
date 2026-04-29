@@ -239,6 +239,7 @@ function TabelloniInner() {
                 key={selected.id}
                 torneoIniziale={selected}
                 genere={selected.genere}
+                enableGironiAnimation={false}
               />
             </div>
           )}
