@@ -97,6 +97,7 @@ export function MatchLiveClient({
   const handleEvent = useCallback(
     (event: LiveEvent) => {
       if (event.tipo === "SPONSOR_SHOWCASE") return;
+      if (event.tipo === "GIRONI_ANIMATION") return;
       if (event.matchId !== match.id) return;
 
       const next = parseScore(event.punteggio);

@@ -9,6 +9,7 @@ import { LiveStrip } from "@/components/LiveStrip";
 import { RoundLabels } from "@/components/RoundLabels";
 import { LiveMatchOverlay } from "@/components/LiveMatchOverlay";
 import { SponsorShowcaseOverlay } from "@/components/SponsorShowcaseOverlay";
+import { GironiAnimation } from "@/components/GironiAnimation";
 import { useRealtime } from "@/hooks/useRealtime";
 import type {
   TournamentWithMatches,
@@ -57,6 +58,8 @@ export function TabelloneClient({
     torneoIniziale.fase
   );
   const [autoCycle, setAutoCycle] = useState(false);
+  const [animationTorneo, setAnimationTorneo] =
+    useState<TournamentWithMatches | null>(null);
 
   const accent = genere === "MASCHILE" ? "var(--color-blue)" : "var(--color-pink)";
 
@@ -64,6 +67,24 @@ export function TabelloneClient({
     (event: LiveEvent) => {
       if (event.tipo === "SPONSOR_SHOWCASE") {
         setShowcaseSponsors(event.sponsors);
+        return;
+      }
+
+      if (event.tipo === "GIRONI_ANIMATION") {
+        if (event.genere !== genere) return;
+        (async () => {
+          try {
+            const res = await fetch(`/api/tornei/${event.tournamentId}`, {
+              cache: "no-store",
+            });
+            if (!res.ok) return;
+            const data = (await res.json()) as TournamentWithMatches;
+            if (data.groups.length === 0) return;
+            setAnimationTorneo(data);
+          } catch {
+            // ignora
+          }
+        })();
         return;
       }
 
@@ -325,6 +346,14 @@ export function TabelloneClient({
         sponsors={showcaseSponsors}
         onClose={dismissShowcase}
       />
+
+      {animationTorneo && (
+        <GironiAnimation
+          torneo={animationTorneo}
+          accent={accent}
+          onClose={() => setAnimationTorneo(null)}
+        />
+      )}
 
       <AnimatePresence>
         {parzialeNotice && (
