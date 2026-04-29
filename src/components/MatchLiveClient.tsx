@@ -708,8 +708,8 @@ function SponsorStrip({
           <Image
             src={sponsor.logoUrl}
             alt={sponsor.nome}
-            width={64}
-            height={64}
+            width={256}
+            height={256}
             className="object-contain bg-paper/10 rounded-sm p-0.5 shrink-0"
             style={{
               height: showcase ? "clamp(36px, 4vw, 52px)" : 22,

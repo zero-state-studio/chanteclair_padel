@@ -215,8 +215,8 @@ function CampoIdle({
                       <Image
                         src={current.logoUrl}
                         alt={current.nome}
-                        width={320}
-                        height={180}
+                        width={800}
+                        height={800}
                         className="object-contain"
                         style={{
                           height: "clamp(120px, 18vh, 220px)",
