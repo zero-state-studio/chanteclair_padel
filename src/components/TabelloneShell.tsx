@@ -63,15 +63,28 @@ export function TabelloneShell({
 
   if (!torneo) {
     return (
-      <div className="relative z-[2] flex-1 flex flex-col items-center justify-center text-center px-6">
+      <div className="relative z-[2] flex-1 flex flex-col items-center justify-center text-center px-6 gap-4">
         <div
-          className="cc-display"
-          style={{ fontSize: 80, color: "var(--color-paper)" }}
+          className="cc-mono uppercase tracking-[0.5em]"
+          style={{ fontSize: 14, color: "var(--color-yellow)" }}
+        >
+          — coming soon
+        </div>
+        <div
+          className="cc-display leading-[0.85]"
+          style={{
+            fontSize: "clamp(3rem, 9vw, 7rem)",
+            color: "var(--color-paper)",
+          }}
         >
           {emptyLabel}
         </div>
-        <div className="cc-mono mt-4" style={{ color: "oklch(0.7 0.02 255)" }}>
-          torna presto
+        <div
+          className="cc-mono mt-2 max-w-[640px]"
+          style={{ color: "oklch(0.78 0.02 255)", fontSize: 14, lineHeight: 1.6 }}
+        >
+          Riflettori pronti. Sorteggio caricato. Resta connesso: il tabellone
+          si accende da un momento all&apos;altro.
         </div>
       </div>
     );

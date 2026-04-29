@@ -47,7 +47,7 @@ export default async function TabelloneMaschilePage() {
       <TabelloneShell
         torneoIniziale={(torneo as unknown as TournamentWithMatches) ?? null}
         genere="MASCHILE"
-        emptyLabel="Nessun torneo maschile attivo"
+        emptyLabel="Lo spettacolo sta per iniziare"
       />
     </div>
   );
