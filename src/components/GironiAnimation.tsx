@@ -315,13 +315,13 @@ export function GironiAnimation({
 function PlayersScrollPhase({
   entry,
   idx,
-  accent,
 }: {
   entry: { player: PlayerWithMatches; team: OrderedTeam };
   idx: number;
   accent: string;
 }) {
-  const { player, team } = entry;
+  const { player } = entry;
+  const yellow = "var(--color-yellow)";
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -342,8 +342,8 @@ function PlayersScrollPhase({
           <div
             className="rounded-full overflow-hidden border-4 mb-6 bg-paper/5"
             style={{
-              borderColor: team.color,
-              boxShadow: `0 0 60px -10px ${team.color}`,
+              borderColor: yellow,
+              boxShadow: `0 0 60px -10px ${yellow}`,
               width: "min(38vw, 360px)",
               height: "min(38vw, 360px)",
             }}
@@ -372,18 +372,12 @@ function PlayersScrollPhase({
           <div
             className="cc-display leading-[0.9]"
             style={{
-              color: accent,
+              color: yellow,
               fontSize: "clamp(2.4rem, 8vw, 6rem)",
               letterSpacing: "0.02em",
             }}
           >
             {player.cognome}
-          </div>
-          <div
-            className="cc-mono mt-4 text-[11px] tracking-[0.3em] uppercase"
-            style={{ color: team.color }}
-          >
-            {team.team.nome}
           </div>
         </motion.div>
       </AnimatePresence>
