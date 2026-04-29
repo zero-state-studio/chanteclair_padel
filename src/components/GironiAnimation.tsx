@@ -13,12 +13,12 @@ import type {
 
 type Phase = "players" | "grid" | "merge" | "groups" | "done";
 
-const PLAYER_DURATION_MS = 2000; // durata animazione singolo giocatore
+const PLAYER_DURATION_MS = 4000; // durata animazione singolo giocatore
 const GRID_HOLD_MS = 2500;
-const MERGE_DURATION_MS = 4500;
+const MERGE_DURATION_MS = 5000;
 const GROUPS_REVEAL_MS = 900;
-const TEAMS_FLY_TOTAL_MS = 4200;
-const FINAL_HOLD_MS = 6000;
+const TEAMS_FLY_TOTAL_MS = 4500;
+const FINAL_HOLD_MS = 7000;
 const GATHER_MS = 2400;
 const FADE_OUT_MS = 3000;
 const SKIP_FADE_MS = 350;
