@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { BracketTipo, MatchWithTeams } from "@/types";
 
@@ -22,11 +23,21 @@ export function LiveStrip({
   onFocus,
   accent,
 }: LiveStripProps) {
-  const now = new Date();
-  const ora = `${now.getHours().toString().padStart(2, "0")}:${now
-    .getMinutes()
-    .toString()
-    .padStart(2, "0")}`;
+  const [ora, setOra] = useState<string>("");
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      setOra(
+        `${now.getHours().toString().padStart(2, "0")}:${now
+          .getMinutes()
+          .toString()
+          .padStart(2, "0")}`
+      );
+    };
+    tick();
+    const id = setInterval(tick, 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <section
@@ -60,7 +71,7 @@ export function LiveStrip({
             className="cc-mono"
             style={{ fontSize: 10, color: "oklch(0.78 0.02 255)" }}
           >
-            {liveMatches.length} match · ora {ora}
+            {liveMatches.length} match{ora ? ` · ora ${ora}` : ""}
           </div>
         </div>
       </div>
