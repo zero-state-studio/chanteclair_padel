@@ -13,15 +13,19 @@ import type {
 
 type Phase = "players" | "grid" | "merge" | "groups" | "done";
 
-const PLAYER_DURATION_MS = 2000;
+const PLAYER_DURATION_MS = 300;
 const GRID_HOLD_MS = 2500;
 const MERGE_DURATION_MS = 4500;
 const GROUPS_REVEAL_MS = 900;
 const TEAMS_FLY_TOTAL_MS = 4200;
-const FINAL_HOLD_MS = 5000;
+const FINAL_HOLD_MS = 6000;
 const GATHER_MS = 2400;
 const FADE_OUT_MS = 3000;
 const SKIP_FADE_MS = 350;
+const TEAMS_HOLD_MS = 4000;
+const MERGE_STAGGER_MS = 320;
+const TEAM_CARD_FADE_MS = 1100;
+const PLAYER_EXIT_MS = 700;
 
 interface OrderedTeam {
   team: GroupTeamWithStats["team"];
@@ -199,7 +203,7 @@ export function GironiAnimation({
     );
     const mergeStart =
       gatherDelay + highlightStagger * teamsArr.length + 350;
-    const mergeStagger = 90;
+    const mergeStagger = MERGE_STAGGER_MS;
 
     const timers: ReturnType<typeof setTimeout>[] = [];
 
@@ -227,9 +231,11 @@ export function GironiAnimation({
       );
     });
 
+    const lastMergeAt =
+      mergeStart + teamsArr.length * mergeStagger + TEAM_CARD_FADE_MS;
     const finishAt = Math.max(
       MERGE_DURATION_MS,
-      mergeStart + teamsArr.length * mergeStagger + 700
+      lastMergeAt + TEAMS_HOLD_MS
     );
     timers.push(setTimeout(() => setPhase("groups"), finishAt));
 
@@ -472,7 +478,7 @@ function FlatGridPhase({
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{
-                    duration: 0.55,
+                    duration: TEAM_CARD_FADE_MS / 1000,
                     ease: [0.22, 0.9, 0.34, 1],
                     layout: { duration: GATHER_MS / 1000, ease: [0.22, 0.9, 0.34, 1] },
                   }}
@@ -492,7 +498,7 @@ function FlatGridPhase({
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.7 }}
                 transition={{
-                  duration: 0.45,
+                  duration: PLAYER_EXIT_MS / 1000,
                   layout: { duration: GATHER_MS / 1000, ease: [0.22, 0.9, 0.34, 1] },
                 }}
                 className="min-h-0 relative"
