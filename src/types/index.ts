@@ -107,4 +107,13 @@ export interface SponsorShowcaseEvent {
   sponsors: SponsorLite[];
 }
 
-export type LiveEvent = MatchLiveEvent | SponsorShowcaseEvent;
+export interface GironiAnimationEvent {
+  tipo: "GIRONI_ANIMATION";
+  genere: Genere;
+  tournamentId: string;
+}
+
+export type LiveEvent =
+  | MatchLiveEvent
+  | SponsorShowcaseEvent
+  | GironiAnimationEvent;

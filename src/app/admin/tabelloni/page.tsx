@@ -3,6 +3,8 @@
 import { Suspense, useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Sparkles } from "lucide-react";
 import { TabelloneClient } from "@/components/TabelloneClient";
 import { toast } from "sonner";
 import {
@@ -32,6 +34,7 @@ function TabelloniInner() {
   const [tornei, setTornei] = useState<TournamentWithMatches[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [broadcasting, setBroadcasting] = useState(false);
 
   const loadTornei = useCallback(async () => {
     setLoading(true);
@@ -176,11 +179,55 @@ function TabelloniInner() {
                 </h2>
               </div>
             </div>
-            <Badge
-              className={`${STATO_BADGE[selected.stato]} hover:opacity-100 shrink-0`}
-            >
-              {selected.stato}
-            </Badge>
+            <div className="flex items-center gap-3 shrink-0">
+              <Button
+                size="sm"
+                onClick={async () => {
+                  if (broadcasting) return;
+                  setBroadcasting(true);
+                  try {
+                    const res = await fetch(
+                      `/api/tornei/${selected.id}/anima-gironi`,
+                      { method: "POST" }
+                    );
+                    if (!res.ok) {
+                      const err = await res.json().catch(() => ({}));
+                      throw new Error(err.error ?? "Errore animazione");
+                    }
+                    const target =
+                      selected.genere === "MASCHILE"
+                        ? "/tabellone-maschile"
+                        : selected.genere === "FEMMINILE"
+                        ? "/tabellone-femminile"
+                        : null;
+                    toast.success(
+                      target
+                        ? `Animazione inviata a ${target}`
+                        : "Animazione inviata"
+                    );
+                  } catch (err) {
+                    toast.error((err as Error).message);
+                  } finally {
+                    setBroadcasting(false);
+                  }
+                }}
+                disabled={selected.groups.length === 0 || broadcasting}
+                className="bg-court-line text-court hover:bg-[#e7ff75] h-9 gap-2"
+                title={
+                  selected.groups.length === 0
+                    ? "Sorteggia prima i gironi"
+                    : `Lancia animazione su /tabellone-${selected.genere.toLowerCase()}`
+                }
+              >
+                <Sparkles className="h-4 w-4" />
+                {broadcasting ? "Invio..." : "Animazione gironi"}
+              </Button>
+              <Badge
+                className={`${STATO_BADGE[selected.stato]} hover:opacity-100`}
+              >
+                {selected.stato}
+              </Badge>
+            </div>
           </div>
           {selected.matches.length === 0 ? (
             <div className="relative z-[2] py-16 text-center text-cream/60">
