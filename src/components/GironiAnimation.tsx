@@ -13,7 +13,7 @@ import type {
 
 type Phase = "players" | "grid" | "merge" | "groups" | "done";
 
-const PLAYER_DURATION_MS = 300; // durata animazione singolo giocatore
+const PLAYER_DURATION_MS = 2000; // durata animazione singolo giocatore
 const GRID_HOLD_MS = 2500;
 const MERGE_DURATION_MS = 4500;
 const GROUPS_REVEAL_MS = 900;
