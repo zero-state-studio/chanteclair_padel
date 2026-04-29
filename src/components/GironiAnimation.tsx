@@ -13,11 +13,14 @@ import type {
 
 type Phase = "players" | "grid" | "merge" | "groups" | "done";
 
-const PLAYER_DURATION_MS = 700;
-const GRID_HOLD_MS = 700;
+const PLAYER_DURATION_MS = 3500;
+const GRID_HOLD_MS = 2500;
 const MERGE_DURATION_MS = 4500;
 const GROUPS_REVEAL_MS = 900;
 const TEAMS_FLY_TOTAL_MS = 4200;
+const FINAL_HOLD_MS = 10000;
+const FADE_OUT_MS = 3000;
+const SKIP_FADE_MS = 350;
 
 interface OrderedTeam {
   team: GroupTeamWithStats["team"];
@@ -83,6 +86,7 @@ export function GironiAnimation({
     new Set()
   );
   const [mergingTeams, setMergingTeams] = useState<Set<string>>(new Set());
+  const [slowFade, setSlowFade] = useState(false);
 
   const orderedTeams = useMemo<OrderedTeam[]>(() => {
     const sortedGroups = [...torneo.groups].sort(
@@ -120,14 +124,16 @@ export function GironiAnimation({
   }, [orderedTeams]);
 
   const skip = useCallback(() => {
+    setSlowFade(false);
     setPhase("done");
   }, []);
 
   useEffect(() => {
     if (phase !== "done") return;
-    const t = setTimeout(onClose, 350);
+    const dur = slowFade ? FADE_OUT_MS : SKIP_FADE_MS;
+    const t = setTimeout(onClose, dur);
     return () => clearTimeout(t);
-  }, [phase, onClose]);
+  }, [phase, onClose, slowFade]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -208,10 +214,10 @@ export function GironiAnimation({
 
   useEffect(() => {
     if (phase !== "groups") return;
-    const t = setTimeout(
-      () => setPhase("done"),
-      GROUPS_REVEAL_MS + TEAMS_FLY_TOTAL_MS + 600
-    );
+    const t = setTimeout(() => {
+      setSlowFade(true);
+      setPhase("done");
+    }, GROUPS_REVEAL_MS + TEAMS_FLY_TOTAL_MS + FINAL_HOLD_MS);
     return () => clearTimeout(t);
   }, [phase]);
 
@@ -222,7 +228,13 @@ export function GironiAnimation({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: phase === "done" ? 0 : 1 }}
-      transition={{ duration: 0.35 }}
+      transition={{
+        duration:
+          phase === "done"
+            ? (slowFade ? FADE_OUT_MS : SKIP_FADE_MS) / 1000
+            : 0.35,
+        ease: phase === "done" && slowFade ? "easeInOut" : "easeOut",
+      }}
       className="fixed inset-0 z-[100] bg-court-deep overflow-hidden"
     >
       <div className="cc-stripes absolute inset-0 pointer-events-none opacity-30" />
@@ -441,12 +453,14 @@ function TeamFrame({
               color={team.color}
               align="right"
               merging={merged}
+              highlighted={highlighted}
             />
             <PlayerMini
               player={team.team.player2}
               color={team.color}
               align="left"
               merging={merged}
+              highlighted={highlighted}
             />
           </motion.div>
         ) : (
@@ -473,11 +487,13 @@ function PlayerMini({
   color,
   align,
   merging,
+  highlighted,
 }: {
   player: PlayerWithMatches;
   color: string;
   align: "left" | "right";
   merging: boolean;
+  highlighted: boolean;
 }) {
   return (
     <motion.div
@@ -494,7 +510,8 @@ function PlayerMini({
         style={{
           width: "clamp(48px, 6vw, 72px)",
           height: "clamp(48px, 6vw, 72px)",
-          borderColor: color,
+          borderColor: highlighted ? color : "color-mix(in oklch, var(--color-paper) 18%, transparent)",
+          transition: "border-color 0.45s ease",
         }}
       >
         {player.fotoUrl ? (
