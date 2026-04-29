@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSSE } from "@/hooks/useSSE";
 import { LiveMatchOverlay } from "@/components/LiveMatchOverlay";
 import { MatchLiveClient } from "@/components/MatchLiveClient";
+import { SponsorShowcaseOverlay } from "@/components/SponsorShowcaseOverlay";
 import type {
   FieldLite,
   Genere,
@@ -27,6 +28,9 @@ const SPONSOR_ROTATE_MS = 5500;
 export function CampoLiveClient({ field, matchIniziale, sponsors }: Props) {
   const [match, setMatch] = useState<MatchWithTeams | null>(matchIniziale);
   const [overlayEvent, setOverlayEvent] = useState<MatchLiveEvent | null>(null);
+  const [showcaseSponsors, setShowcaseSponsors] = useState<
+    SponsorLite[] | null
+  >(null);
   const finiteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchMatch = useCallback(async () => {
@@ -44,7 +48,10 @@ export function CampoLiveClient({ field, matchIniziale, sponsors }: Props) {
 
   const handleEvent = useCallback(
     (event: LiveEvent) => {
-      if (event.tipo === "SPONSOR_SHOWCASE") return;
+      if (event.tipo === "SPONSOR_SHOWCASE") {
+        setShowcaseSponsors(event.sponsors);
+        return;
+      }
 
       if (
         event.tipo === "PARTITA_INIZIATA" &&
@@ -100,6 +107,11 @@ export function CampoLiveClient({ field, matchIniziale, sponsors }: Props) {
       <LiveMatchOverlay
         event={overlayEvent}
         onClose={() => setOverlayEvent(null)}
+      />
+
+      <SponsorShowcaseOverlay
+        sponsors={showcaseSponsors}
+        onClose={() => setShowcaseSponsors(null)}
       />
     </>
   );

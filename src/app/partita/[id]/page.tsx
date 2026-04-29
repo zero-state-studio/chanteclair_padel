@@ -9,17 +9,23 @@ type PageProps = { params: Promise<{ id: string }> };
 
 export default async function PartitaPage({ params }: PageProps) {
   const { id } = await params;
-  const match = await prisma.match.findUnique({
-    where: { id },
-    include: {
-      team1: { include: { player1: true, player2: true } },
-      team2: { include: { player1: true, player2: true } },
-      winner: { include: { player1: true, player2: true } },
-      tournament: true,
-      sponsor: { select: { id: true, nome: true, logoUrl: true } },
-      field: { select: { id: true, nome: true, descrizione: true } },
-    },
-  });
+
+  let match;
+  try {
+    match = await prisma.match.findUnique({
+      where: { id },
+      include: {
+        team1: { include: { player1: true, player2: true } },
+        team2: { include: { player1: true, player2: true } },
+        winner: { include: { player1: true, player2: true } },
+        tournament: true,
+        sponsor: { select: { id: true, nome: true, logoUrl: true } },
+        field: { select: { id: true, nome: true, descrizione: true } },
+      },
+    });
+  } catch {
+    notFound();
+  }
 
   if (!match) notFound();
 

@@ -229,6 +229,48 @@ function PartitaCard({
     }
   };
 
+  const riavvia = async () => {
+    if (
+      !confirm(
+        "Riavviare la partita? Il punteggio attuale verrà azzerato e l'animazione di inizio match verrà rilanciata sui tabelloni."
+      )
+    )
+      return;
+    setBusy(true);
+    try {
+      const resReset = await fetch(`/api/partite/${match.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ azione: "RESET" }),
+      });
+      if (!resReset.ok)
+        throw new Error((await resReset.json()).error ?? "Errore reset");
+
+      const resInizia = await fetch(`/api/partite/${match.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          azione: "INIZIA",
+          fieldId: match.fieldId ?? null,
+        }),
+      });
+      if (!resInizia.ok)
+        throw new Error((await resInizia.json()).error ?? "Errore avvio");
+
+      toast.success("Partita riavviata");
+      setShowForm(false);
+      setS1("");
+      setS2("");
+      setTb1("");
+      setTb2("");
+      await onAction();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const termina = async () => {
     const set1Team1 = parseInt(s1, 10);
     const set1Team2 = parseInt(s2, 10);
@@ -407,13 +449,24 @@ function PartitaCard({
       )}
 
       {match.stato === "IN_CORSO" && !showForm && (
-        <Button
-          size="sm"
-          onClick={() => setShowForm(true)}
-          className="bg-cream text-court hover:bg-cream/90 w-full sm:w-auto h-10"
-        >
-          ⏹ Inserisci Risultato
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            onClick={() => setShowForm(true)}
+            className="bg-cream text-court hover:bg-cream/90 w-full sm:w-auto h-10"
+          >
+            ⏹ Inserisci Risultato
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={riavvia}
+            disabled={busy}
+            className="bg-transparent border-clay/40 text-clay hover:bg-clay/10 hover:text-clay w-full sm:w-auto h-10"
+          >
+            ↺ Riavvia partita
+          </Button>
+        </div>
       )}
 
       {match.stato === "IN_CORSO" && showForm && (

@@ -83,7 +83,7 @@ function IntroTeamColumn({
       animate={{ x: 0, opacity: 1, filter: "blur(0px)" }}
       exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.5 } }}
       transition={{ delay, type: "spring", stiffness: 70, damping: 14 }}
-      className={`flex flex-col items-${side === "left" ? "start" : "end"} gap-6 ${
+      className={`flex flex-col items-${side === "left" ? "start" : "end"} gap-3 md:gap-4 ${
         isLoser ? "opacity-50" : ""
       }`}
     >
@@ -110,15 +110,15 @@ function IntroTeamColumn({
         )}
         <div
           className="flex"
-          style={{ gap: "calc(clamp(96px, 14vw, 220px) * -0.18)" }}
+          style={{ gap: "calc(clamp(72px, 10vw, 160px) * -0.18)" }}
         >
           <MiniAvatar
             player={team.player1}
-            size="clamp(96px, 14vw, 220px)"
+            size="clamp(72px, 10vw, 160px)"
           />
           <MiniAvatar
             player={team.player2}
-            size="clamp(96px, 14vw, 220px)"
+            size="clamp(72px, 10vw, 160px)"
           />
         </div>
       </div>
@@ -129,14 +129,14 @@ function IntroTeamColumn({
         </div>
         <div
           className="cc-display text-paper"
-          style={{ fontSize: "clamp(48px, 7vw, 130px)", lineHeight: 0.9 }}
+          style={{ fontSize: "clamp(36px, 5.4vw, 96px)", lineHeight: 0.9 }}
         >
           {team.player1.cognome}
         </div>
         <div
           className="cc-display text-paper/70"
           style={{
-            fontSize: "clamp(32px, 5vw, 90px)",
+            fontSize: "clamp(24px, 3.8vw, 66px)",
             lineHeight: 1,
             letterSpacing: "0.01em",
           }}
@@ -372,18 +372,6 @@ export function LiveMatchOverlay({ event, onClose }: LiveMatchOverlayProps) {
             >
               <div className="text-eyebrow text-paper/60 flex items-center gap-3 flex-wrap">
                 <span>Chanteclair · {event.genere}</span>
-                {event.field && (
-                  <span
-                    className="inline-flex items-center gap-1.5 px-2 py-1 border border-paper/20"
-                    style={{
-                      letterSpacing: "0.28em",
-                      color: "var(--color-yellow)",
-                    }}
-                  >
-                    <span aria-hidden>◆</span>
-                    <span>Campo {event.field.nome}</span>
-                  </span>
-                )}
               </div>
               <div className="flex items-center gap-3">
                 {event.tipo === "PARTITA_INIZIATA" && (
@@ -422,7 +410,7 @@ export function LiveMatchOverlay({ event, onClose }: LiveMatchOverlayProps) {
             </motion.div>
 
             {/* Center content (intro vs reveal) */}
-            <div className="flex flex-col items-center text-center">
+            <div className="flex-1 min-h-0 flex flex-col items-center justify-center text-center w-full overflow-hidden py-2">
               <AnimatePresence mode="wait">
                 {phase === "intro" || event.tipo === "PARTITA_INIZIATA" ? (
                   <motion.div
@@ -430,11 +418,44 @@ export function LiveMatchOverlay({ event, onClose }: LiveMatchOverlayProps) {
                     exit={{ opacity: 0, transition: { duration: 0.5 } }}
                     className="w-full"
                   >
+                    {event.tipo === "PARTITA_INIZIATA" && event.field && (
+                      <motion.div
+                        initial={{ y: -20, opacity: 0, scale: 0.92 }}
+                        animate={{ y: 0, opacity: 1, scale: 1 }}
+                        transition={{
+                          delay: 0.25,
+                          type: "spring",
+                          stiffness: 90,
+                          damping: 14,
+                        }}
+                        className="flex flex-col items-center mb-3 md:mb-5"
+                      >
+                        <div
+                          className="text-eyebrow text-paper/50 mb-1 md:mb-2"
+                          style={{ letterSpacing: "0.5em" }}
+                        >
+                          ◆ campo
+                        </div>
+                        <div
+                          className="cc-display"
+                          style={{
+                            fontSize: "clamp(44px, 7vw, 120px)",
+                            lineHeight: 0.9,
+                            letterSpacing: "0.005em",
+                            color: "var(--color-yellow)",
+                            textShadow: "0 0 60px rgba(236, 210, 74, 0.35)",
+                          }}
+                        >
+                          {event.field.nome}
+                        </div>
+                      </motion.div>
+                    )}
+
                     <motion.div
                       initial={{ y: 20, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
                       transition={{ delay: 0.4 }}
-                      className="text-eyebrow mb-8"
+                      className="text-eyebrow mb-4 md:mb-6"
                       style={{ color: "var(--color-yellow)" }}
                     >
                       {event.tipo === "PARTITA_INIZIATA"
@@ -442,7 +463,7 @@ export function LiveMatchOverlay({ event, onClose }: LiveMatchOverlayProps) {
                         : "— Match concluso —"}
                     </motion.div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-10 md:gap-20 items-center w-full">
+                    <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-6 md:gap-12 items-center w-full">
                       <IntroTeamColumn
                         team={event.team1}
                         isWinner={winner?.id === event.team1.id}
@@ -471,7 +492,7 @@ export function LiveMatchOverlay({ event, onClose }: LiveMatchOverlayProps) {
                             <div
                               className="cc-display"
                               style={{
-                                fontSize: "clamp(80px, 12vw, 200px)",
+                                fontSize: "clamp(56px, 8vw, 140px)",
                                 lineHeight: 1,
                                 color: "var(--color-yellow)",
                               }}

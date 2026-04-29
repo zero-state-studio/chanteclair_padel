@@ -102,6 +102,9 @@ export function TabelloneClient({
   const dismissCurrentEvent = useCallback(() => {
     setEventQueue((q) => q.slice(1));
   }, []);
+  const dismissShowcase = useCallback(() => {
+    setShowcaseSponsors(null);
+  }, []);
 
   useSSE(handleSSEEvent);
 
@@ -169,15 +172,6 @@ export function TabelloneClient({
     }, 20000);
     return () => clearInterval(id);
   }, [autoCycle, isFaseGironi, bracketsConPartite]);
-
-  // Default tab to first bracket with live match
-  useEffect(() => {
-    if (isFaseGironi) return;
-    const liveBracket = liveMatches.find((m) => m.bracketTipo)?.bracketTipo;
-    if (liveBracket && BRACKETS.includes(liveBracket as BracketTipo)) {
-      setActiveBracket(liveBracket as BracketTipo);
-    }
-  }, [liveMatches, isFaseGironi]);
 
   const roundsSummary = useMemo(() => {
     const map = new Map<number, number>();
@@ -329,7 +323,7 @@ export function TabelloneClient({
 
       <SponsorShowcaseOverlay
         sponsors={showcaseSponsors}
-        onClose={() => setShowcaseSponsors(null)}
+        onClose={dismissShowcase}
       />
 
       <AnimatePresence>
