@@ -42,16 +42,30 @@ function teamColor(idx: number, total: number): string {
   return `oklch(0.72 0.2 ${hue})`;
 }
 
-function colsForTeams(n: number): number {
+function colsForPlayers(n: number): number {
   if (n <= 2) return 2;
   if (n <= 4) return 2;
-  if (n <= 6) return 3;
-  if (n <= 9) return 3;
+  if (n <= 8) return 4;
   if (n <= 12) return 4;
-  if (n <= 16) return 4;
-  if (n <= 20) return 5;
-  if (n <= 25) return 5;
-  return 6;
+  if (n <= 18) return 6;
+  if (n <= 24) return 6;
+  if (n <= 32) return 8;
+  if (n <= 40) return 8;
+  return 10;
+}
+
+function shuffleSeeded<T>(arr: T[], seed: number): T[] {
+  const out = [...arr];
+  let s = seed || 1;
+  const rng = () => {
+    s = (s * 9301 + 49297) % 233280;
+    return s / 233280;
+  };
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
 }
 
 function colsForGroups(n: number): number {
@@ -126,6 +140,14 @@ export function GironiAnimation({
     return arr;
   }, [orderedTeams]);
 
+  const shuffledPlayers = useMemo(() => {
+    const seed = orderedPlayers.reduce(
+      (acc, e, i) => acc + (e.player.id.charCodeAt(0) || 1) * (i + 3),
+      11
+    );
+    return shuffleSeeded(orderedPlayers, seed);
+  }, [orderedPlayers]);
+
   const skip = useCallback(() => {
     setSlowFade(false);
     setPhase("done");
@@ -148,17 +170,17 @@ export function GironiAnimation({
 
   useEffect(() => {
     if (phase !== "players") return;
-    if (orderedPlayers.length === 0) {
+    if (shuffledPlayers.length === 0) {
       const t = setTimeout(() => setPhase("groups"), 0);
       return () => clearTimeout(t);
     }
-    if (playerIdx >= orderedPlayers.length) {
+    if (playerIdx >= shuffledPlayers.length) {
       const t = setTimeout(() => setPhase("grid"), 250);
       return () => clearTimeout(t);
     }
     const t = setTimeout(() => setPlayerIdx((i) => i + 1), PLAYER_DURATION_MS);
     return () => clearTimeout(t);
-  }, [phase, playerIdx, orderedPlayers.length]);
+  }, [phase, playerIdx, shuffledPlayers.length]);
 
   useEffect(() => {
     if (phase !== "grid") return;
@@ -173,11 +195,13 @@ export function GironiAnimation({
       const t = setTimeout(() => setPhase("groups"), 0);
       return () => clearTimeout(t);
     }
+    const gatherDelay = 900;
     const highlightStagger = Math.min(
       240,
       Math.max(120, MERGE_DURATION_MS / (teamsArr.length * 3))
     );
-    const mergeStart = highlightStagger * teamsArr.length + 350;
+    const mergeStart =
+      gatherDelay + highlightStagger * teamsArr.length + 350;
     const mergeStagger = 90;
 
     const timers: ReturnType<typeof setTimeout>[] = [];
@@ -190,7 +214,7 @@ export function GironiAnimation({
             next.add(t.team.id);
             return next;
           });
-        }, i * highlightStagger)
+        }, gatherDelay + i * highlightStagger)
       );
     });
 
@@ -225,7 +249,7 @@ export function GironiAnimation({
   }, [phase]);
 
   const currentPlayer =
-    orderedPlayers[Math.min(playerIdx, orderedPlayers.length - 1)] ?? null;
+    shuffledPlayers[Math.min(playerIdx, shuffledPlayers.length - 1)] ?? null;
 
   return (
     <motion.div
@@ -256,23 +280,29 @@ export function GironiAnimation({
 
       <div className="relative z-10 h-full w-full">
         <AnimatePresence mode="wait">
-          {phase === "groups" ? (
+          {phase === "players" && currentPlayer && (
+            <PlayersScrollPhase
+              key="players"
+              entry={currentPlayer}
+              idx={playerIdx}
+              accent={accent}
+            />
+          )}
+          {(phase === "grid" || phase === "merge") && (
+            <FlatGridPhase
+              key="flatgrid"
+              phase={phase}
+              shuffledPlayers={shuffledPlayers}
+              orderedTeams={orderedTeams}
+              highlightedTeams={highlightedTeams}
+              mergingTeams={mergingTeams}
+            />
+          )}
+          {phase === "groups" && (
             <GroupsRevealPhase
               key="groups"
               torneo={torneo}
               orderedTeams={orderedTeams}
-              accent={accent}
-            />
-          ) : (
-            <ScatterStage
-              key="scatter"
-              phase={phase}
-              playerIdx={playerIdx}
-              orderedPlayers={orderedPlayers}
-              orderedTeams={orderedTeams}
-              currentPlayer={currentPlayer}
-              highlightedTeams={highlightedTeams}
-              mergingTeams={mergingTeams}
               accent={accent}
             />
           )}
@@ -282,103 +312,145 @@ export function GironiAnimation({
   );
 }
 
-type ScatterPos = { x: number; y: number; rotate: number };
-type TeamLayout = {
-  cx: number;
-  cy: number;
-  frameW: number;
-  frameH: number;
-  slot0: { x: number; y: number };
-  slot1: { x: number; y: number };
-};
-
-function computeScatterPositions(
-  orderedPlayers: { player: PlayerWithMatches; team: OrderedTeam }[]
-): ScatterPos[] {
-  return orderedPlayers.map((entry, i) => {
-    let seed =
-      ((entry.player.id.charCodeAt(0) || 1) +
-        (entry.player.id.charCodeAt(1) || 0) * 31) *
-        (i + 1) +
-      (entry.player.cognome.charCodeAt(0) || 1) * 13;
-    const rng = () => {
-      seed = (seed * 9301 + 49297) % 233280;
-      return seed / 233280;
-    };
-    return {
-      x: 8 + rng() * 84,
-      y: 22 + rng() * 62,
-      rotate: -10 + rng() * 20,
-    };
-  });
-}
-
-function computeTeamLayouts(orderedTeams: OrderedTeam[]): TeamLayout[] {
-  const cols = colsForTeams(orderedTeams.length);
-  const rows = Math.max(1, Math.ceil(orderedTeams.length / cols));
-  const padX = 6;
-  const padTop = 14;
-  const padBottom = 8;
-  const totalW = 100 - padX * 2;
-  const totalH = 100 - padTop - padBottom;
-  const frameW = totalW / cols;
-  const frameH = totalH / rows;
-  return orderedTeams.map((_, i) => {
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    const cx = padX + col * frameW + frameW / 2;
-    const cy = padTop + row * frameH + frameH / 2;
-    const innerOffsetX = frameW * 0.22;
-    return {
-      cx,
-      cy,
-      frameW,
-      frameH,
-      slot0: { x: cx - innerOffsetX, y: cy },
-      slot1: { x: cx + innerOffsetX, y: cy },
-    };
-  });
-}
-
-function ScatterStage({
-  phase,
-  playerIdx,
-  orderedPlayers,
-  orderedTeams,
-  currentPlayer,
-  highlightedTeams,
-  mergingTeams,
+function PlayersScrollPhase({
+  entry,
+  idx,
   accent,
 }: {
-  phase: Phase;
-  playerIdx: number;
-  orderedPlayers: { player: PlayerWithMatches; team: OrderedTeam }[];
-  orderedTeams: OrderedTeam[];
-  currentPlayer: { player: PlayerWithMatches; team: OrderedTeam } | null;
-  highlightedTeams: Set<string>;
-  mergingTeams: Set<string>;
+  entry: { player: PlayerWithMatches; team: OrderedTeam };
+  idx: number;
   accent: string;
 }) {
-  const scatterPositions = useMemo(
-    () => computeScatterPositions(orderedPlayers),
-    [orderedPlayers]
+  const { player, team } = entry;
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
+      className="absolute inset-0 flex items-center justify-center px-6"
+    >
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={player.id + "-" + idx}
+          initial={{ opacity: 0, x: 80, scale: 0.9 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          exit={{ opacity: 0, x: -80, scale: 0.9 }}
+          transition={{ duration: 0.35, ease: [0.22, 0.9, 0.34, 1] }}
+          className="flex flex-col items-center text-center"
+        >
+          <div
+            className="rounded-full overflow-hidden border-4 mb-6 bg-paper/5"
+            style={{
+              borderColor: team.color,
+              boxShadow: `0 0 60px -10px ${team.color}`,
+              width: "min(38vw, 360px)",
+              height: "min(38vw, 360px)",
+            }}
+          >
+            {player.fotoUrl ? (
+              <Image
+                src={player.fotoUrl}
+                alt={`${player.nome} ${player.cognome}`}
+                width={400}
+                height={400}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center cc-display text-paper/80 text-[28vw] sm:text-[16vw] md:text-[12rem] leading-none">
+                {player.nome[0]}
+                {player.cognome[0]}
+              </div>
+            )}
+          </div>
+          <div
+            className="cc-display leading-[0.9] text-paper text-[10vw] sm:text-[7vw] md:text-[5.5rem]"
+            style={{ letterSpacing: "0.01em" }}
+          >
+            {player.nome}
+          </div>
+          <div
+            className="cc-display leading-[0.9]"
+            style={{
+              color: accent,
+              fontSize: "clamp(2.4rem, 8vw, 6rem)",
+              letterSpacing: "0.02em",
+            }}
+          >
+            {player.cognome}
+          </div>
+          <div
+            className="cc-mono mt-4 text-[11px] tracking-[0.3em] uppercase"
+            style={{ color: team.color }}
+          >
+            {team.team.nome}
+          </div>
+        </motion.div>
+      </AnimatePresence>
+    </motion.div>
   );
-  const teamLayouts = useMemo(
-    () => computeTeamLayouts(orderedTeams),
-    [orderedTeams]
-  );
+}
 
-  const playerLayout = useMemo(() => {
-    const teamIdxMap = new Map<string, number>();
-    orderedTeams.forEach((t, i) => teamIdxMap.set(t.team.id, i));
-    return orderedPlayers.map((entry, i) => {
-      const teamIdx = teamIdxMap.get(entry.team.team.id) ?? 0;
-      const prev = orderedPlayers[i - 1];
-      const slotInTeam: 0 | 1 =
-        prev && prev.team.team.id === entry.team.team.id ? 1 : 0;
-      return { teamIdx, slotInTeam };
-    });
-  }, [orderedPlayers, orderedTeams]);
+type FlatItem =
+  | {
+      kind: "player";
+      key: string;
+      entry: { player: PlayerWithMatches; team: OrderedTeam };
+      teamId: string;
+    }
+  | { kind: "team"; key: string; team: OrderedTeam };
+
+function FlatGridPhase({
+  phase,
+  shuffledPlayers,
+  orderedTeams,
+  highlightedTeams,
+  mergingTeams,
+}: {
+  phase: Phase;
+  shuffledPlayers: { player: PlayerWithMatches; team: OrderedTeam }[];
+  orderedTeams: OrderedTeam[];
+  highlightedTeams: Set<string>;
+  mergingTeams: Set<string>;
+}) {
+  const cols = colsForPlayers(shuffledPlayers.length);
+
+  const items: FlatItem[] = useMemo(() => {
+    if (phase === "grid") {
+      return shuffledPlayers.map((entry) => ({
+        kind: "player" as const,
+        key: entry.player.id,
+        entry,
+        teamId: entry.team.team.id,
+      }));
+    }
+    const playerById = new Map<string, { player: PlayerWithMatches; team: OrderedTeam }>();
+    for (const e of shuffledPlayers) playerById.set(e.player.id, e);
+    const list: FlatItem[] = [];
+    for (const t of orderedTeams) {
+      if (mergingTeams.has(t.team.id)) {
+        list.push({ kind: "team", key: `team-${t.team.id}`, team: t });
+      } else {
+        const e1 = playerById.get(t.team.player1.id);
+        const e2 = playerById.get(t.team.player2.id);
+        if (e1)
+          list.push({
+            kind: "player",
+            key: e1.player.id,
+            entry: e1,
+            teamId: t.team.id,
+          });
+        if (e2)
+          list.push({
+            kind: "player",
+            key: e2.player.id,
+            entry: e2,
+            teamId: t.team.id,
+          });
+      }
+    }
+    return list;
+  }, [phase, shuffledPlayers, orderedTeams, mergingTeams]);
 
   return (
     <motion.div
@@ -386,325 +458,183 @@ function ScatterStage({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4 }}
-      className="absolute inset-0"
+      className="absolute inset-0 flex flex-col p-4 md:p-8 pt-14 md:pt-16"
     >
-      {orderedPlayers.map((entry, i) => (
-        <PlayerNode
-          key={entry.player.id + "-" + i}
-          entry={entry}
-          globalIdx={i}
-          phase={phase}
-          playerIdx={playerIdx}
-          scatter={scatterPositions[i]}
-          team={teamLayouts[playerLayout[i].teamIdx]}
-          slotInTeam={playerLayout[i].slotInTeam}
-          highlighted={highlightedTeams.has(entry.team.team.id)}
-          merged={mergingTeams.has(entry.team.team.id)}
-        />
-      ))}
-
-      {orderedTeams.map((t, i) => (
-        <TeamMergeCard
-          key={t.team.id}
-          team={t}
-          layout={teamLayouts[i]}
-          visible={mergingTeams.has(t.team.id)}
-        />
-      ))}
-
-      <AnimatePresence>
-        {phase === "players" && currentPlayer && (
-          <ShowcaseLabel
-            key={currentPlayer.player.id + "-" + playerIdx}
-            entry={currentPlayer}
-            accent={accent}
-          />
-        )}
-      </AnimatePresence>
+      <div className="cc-mono text-[10px] tracking-[0.4em] uppercase text-paper/40 mb-2 md:mb-3 text-center shrink-0">
+        — giocatori
+      </div>
+      <div
+        className="grid gap-2 md:gap-3 flex-1 min-h-0"
+        style={{
+          gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+          gridAutoRows: "1fr",
+        }}
+      >
+        <AnimatePresence>
+          {items.map((item) => {
+            if (item.kind === "team") {
+              return (
+                <motion.div
+                  key={item.key}
+                  layout
+                  initial={{ opacity: 0, scale: 0.6 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{
+                    duration: 0.55,
+                    ease: [0.22, 0.9, 0.34, 1],
+                    layout: { duration: 0.7, ease: [0.22, 0.9, 0.34, 1] },
+                  }}
+                  className="min-h-0"
+                  style={{ gridColumn: "span 2" }}
+                >
+                  <TeamMergedCell team={item.team} />
+                </motion.div>
+              );
+            }
+            const highlighted = highlightedTeams.has(item.teamId);
+            return (
+              <motion.div
+                key={item.key}
+                layout
+                initial={{ opacity: 0, scale: 0.7 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.7 }}
+                transition={{
+                  duration: 0.45,
+                  layout: { duration: 0.75, ease: [0.22, 0.9, 0.34, 1] },
+                }}
+                className="min-h-0 relative"
+              >
+                <PlayerCell
+                  player={item.entry.player}
+                  color={item.entry.team.color}
+                  highlighted={highlighted}
+                />
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </div>
     </motion.div>
   );
 }
 
-function PlayerNode({
-  entry,
-  globalIdx,
-  phase,
-  playerIdx,
-  scatter,
-  team,
-  slotInTeam,
-  highlighted,
-  merged,
-}: {
-  entry: { player: PlayerWithMatches; team: OrderedTeam };
-  globalIdx: number;
-  phase: Phase;
-  playerIdx: number;
-  scatter: ScatterPos;
-  team: TeamLayout;
-  slotInTeam: 0 | 1;
-  highlighted: boolean;
-  merged: boolean;
-}) {
-  const isShowcase = phase === "players" && globalIdx === playerIdx;
-  const isPre = phase === "players" && globalIdx > playerIdx;
-  const isMergedHidden = phase === "merge" && merged;
-
-  let target: {
-    left: string;
-    top: string;
-    scale: number;
-    opacity: number;
-    rotate: number;
-  };
-
-  if (isShowcase) {
-    target = { left: "50%", top: "42%", scale: 1.4, opacity: 1, rotate: 0 };
-  } else if (phase === "merge" && !merged) {
-    const slot = slotInTeam === 0 ? team.slot0 : team.slot1;
-    const fitScale = Math.min(team.frameW / 24, team.frameH / 32);
-    target = {
-      left: `${slot.x}%`,
-      top: `${slot.y}%`,
-      scale: Math.max(0.28, Math.min(0.55, fitScale)),
-      opacity: 1,
-      rotate: 0,
-    };
-  } else if (isPre) {
-    target = {
-      left: `${scatter.x}%`,
-      top: `${scatter.y}%`,
-      scale: 0.32,
-      opacity: 0,
-      rotate: scatter.rotate,
-    };
-  } else if (isMergedHidden) {
-    target = {
-      left: `${scatter.x}%`,
-      top: `${scatter.y}%`,
-      scale: 0.4,
-      opacity: 0,
-      rotate: scatter.rotate,
-    };
-  } else {
-    target = {
-      left: `${scatter.x}%`,
-      top: `${scatter.y}%`,
-      scale: 0.42,
-      opacity: 1,
-      rotate: scatter.rotate,
-    };
-  }
-
-  return (
-    <motion.div
-      style={{ position: "absolute", x: "-50%", y: "-50%" }}
-      initial={false}
-      animate={target}
-      transition={{ duration: 0.65, ease: [0.22, 0.9, 0.34, 1] }}
-    >
-      <CompactPlayerCard
-        player={entry.player}
-        color={entry.team.color}
-        highlighted={highlighted || isShowcase}
-        showLabel={!isShowcase}
-      />
-    </motion.div>
-  );
-}
-
-function CompactPlayerCard({
+function PlayerCell({
   player,
   color,
   highlighted,
-  showLabel,
 }: {
   player: PlayerWithMatches;
   color: string;
   highlighted: boolean;
-  showLabel: boolean;
 }) {
   return (
-    <div className="flex flex-col items-center gap-1.5">
+    <div
+      className="w-full h-full rounded-md flex flex-col items-center justify-center text-center gap-1 p-2"
+      style={{
+        background: highlighted
+          ? `color-mix(in oklch, ${color} 14%, transparent)`
+          : "color-mix(in oklch, var(--color-night-deep) 60%, transparent)",
+        border: highlighted
+          ? `1px solid ${color}`
+          : "1px solid color-mix(in oklch, var(--color-paper) 10%, transparent)",
+        boxShadow: highlighted ? `0 0 30px -8px ${color}` : "none",
+        transition:
+          "background 0.45s ease, border-color 0.45s ease, box-shadow 0.45s ease",
+      }}
+    >
       <div
-        className="rounded-full overflow-hidden border-[3px] bg-paper/10"
+        className="rounded-full overflow-hidden border-2 bg-paper/10"
         style={{
-          width: 200,
-          height: 200,
+          width: "clamp(36px, 5vw, 76px)",
+          height: "clamp(36px, 5vw, 76px)",
           borderColor: highlighted
             ? color
-            : "color-mix(in oklch, var(--color-paper) 22%, transparent)",
-          boxShadow: highlighted
-            ? `0 0 30px -4px ${color}`
-            : "0 0 18px -8px oklch(0 0 0 / 0.55)",
-          transition: "border-color 0.45s ease, box-shadow 0.45s ease",
+            : "color-mix(in oklch, var(--color-paper) 18%, transparent)",
+          transition: "border-color 0.45s ease",
         }}
       >
         {player.fotoUrl ? (
           <Image
             src={player.fotoUrl}
-            alt={`${player.nome} ${player.cognome}`}
-            width={400}
-            height={400}
+            alt=""
+            width={120}
+            height={120}
             className="h-full w-full object-cover"
           />
         ) : (
-          <div
-            className="h-full w-full flex items-center justify-center cc-display text-paper/85"
-            style={{ fontSize: 92, lineHeight: 1 }}
-          >
+          <div className="h-full w-full flex items-center justify-center cc-mono text-paper/85 text-sm">
             {player.nome[0]}
             {player.cognome[0]}
           </div>
         )}
       </div>
-      {showLabel && (
-        <div className="text-center max-w-[220px]">
-          <div
-            className="text-paper font-semibold leading-tight truncate"
-            style={{ fontSize: 22 }}
-          >
-            {player.cognome}
-          </div>
-          <div
-            className="text-paper/65 leading-tight truncate"
-            style={{ fontSize: 14 }}
-          >
-            {player.nome}
-          </div>
-        </div>
-      )}
+      <div className="text-paper text-xs md:text-sm font-semibold leading-tight truncate w-full px-1">
+        {player.cognome}
+      </div>
+      <div className="text-paper/60 text-[10px] truncate w-full px-1">
+        {player.nome}
+      </div>
     </div>
   );
 }
 
-function TeamMergeCard({
-  team,
-  layout,
-  visible,
-}: {
-  team: OrderedTeam;
-  layout: TeamLayout;
-  visible: boolean;
-}) {
+function TeamMergedCell({ team }: { team: OrderedTeam }) {
   return (
-    <motion.div
-      initial={false}
-      animate={{
-        opacity: visible ? 1 : 0,
-        scale: visible ? 1 : 0.6,
-      }}
-      transition={{ duration: 0.55, ease: [0.22, 0.9, 0.34, 1] }}
+    <div
+      className="w-full h-full rounded-md flex flex-col items-center justify-center text-center gap-2 px-3 py-2"
       style={{
-        position: "absolute",
-        left: `${layout.cx}%`,
-        top: `${layout.cy}%`,
-        x: "-50%",
-        y: "-50%",
-        width: `${layout.frameW * 0.92}%`,
-        height: `${layout.frameH * 0.86}%`,
-        pointerEvents: "none",
+        background: `linear-gradient(135deg, color-mix(in oklch, ${team.color} 22%, var(--color-night-deep)) 0%, var(--color-night-deep) 100%)`,
+        border: `1px solid ${team.color}`,
+        boxShadow: `0 0 20px -6px ${team.color}`,
       }}
     >
-      <div
-        className="w-full h-full rounded-md flex flex-col items-center justify-center text-center gap-2 px-3 py-2"
-        style={{
-          background: `linear-gradient(135deg, color-mix(in oklch, ${team.color} 22%, var(--color-night-deep)) 0%, var(--color-night-deep) 100%)`,
-          border: `1px solid ${team.color}`,
-          boxShadow: `0 0 20px -6px ${team.color}`,
-        }}
-      >
-        <div className="flex -space-x-2">
-          {[team.team.player1, team.team.player2].map((p) =>
-            p.fotoUrl ? (
-              <Image
-                key={p.id}
-                src={p.fotoUrl}
-                alt=""
-                width={64}
-                height={64}
-                className="rounded-full object-cover bg-paper/10"
-                style={{
-                  width: "clamp(36px, 4.5vw, 56px)",
-                  height: "clamp(36px, 4.5vw, 56px)",
-                  boxShadow: `0 0 0 2px ${team.color}`,
-                }}
-              />
-            ) : (
-              <span
-                key={p.id}
-                className="rounded-full bg-paper/10 flex items-center justify-center cc-mono text-paper text-xs"
-                style={{
-                  width: "clamp(36px, 4.5vw, 56px)",
-                  height: "clamp(36px, 4.5vw, 56px)",
-                  boxShadow: `0 0 0 2px ${team.color}`,
-                }}
-              >
-                {p.nome[0]}
-                {p.cognome[0]}
-              </span>
-            )
-          )}
-        </div>
-        <div
-          className="cc-display text-paper leading-tight"
-          style={{ fontSize: "clamp(0.9rem, 1.6vw, 1.3rem)" }}
-        >
-          {team.team.nome}
-        </div>
-        <div className="cc-mono text-[10px] text-paper/70 leading-tight truncate max-w-full">
-          {team.team.player1.cognome} / {team.team.player2.cognome}
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-function ShowcaseLabel({
-  entry,
-  accent,
-}: {
-  entry: { player: PlayerWithMatches; team: OrderedTeam };
-  accent: string;
-}) {
-  const { player, team } = entry;
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.35, ease: [0.22, 0.9, 0.34, 1] }}
-      className="absolute left-1/2 -translate-x-1/2 text-center pointer-events-none"
-      style={{ top: "70%", width: "min(90vw, 1100px)" }}
-    >
-      <div
-        className="cc-display leading-[0.9] text-paper"
-        style={{
-          fontSize: "clamp(2.4rem, 7vw, 5rem)",
-          letterSpacing: "0.01em",
-        }}
-      >
-        {player.nome}
+      <div className="flex -space-x-2">
+        {[team.team.player1, team.team.player2].map((p) =>
+          p.fotoUrl ? (
+            <Image
+              key={p.id}
+              src={p.fotoUrl}
+              alt=""
+              width={64}
+              height={64}
+              className="rounded-full object-cover bg-paper/10"
+              style={{
+                width: "clamp(36px, 4.5vw, 56px)",
+                height: "clamp(36px, 4.5vw, 56px)",
+                boxShadow: `0 0 0 2px ${team.color}`,
+              }}
+            />
+          ) : (
+            <span
+              key={p.id}
+              className="rounded-full bg-paper/10 flex items-center justify-center cc-mono text-paper text-xs"
+              style={{
+                width: "clamp(36px, 4.5vw, 56px)",
+                height: "clamp(36px, 4.5vw, 56px)",
+                boxShadow: `0 0 0 2px ${team.color}`,
+              }}
+            >
+              {p.nome[0]}
+              {p.cognome[0]}
+            </span>
+          )
+        )}
       </div>
       <div
-        className="cc-display leading-[0.9]"
-        style={{
-          color: accent,
-          fontSize: "clamp(2.6rem, 8vw, 6rem)",
-          letterSpacing: "0.02em",
-        }}
-      >
-        {player.cognome}
-      </div>
-      <div
-        className="cc-mono mt-3 text-[11px] tracking-[0.3em] uppercase"
-        style={{ color: team.color }}
+        className="cc-display text-paper leading-tight"
+        style={{ fontSize: "clamp(0.9rem, 1.6vw, 1.3rem)" }}
       >
         {team.team.nome}
       </div>
-    </motion.div>
+      <div className="cc-mono text-[10px] text-paper/70 leading-tight truncate max-w-full">
+        {team.team.player1.cognome} / {team.team.player2.cognome}
+      </div>
+    </div>
   );
 }
+
 
 function GroupsRevealPhase({
   torneo,
