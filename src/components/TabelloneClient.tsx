@@ -9,7 +9,7 @@ import { LiveStrip } from "@/components/LiveStrip";
 import { RoundLabels } from "@/components/RoundLabels";
 import { LiveMatchOverlay } from "@/components/LiveMatchOverlay";
 import { SponsorShowcaseOverlay } from "@/components/SponsorShowcaseOverlay";
-import { useSSE } from "@/hooks/useSSE";
+import { useRealtime } from "@/hooks/useRealtime";
 import type {
   TournamentWithMatches,
   LiveEvent,
@@ -106,7 +106,7 @@ export function TabelloneClient({
     setShowcaseSponsors(null);
   }, []);
 
-  useSSE(handleSSEEvent);
+  useRealtime(handleSSEEvent);
 
   const hasGroups = torneo.groups.length > 0;
   const hasBracket = torneo.fase === "BRACKET";
