@@ -378,8 +378,8 @@ function Marquee({
                 <Image
                   src={s.logoUrl}
                   alt={s.nome}
-                  width={32}
-                  height={32}
+                  width={256}
+                  height={256}
                   className="object-contain"
                   style={{ height: 32, width: "auto" }}
                 />

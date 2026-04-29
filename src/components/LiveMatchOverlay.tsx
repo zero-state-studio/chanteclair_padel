@@ -606,8 +606,8 @@ export function LiveMatchOverlay({ event, onClose }: LiveMatchOverlayProps) {
                       <Image
                         src={event.sponsor!.logoUrl}
                         alt={event.sponsor!.nome}
-                        width={48}
-                        height={48}
+                        width={256}
+                        height={256}
                         className="object-contain bg-paper/10 rounded-sm p-0.5 shrink-0"
                         style={{
                           height: isCorner
