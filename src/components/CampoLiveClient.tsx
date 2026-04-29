@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { useSSE } from "@/hooks/useSSE";
+import { useRealtime } from "@/hooks/useRealtime";
 import { LiveMatchOverlay } from "@/components/LiveMatchOverlay";
 import { MatchLiveClient } from "@/components/MatchLiveClient";
 import { SponsorShowcaseOverlay } from "@/components/SponsorShowcaseOverlay";
@@ -83,7 +83,7 @@ export function CampoLiveClient({ field, matchIniziale, sponsors }: Props) {
     []
   );
 
-  useSSE(handleEvent);
+  useRealtime(handleEvent);
 
   return (
     <>

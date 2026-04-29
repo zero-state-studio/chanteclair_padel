@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { useSSE } from "@/hooks/useSSE";
+import { useRealtime } from "@/hooks/useRealtime";
 import type {
   MatchWithTeams,
   LiveEvent,
@@ -169,7 +169,7 @@ export function MatchLiveClient({
     []
   );
 
-  useSSE(handleEvent);
+  useRealtime(handleEvent);
 
   const winnerId = match.winner?.id ?? null;
   const showcaseSponsor = !!anim;

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { sseEmitter } from "@/lib/sse";
+import { publishLiveEvent } from "@/lib/realtime";
 import { requireAdmin } from "@/lib/api-auth";
 import type { Genere, LiveEvent, PlayerWithMatches, TeamWithPlayers } from "@/types";
 
@@ -155,7 +155,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       sponsor: updated.sponsor ?? null,
       field: updated.field ?? null,
     };
-    sseEmitter.emit("live-event", event);
+    await publishLiveEvent(event);
 
     return NextResponse.json(updated);
   }
@@ -214,7 +214,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       sponsor: updated.sponsor ?? null,
       field: updated.field ?? null,
     };
-    sseEmitter.emit("live-event", event);
+    await publishLiveEvent(event);
 
     return NextResponse.json(updated);
   }
@@ -290,7 +290,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       sponsor: updated.sponsor ?? null,
       field: updated.field ?? null,
     };
-    sseEmitter.emit("live-event", event);
+    await publishLiveEvent(event);
 
     return NextResponse.json(updated);
   }

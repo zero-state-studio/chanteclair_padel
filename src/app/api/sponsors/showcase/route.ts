@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { sseEmitter } from "@/lib/sse";
+import { publishLiveEvent } from "@/lib/realtime";
 import { requireAdmin } from "@/lib/api-auth";
 import type { SponsorShowcaseEvent } from "@/types";
 
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
   }
 
   const event: SponsorShowcaseEvent = { tipo: "SPONSOR_SHOWCASE", sponsors };
-  sseEmitter.emit("live-event", event);
+  await publishLiveEvent(event);
 
   return NextResponse.json({ success: true, count: sponsors.length });
 }
