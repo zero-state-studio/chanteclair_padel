@@ -13,7 +13,7 @@ import type {
 
 type Phase = "players" | "grid" | "merge" | "groups" | "done";
 
-const PLAYER_DURATION_MS = 300;
+const PLAYER_DURATION_MS = 300; // durata animazione singolo giocatore
 const GRID_HOLD_MS = 2500;
 const MERGE_DURATION_MS = 4500;
 const GROUPS_REVEAL_MS = 900;
@@ -388,15 +388,6 @@ function PlayersScrollPhase({
   );
 }
 
-type FlatItem =
-  | {
-      kind: "player";
-      key: string;
-      entry: { player: PlayerWithMatches; team: OrderedTeam };
-      teamId: string;
-    }
-  | { kind: "team"; key: string; team: OrderedTeam };
-
 function FlatGridPhase({
   phase,
   shuffledPlayers,
@@ -412,42 +403,28 @@ function FlatGridPhase({
 }) {
   const cols = colsForPlayers(shuffledPlayers.length);
 
-  const items: FlatItem[] = useMemo(() => {
+  const playerItems = useMemo(() => {
     if (phase === "grid") {
       return shuffledPlayers.map((entry) => ({
-        kind: "player" as const,
         key: entry.player.id,
         entry,
         teamId: entry.team.team.id,
       }));
     }
-    const playerById = new Map<string, { player: PlayerWithMatches; team: OrderedTeam }>();
+    const playerById = new Map<
+      string,
+      { player: PlayerWithMatches; team: OrderedTeam }
+    >();
     for (const e of shuffledPlayers) playerById.set(e.player.id, e);
-    const list: FlatItem[] = [];
+    const list: { key: string; entry: typeof shuffledPlayers[number]; teamId: string }[] = [];
     for (const t of orderedTeams) {
-      if (mergingTeams.has(t.team.id)) {
-        list.push({ kind: "team", key: `team-${t.team.id}`, team: t });
-      } else {
-        const e1 = playerById.get(t.team.player1.id);
-        const e2 = playerById.get(t.team.player2.id);
-        if (e1)
-          list.push({
-            kind: "player",
-            key: e1.player.id,
-            entry: e1,
-            teamId: t.team.id,
-          });
-        if (e2)
-          list.push({
-            kind: "player",
-            key: e2.player.id,
-            entry: e2,
-            teamId: t.team.id,
-          });
-      }
+      const e1 = playerById.get(t.team.player1.id);
+      const e2 = playerById.get(t.team.player2.id);
+      if (e1) list.push({ key: e1.player.id, entry: e1, teamId: t.team.id });
+      if (e2) list.push({ key: e2.player.id, entry: e2, teamId: t.team.id });
     }
     return list;
-  }, [phase, shuffledPlayers, orderedTeams, mergingTeams]);
+  }, [phase, shuffledPlayers, orderedTeams]);
 
   return (
     <motion.div
@@ -460,46 +437,32 @@ function FlatGridPhase({
       <div className="cc-mono text-[10px] tracking-[0.4em] uppercase text-paper/40 mb-2 md:mb-3 text-center shrink-0">
         — giocatori
       </div>
-      <div
-        className="grid gap-2 md:gap-3 flex-1 min-h-0"
-        style={{
-          gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-          gridAutoRows: "1fr",
-        }}
-      >
-        <AnimatePresence>
-          {items.map((item) => {
-            if (item.kind === "team") {
-              return (
-                <motion.div
-                  key={item.key}
-                  layout
-                  initial={{ opacity: 0, scale: 0.6 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{
-                    duration: TEAM_CARD_FADE_MS / 1000,
-                    ease: [0.22, 0.9, 0.34, 1],
-                    layout: { duration: GATHER_MS / 1000, ease: [0.22, 0.9, 0.34, 1] },
-                  }}
-                  className="min-h-0"
-                  style={{ gridColumn: "span 2" }}
-                >
-                  <TeamMergedCell team={item.team} />
-                </motion.div>
-              );
-            }
+      <div className="relative flex-1 min-h-0">
+        <div
+          className="absolute inset-0 grid gap-2 md:gap-3"
+          style={{
+            gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+            gridAutoRows: "1fr",
+          }}
+        >
+          {playerItems.map((item) => {
             const highlighted = highlightedTeams.has(item.teamId);
+            const merged = mergingTeams.has(item.teamId);
             return (
               <motion.div
                 key={item.key}
                 layout
                 initial={{ opacity: 0, scale: 0.7 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.7 }}
+                animate={{
+                  opacity: merged ? 0 : 1,
+                  scale: merged ? 0.7 : 1,
+                }}
                 transition={{
                   duration: PLAYER_EXIT_MS / 1000,
-                  layout: { duration: GATHER_MS / 1000, ease: [0.22, 0.9, 0.34, 1] },
+                  layout: {
+                    duration: GATHER_MS / 1000,
+                    ease: [0.22, 0.9, 0.34, 1],
+                  },
                 }}
                 className="min-h-0 relative"
               >
@@ -511,7 +474,44 @@ function FlatGridPhase({
               </motion.div>
             );
           })}
-        </AnimatePresence>
+        </div>
+
+        {phase === "merge" && (
+          <div
+            className="absolute inset-0 grid gap-2 md:gap-3 pointer-events-none"
+            style={{
+              gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+              gridAutoRows: "1fr",
+            }}
+          >
+            {orderedTeams.map((t, i) => {
+              const merged = mergingTeams.has(t.team.id);
+              const colStart = ((i * 2) % cols) + 1;
+              const rowStart = Math.floor((i * 2) / cols) + 1;
+              return (
+                <motion.div
+                  key={`team-${t.team.id}`}
+                  initial={false}
+                  animate={{
+                    opacity: merged ? 1 : 0,
+                    scale: merged ? 1 : 0.6,
+                  }}
+                  transition={{
+                    duration: TEAM_CARD_FADE_MS / 1000,
+                    ease: [0.22, 0.9, 0.34, 1],
+                  }}
+                  className="min-h-0"
+                  style={{
+                    gridColumn: `${colStart} / span 2`,
+                    gridRow: rowStart,
+                  }}
+                >
+                  <TeamMergedCell team={t} />
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </motion.div>
   );
