@@ -24,6 +24,7 @@ interface TabelloneClientProps {
   torneoIniziale: TournamentWithMatches;
   genere: Genere;
   enableGironiAnimation?: boolean;
+  autoStartAnimationOnMount?: boolean;
 }
 
 const BRACKETS: BracketTipo[] = ["GOLD", "SILVER", "BRONZE"];
@@ -44,6 +45,7 @@ export function TabelloneClient({
   torneoIniziale,
   genere,
   enableGironiAnimation = true,
+  autoStartAnimationOnMount = false,
 }: TabelloneClientProps) {
   const [torneo, setTorneo] = useState(torneoIniziale);
   const [eventQueue, setEventQueue] = useState<MatchLiveEvent[]>([]);
@@ -60,8 +62,9 @@ export function TabelloneClient({
     torneoIniziale.fase
   );
   const [autoCycle, setAutoCycle] = useState(false);
-  const [animationTorneo, setAnimationTorneo] =
-    useState<TournamentWithMatches | null>(null);
+  const [animationTorneo, setAnimationTorneo] = useState<TournamentWithMatches | null>(
+    autoStartAnimationOnMount && enableGironiAnimation ? torneoIniziale : null
+  );
 
   const accent = genere === "MASCHILE" ? "var(--color-blue)" : "var(--color-pink)";
 
@@ -88,6 +91,10 @@ export function TabelloneClient({
             // ignora
           }
         })();
+        return;
+      }
+
+      if (event.tipo === "TORNEO_INIZIATO") {
         return;
       }
 
