@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/prisma";
-import { TabelloneClient } from "@/components/TabelloneClient";
+import { TabelloneShell } from "@/components/TabelloneShell";
 import { TabelloneHeader } from "@/components/TabelloneHeader";
 import type { TournamentWithMatches } from "@/types";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 export default async function TabelloneFemminilePage() {
   const torneo = await prisma.tournament.findFirst({
@@ -44,30 +44,11 @@ export default async function TabelloneFemminilePage() {
 
       <TabelloneHeader genereAttivo="FEMMINILE" />
 
-      {torneo ? (
-        <TabelloneClient
-          torneoIniziale={torneo as unknown as TournamentWithMatches}
-          genere="FEMMINILE"
-        />
-      ) : (
-        <EmptyState />
-      )}
-    </div>
-  );
-}
-
-function EmptyState() {
-  return (
-    <div className="relative z-[2] flex-1 flex flex-col items-center justify-center text-center px-6">
-      <div
-        className="cc-display"
-        style={{ fontSize: 80, color: "var(--color-paper)" }}
-      >
-        Nessun torneo femminile attivo
-      </div>
-      <div className="cc-mono mt-4" style={{ color: "oklch(0.7 0.02 255)" }}>
-        torna presto
-      </div>
+      <TabelloneShell
+        torneoIniziale={(torneo as unknown as TournamentWithMatches) ?? null}
+        genere="FEMMINILE"
+        emptyLabel="Lo spettacolo sta per iniziare"
+      />
     </div>
   );
 }

@@ -57,6 +57,10 @@ export function CampoLiveClient({ field, matchIniziale, sponsors }: Props) {
         return;
       }
 
+      if (event.tipo === "TORNEO_INIZIATO") {
+        return;
+      }
+
       if (
         event.tipo === "PARTITA_INIZIATA" &&
         event.field?.id === field.id

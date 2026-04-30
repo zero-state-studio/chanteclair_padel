@@ -93,7 +93,7 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
 
       return tx.tournament.update({
         where: { id: torneo.id },
-        data: { stato: "ATTIVO", fase: "GIRONI" },
+        data: { fase: "GIRONI" },
         include: tournamentInclude,
       });
     }, { maxWait: 10000, timeout: 30000 });

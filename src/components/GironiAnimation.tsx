@@ -13,14 +13,19 @@ import type {
 
 type Phase = "players" | "grid" | "merge" | "groups" | "done";
 
-const PLAYER_DURATION_MS = 3500;
+const PLAYER_DURATION_MS = 4000; // durata animazione singolo giocatore
 const GRID_HOLD_MS = 2500;
-const MERGE_DURATION_MS = 4500;
+const MERGE_DURATION_MS = 5000;
 const GROUPS_REVEAL_MS = 900;
-const TEAMS_FLY_TOTAL_MS = 4200;
-const FINAL_HOLD_MS = 10000;
+const TEAMS_FLY_TOTAL_MS = 4500;
+const FINAL_HOLD_MS = 7000;
+const GATHER_MS = 2400;
 const FADE_OUT_MS = 3000;
 const SKIP_FADE_MS = 350;
+const TEAMS_HOLD_MS = 4000;
+const MERGE_STAGGER_MS = 320;
+const TEAM_CARD_FADE_MS = 1100;
+const PLAYER_EXIT_MS = 700;
 
 interface OrderedTeam {
   team: GroupTeamWithStats["team"];
@@ -37,18 +42,32 @@ interface GironiAnimationProps {
   onClose: () => void;
 }
 
-function teamColor(idx: number, total: number): string {
-  const hue = (idx * (360 / Math.max(total, 1))) % 360;
-  return `oklch(0.72 0.2 ${hue})`;
-}
+const TEAM_COLOR = "var(--color-yellow)";
 
-function colsForTeams(n: number): number {
+function colsForPlayers(n: number): number {
   if (n <= 2) return 2;
   if (n <= 4) return 2;
-  if (n <= 6) return 3;
-  if (n <= 9) return 3;
+  if (n <= 8) return 4;
   if (n <= 12) return 4;
-  return 4;
+  if (n <= 18) return 6;
+  if (n <= 24) return 6;
+  if (n <= 32) return 8;
+  if (n <= 40) return 8;
+  return 10;
+}
+
+function shuffleSeeded<T>(arr: T[], seed: number): T[] {
+  const out = [...arr];
+  let s = seed || 1;
+  const rng = () => {
+    s = (s * 9301 + 49297) % 233280;
+    return s / 233280;
+  };
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
 }
 
 function colsForGroups(n: number): number {
@@ -110,8 +129,7 @@ export function GironiAnimation({
         });
       });
     }
-    const total = arr.length;
-    return arr.map((t, i) => ({ ...t, color: teamColor(i, total) }));
+    return arr.map((t) => ({ ...t, color: TEAM_COLOR }));
   }, [torneo.groups]);
 
   const orderedPlayers = useMemo(() => {
@@ -122,6 +140,14 @@ export function GironiAnimation({
     }
     return arr;
   }, [orderedTeams]);
+
+  const shuffledPlayers = useMemo(() => {
+    const seed = orderedPlayers.reduce(
+      (acc, e, i) => acc + (e.player.id.charCodeAt(0) || 1) * (i + 3),
+      11
+    );
+    return shuffleSeeded(orderedPlayers, seed);
+  }, [orderedPlayers]);
 
   const skip = useCallback(() => {
     setSlowFade(false);
@@ -145,17 +171,17 @@ export function GironiAnimation({
 
   useEffect(() => {
     if (phase !== "players") return;
-    if (orderedPlayers.length === 0) {
+    if (shuffledPlayers.length === 0) {
       const t = setTimeout(() => setPhase("groups"), 0);
       return () => clearTimeout(t);
     }
-    if (playerIdx >= orderedPlayers.length) {
+    if (playerIdx >= shuffledPlayers.length) {
       const t = setTimeout(() => setPhase("grid"), 250);
       return () => clearTimeout(t);
     }
     const t = setTimeout(() => setPlayerIdx((i) => i + 1), PLAYER_DURATION_MS);
     return () => clearTimeout(t);
-  }, [phase, playerIdx, orderedPlayers.length]);
+  }, [phase, playerIdx, shuffledPlayers.length]);
 
   useEffect(() => {
     if (phase !== "grid") return;
@@ -170,12 +196,14 @@ export function GironiAnimation({
       const t = setTimeout(() => setPhase("groups"), 0);
       return () => clearTimeout(t);
     }
+    const gatherDelay = GATHER_MS;
     const highlightStagger = Math.min(
       240,
       Math.max(120, MERGE_DURATION_MS / (teamsArr.length * 3))
     );
-    const mergeStart = highlightStagger * teamsArr.length + 350;
-    const mergeStagger = 90;
+    const mergeStart =
+      gatherDelay + highlightStagger * teamsArr.length + 350;
+    const mergeStagger = MERGE_STAGGER_MS;
 
     const timers: ReturnType<typeof setTimeout>[] = [];
 
@@ -187,7 +215,7 @@ export function GironiAnimation({
             next.add(t.team.id);
             return next;
           });
-        }, i * highlightStagger)
+        }, gatherDelay + i * highlightStagger)
       );
     });
 
@@ -203,9 +231,11 @@ export function GironiAnimation({
       );
     });
 
+    const lastMergeAt =
+      mergeStart + teamsArr.length * mergeStagger + TEAM_CARD_FADE_MS;
     const finishAt = Math.max(
       MERGE_DURATION_MS,
-      mergeStart + teamsArr.length * mergeStagger + 700
+      lastMergeAt + TEAMS_HOLD_MS
     );
     timers.push(setTimeout(() => setPhase("groups"), finishAt));
 
@@ -222,7 +252,7 @@ export function GironiAnimation({
   }, [phase]);
 
   const currentPlayer =
-    orderedPlayers[Math.min(playerIdx, orderedPlayers.length - 1)] ?? null;
+    shuffledPlayers[Math.min(playerIdx, shuffledPlayers.length - 1)] ?? null;
 
   return (
     <motion.div
@@ -258,13 +288,14 @@ export function GironiAnimation({
               key="players"
               entry={currentPlayer}
               idx={playerIdx}
-              total={orderedPlayers.length}
               accent={accent}
             />
           )}
           {(phase === "grid" || phase === "merge") && (
-            <GridMergePhase
-              key="gridmerge"
+            <FlatGridPhase
+              key="flatgrid"
+              phase={phase}
+              shuffledPlayers={shuffledPlayers}
               orderedTeams={orderedTeams}
               highlightedTeams={highlightedTeams}
               mergingTeams={mergingTeams}
@@ -287,16 +318,13 @@ export function GironiAnimation({
 function PlayersScrollPhase({
   entry,
   idx,
-  total,
-  accent,
 }: {
   entry: { player: PlayerWithMatches; team: OrderedTeam };
   idx: number;
-  total: number;
   accent: string;
 }) {
-  const { player, team } = entry;
-  const safeIdx = Math.min(idx, total - 1);
+  const { player } = entry;
+  const yellow = "var(--color-yellow)";
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -305,10 +333,6 @@ function PlayersScrollPhase({
       transition={{ duration: 0.3 }}
       className="absolute inset-0 flex items-center justify-center px-6"
     >
-      <div className="absolute top-20 left-1/2 -translate-x-1/2 cc-mono text-[10px] tracking-[0.4em] uppercase text-paper/40">
-        Partecipanti · {safeIdx + 1} / {total}
-      </div>
-
       <AnimatePresence mode="wait">
         <motion.div
           key={player.id + "-" + idx}
@@ -321,8 +345,8 @@ function PlayersScrollPhase({
           <div
             className="rounded-full overflow-hidden border-4 mb-6 bg-paper/5"
             style={{
-              borderColor: team.color,
-              boxShadow: `0 0 60px -10px ${team.color}`,
+              borderColor: yellow,
+              boxShadow: `0 0 60px -10px ${yellow}`,
               width: "min(38vw, 360px)",
               height: "min(38vw, 360px)",
             }}
@@ -351,18 +375,12 @@ function PlayersScrollPhase({
           <div
             className="cc-display leading-[0.9]"
             style={{
-              color: accent,
+              color: yellow,
               fontSize: "clamp(2.4rem, 8vw, 6rem)",
               letterSpacing: "0.02em",
             }}
           >
             {player.cognome}
-          </div>
-          <div
-            className="cc-mono mt-4 text-[11px] tracking-[0.3em] uppercase"
-            style={{ color: team.color }}
-          >
-            {team.team.nome}
           </div>
         </motion.div>
       </AnimatePresence>
@@ -370,147 +388,167 @@ function PlayersScrollPhase({
   );
 }
 
-function GridMergePhase({
+function FlatGridPhase({
+  phase,
+  shuffledPlayers,
   orderedTeams,
   highlightedTeams,
   mergingTeams,
 }: {
+  phase: Phase;
+  shuffledPlayers: { player: PlayerWithMatches; team: OrderedTeam }[];
   orderedTeams: OrderedTeam[];
   highlightedTeams: Set<string>;
   mergingTeams: Set<string>;
 }) {
-  const cols = colsForTeams(orderedTeams.length);
+  const cols = colsForPlayers(shuffledPlayers.length);
+
+  const playerItems = useMemo(() => {
+    if (phase === "grid") {
+      return shuffledPlayers.map((entry) => ({
+        key: entry.player.id,
+        entry,
+        teamId: entry.team.team.id,
+      }));
+    }
+    const playerById = new Map<
+      string,
+      { player: PlayerWithMatches; team: OrderedTeam }
+    >();
+    for (const e of shuffledPlayers) playerById.set(e.player.id, e);
+    const list: { key: string; entry: typeof shuffledPlayers[number]; teamId: string }[] = [];
+    for (const t of orderedTeams) {
+      const e1 = playerById.get(t.team.player1.id);
+      const e2 = playerById.get(t.team.player2.id);
+      if (e1) list.push({ key: e1.player.id, entry: e1, teamId: t.team.id });
+      if (e2) list.push({ key: e2.player.id, entry: e2, teamId: t.team.id });
+    }
+    return list;
+  }, [phase, shuffledPlayers, orderedTeams]);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4 }}
-      className="absolute inset-0 flex items-center justify-center p-6 md:p-12"
+      className="absolute inset-0 flex flex-col p-4 md:p-8 pt-14 md:pt-16"
     >
-      <div className="w-full max-w-[1500px]">
-        <div className="cc-mono text-[10px] tracking-[0.4em] uppercase text-paper/40 mb-4 md:mb-6 text-center">
-          — squadre formate
-        </div>
+      <div className="cc-mono text-[10px] tracking-[0.4em] uppercase text-paper/40 mb-2 md:mb-3 text-center shrink-0">
+        — giocatori
+      </div>
+      <div className="relative flex-1 min-h-0">
         <div
-          className="grid gap-3 md:gap-5"
-          style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+          className="absolute inset-0 grid gap-2 md:gap-3"
+          style={{
+            gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+            gridAutoRows: "1fr",
+          }}
         >
-          {orderedTeams.map((t, i) => (
-            <TeamFrame
-              key={t.team.id}
-              team={t}
-              index={i}
-              highlighted={highlightedTeams.has(t.team.id)}
-              merged={mergingTeams.has(t.team.id)}
-            />
-          ))}
+          {playerItems.map((item) => {
+            const highlighted = highlightedTeams.has(item.teamId);
+            const merged = mergingTeams.has(item.teamId);
+            return (
+              <motion.div
+                key={item.key}
+                layout
+                initial={{ opacity: 0, scale: 0.7 }}
+                animate={{
+                  opacity: merged ? 0 : 1,
+                  scale: merged ? 0.7 : 1,
+                }}
+                transition={{
+                  duration: PLAYER_EXIT_MS / 1000,
+                  layout: {
+                    duration: GATHER_MS / 1000,
+                    ease: [0.22, 0.9, 0.34, 1],
+                  },
+                }}
+                className="min-h-0 relative"
+              >
+                <PlayerCell
+                  player={item.entry.player}
+                  color={item.entry.team.color}
+                  highlighted={highlighted}
+                />
+              </motion.div>
+            );
+          })}
         </div>
+
+        {phase === "merge" && (
+          <div
+            className="absolute inset-0 grid gap-2 md:gap-3 pointer-events-none"
+            style={{
+              gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+              gridAutoRows: "1fr",
+            }}
+          >
+            {orderedTeams.map((t, i) => {
+              const merged = mergingTeams.has(t.team.id);
+              const colStart = ((i * 2) % cols) + 1;
+              const rowStart = Math.floor((i * 2) / cols) + 1;
+              return (
+                <motion.div
+                  key={`team-${t.team.id}`}
+                  initial={false}
+                  animate={{
+                    opacity: merged ? 1 : 0,
+                    scale: merged ? 1 : 0.6,
+                  }}
+                  transition={{
+                    duration: TEAM_CARD_FADE_MS / 1000,
+                    ease: [0.22, 0.9, 0.34, 1],
+                  }}
+                  className="min-h-0"
+                  style={{
+                    gridColumn: `${colStart} / span 2`,
+                    gridRow: rowStart,
+                  }}
+                >
+                  <TeamMergedCell team={t} />
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </motion.div>
   );
 }
 
-function TeamFrame({
-  team,
-  index,
-  highlighted,
-  merged,
-}: {
-  team: OrderedTeam;
-  index: number;
-  highlighted: boolean;
-  merged: boolean;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.04 }}
-      className="relative rounded-md border border-paper/10 overflow-hidden"
-      style={{
-        height: "clamp(160px, 22vh, 220px)",
-        background: highlighted
-          ? `color-mix(in oklch, ${team.color} 14%, transparent)`
-          : "color-mix(in oklch, var(--color-night-deep) 60%, transparent)",
-        boxShadow: highlighted
-          ? `inset 0 0 0 1px ${team.color}, 0 0 30px -8px ${team.color}`
-          : "none",
-        transition: "background 0.45s ease, box-shadow 0.45s ease",
-      }}
-    >
-      <AnimatePresence mode="wait">
-        {!merged ? (
-          <motion.div
-            key="pair"
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0, scale: 0.85 }}
-            transition={{ duration: 0.45 }}
-            className="absolute inset-0 grid grid-cols-2 gap-2 p-3"
-          >
-            <PlayerMini
-              player={team.team.player1}
-              color={team.color}
-              align="right"
-              merging={merged}
-              highlighted={highlighted}
-            />
-            <PlayerMini
-              player={team.team.player2}
-              color={team.color}
-              align="left"
-              merging={merged}
-              highlighted={highlighted}
-            />
-          </motion.div>
-        ) : (
-          <motion.div
-            key="team"
-            initial={{ opacity: 0, scale: 0.6 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{
-              duration: 0.55,
-              ease: [0.22, 0.9, 0.34, 1],
-            }}
-            className="absolute inset-0 flex items-center justify-center p-3"
-          >
-            <TeamCardCompact team={team} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  );
-}
-
-function PlayerMini({
+function PlayerCell({
   player,
   color,
-  align,
-  merging,
   highlighted,
 }: {
   player: PlayerWithMatches;
   color: string;
-  align: "left" | "right";
-  merging: boolean;
   highlighted: boolean;
 }) {
   return (
-    <motion.div
-      animate={
-        merging
-          ? { x: align === "right" ? "20%" : "-20%", opacity: 0, scale: 0.8 }
-          : { x: 0, opacity: 1, scale: 1 }
-      }
-      transition={{ duration: 0.45 }}
-      className="flex flex-col items-center justify-center text-center gap-2 min-w-0"
+    <div
+      className="w-full h-full rounded-md flex flex-col items-center justify-center text-center gap-1 p-2"
+      style={{
+        background: highlighted
+          ? `color-mix(in oklch, ${color} 14%, transparent)`
+          : "color-mix(in oklch, var(--color-night-deep) 60%, transparent)",
+        border: highlighted
+          ? `1px solid ${color}`
+          : "1px solid color-mix(in oklch, var(--color-paper) 10%, transparent)",
+        boxShadow: highlighted ? `0 0 30px -8px ${color}` : "none",
+        transition:
+          "background 0.45s ease, border-color 0.45s ease, box-shadow 0.45s ease",
+      }}
     >
       <div
         className="rounded-full overflow-hidden border-2 bg-paper/10"
         style={{
-          width: "clamp(48px, 6vw, 72px)",
-          height: "clamp(48px, 6vw, 72px)",
-          borderColor: highlighted ? color : "color-mix(in oklch, var(--color-paper) 18%, transparent)",
+          width: "clamp(36px, 5vw, 76px)",
+          height: "clamp(36px, 5vw, 76px)",
+          borderColor: highlighted
+            ? color
+            : "color-mix(in oklch, var(--color-paper) 18%, transparent)",
           transition: "border-color 0.45s ease",
         }}
       >
@@ -518,12 +556,12 @@ function PlayerMini({
           <Image
             src={player.fotoUrl}
             alt=""
-            width={96}
-            height={96}
+            width={120}
+            height={120}
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="h-full w-full flex items-center justify-center cc-mono text-paper/80 text-sm">
+          <div className="h-full w-full flex items-center justify-center cc-mono text-paper/85 text-sm">
             {player.nome[0]}
             {player.cognome[0]}
           </div>
@@ -535,14 +573,14 @@ function PlayerMini({
       <div className="text-paper/60 text-[10px] truncate w-full px-1">
         {player.nome}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
-function TeamCardCompact({ team }: { team: OrderedTeam }) {
+function TeamMergedCell({ team }: { team: OrderedTeam }) {
   return (
     <div
-      className="w-full h-full rounded-sm flex flex-col items-center justify-center text-center gap-2 px-3 py-2"
+      className="w-full h-full rounded-md flex flex-col items-center justify-center text-center gap-2 px-3 py-2"
       style={{
         background: `linear-gradient(135deg, color-mix(in oklch, ${team.color} 22%, var(--color-night-deep)) 0%, var(--color-night-deep) 100%)`,
         border: `1px solid ${team.color}`,
@@ -556,23 +594,22 @@ function TeamCardCompact({ team }: { team: OrderedTeam }) {
               key={p.id}
               src={p.fotoUrl}
               alt=""
-              width={56}
-              height={56}
-              className="rounded-full object-cover ring-2 bg-paper/10"
+              width={64}
+              height={64}
+              className="rounded-full object-cover bg-paper/10"
               style={{
-                width: "clamp(40px, 5vw, 56px)",
-                height: "clamp(40px, 5vw, 56px)",
-                borderColor: team.color,
+                width: "clamp(36px, 4.5vw, 56px)",
+                height: "clamp(36px, 4.5vw, 56px)",
                 boxShadow: `0 0 0 2px ${team.color}`,
               }}
             />
           ) : (
             <span
               key={p.id}
-              className="rounded-full ring-2 bg-paper/10 flex items-center justify-center cc-mono text-paper text-xs"
+              className="rounded-full bg-paper/10 flex items-center justify-center cc-mono text-paper text-xs"
               style={{
-                width: "clamp(40px, 5vw, 56px)",
-                height: "clamp(40px, 5vw, 56px)",
+                width: "clamp(36px, 4.5vw, 56px)",
+                height: "clamp(36px, 4.5vw, 56px)",
                 boxShadow: `0 0 0 2px ${team.color}`,
               }}
             >
@@ -588,12 +625,13 @@ function TeamCardCompact({ team }: { team: OrderedTeam }) {
       >
         {team.team.nome}
       </div>
-      <div className="cc-mono text-[10px] text-paper/70 leading-tight">
+      <div className="cc-mono text-[10px] text-paper/70 leading-tight truncate max-w-full">
         {team.team.player1.cognome} / {team.team.player2.cognome}
       </div>
     </div>
   );
 }
+
 
 function GroupsRevealPhase({
   torneo,

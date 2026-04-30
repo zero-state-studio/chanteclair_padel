@@ -113,7 +113,14 @@ export interface GironiAnimationEvent {
   tournamentId: string;
 }
 
+export interface TorneoInizatoEvent {
+  tipo: "TORNEO_INIZIATO";
+  genere: Genere;
+  tournamentId: string;
+}
+
 export type LiveEvent =
   | MatchLiveEvent
   | SponsorShowcaseEvent
-  | GironiAnimationEvent;
+  | GironiAnimationEvent
+  | TorneoInizatoEvent;

@@ -188,6 +188,32 @@ export default function TorneoPage() {
     }
   };
 
+  const handleInizia = async (t: TorneoListItem, conAnimazione: boolean) => {
+    if (!t.groups?.length) {
+      toast.error("Sorteggia prima i gironi");
+      return;
+    }
+    const label = conAnimazione ? "con animazione" : "";
+    const msg = `Iniziare il torneo "${t.nome}"${label ? " " + label : ""}? Il tabellone diventerà pubblicamente visibile.`;
+    if (!confirm(msg)) return;
+    const endpoint = conAnimazione
+      ? `/api/tornei/${t.id}/inizia-con-animazione`
+      : `/api/tornei/${t.id}/inizia`;
+    try {
+      const res = await fetch(endpoint, { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? "Errore avvio torneo");
+      }
+      toast.success(
+        conAnimazione ? "Torneo avviato con animazione" : "Torneo avviato"
+      );
+      await loadAll();
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
+
   const handleStato = async (t: TorneoListItem, stato: StatoTorneo) => {
     const res = await fetch(`/api/tornei/${t.id}`, {
       method: "PATCH",
@@ -360,6 +386,24 @@ export default function TorneoPage() {
                     >
                       {drawing === t.id ? "Sorteggio..." : "Sorteggia Gironi"}
                     </Button>
+                    {t.stato === "BOZZA" && (t.groups?.length ?? 0) > 0 && (
+                      <>
+                        <Button
+                          size="sm"
+                          onClick={() => handleInizia(t, false)}
+                          className="bg-court-line text-court hover:bg-[#e7ff75] h-10"
+                        >
+                          Inizia torneo
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleInizia(t, true)}
+                          className="bg-court-line text-court hover:bg-[#e7ff75] h-10"
+                        >
+                          Inizia torneo con animazione
+                        </Button>
+                      </>
+                    )}
                     {groupComplete && (
                       <Button
                         size="sm"
