@@ -222,7 +222,7 @@ function CampoIdle({
                     >
                       <Image
                         src={current.logoUrl}
-                        alt={current.nome}
+                        alt={current.nome ?? "sponsor"}
                         width={800}
                         height={800}
                         className="object-contain"
@@ -241,16 +241,18 @@ function CampoIdle({
                       🏷️
                     </div>
                   )}
-                  <div
-                    className="cc-display text-paper"
-                    style={{
-                      fontSize: "clamp(28px, 4vw, 56px)",
-                      lineHeight: 1,
-                      letterSpacing: "0.01em",
-                    }}
-                  >
-                    {current.nome}
-                  </div>
+                  {current.nome && (
+                    <div
+                      className="cc-display text-paper"
+                      style={{
+                        fontSize: "clamp(28px, 4vw, 56px)",
+                        lineHeight: 1,
+                        letterSpacing: "0.01em",
+                      }}
+                    >
+                      {current.nome}
+                    </div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>

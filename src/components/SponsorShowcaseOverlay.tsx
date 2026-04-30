@@ -59,20 +59,6 @@ export function SponsorShowcaseOverlay({ sponsors, onClose }: Props) {
 
           <div className="relative h-full flex flex-col items-center justify-center max-w-[1600px] mx-auto px-6 md:px-12 py-8 md:py-12 text-center">
             <motion.div
-              initial={{ y: -30, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3, duration: 0.5 }}
-              className="cc-mono uppercase mb-6 md:mb-10"
-              style={{
-                color: "var(--color-yellow)",
-                letterSpacing: "0.4em",
-                fontSize: "clamp(12px, 1.2vw, 18px)",
-              }}
-            >
-              ★ Partner ★
-            </motion.div>
-
-            <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.4, duration: 0.6 }}
@@ -121,7 +107,7 @@ export function SponsorShowcaseOverlay({ sponsors, onClose }: Props) {
                     >
                       <Image
                         src={s.logoUrl}
-                        alt={s.nome}
+                        alt={s.nome ?? "sponsor"}
                         width={260}
                         height={260}
                         className="object-contain"
@@ -134,28 +120,22 @@ export function SponsorShowcaseOverlay({ sponsors, onClose }: Props) {
                       />
                     </div>
                   )}
-                  <div
-                    className="cc-display text-paper"
-                    style={{
-                      fontSize: "clamp(22px, 2.6vw, 44px)",
-                      lineHeight: 1,
-                      letterSpacing: "0.02em",
-                    }}
-                  >
-                    {s.nome}
-                  </div>
+                  {s.nome && (
+                    <div
+                      className="cc-display text-paper"
+                      style={{
+                        fontSize: "clamp(22px, 2.6vw, 44px)",
+                        lineHeight: 1,
+                        letterSpacing: "0.02em",
+                      }}
+                    >
+                      {s.nome}
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </div>
 
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1.5 }}
-              className="absolute bottom-6 left-0 right-0 text-eyebrow text-paper/40 text-center"
-            >
-              tocca per chiudere · auto · {TOTAL_DURATION_MS / 1000}s
-            </motion.div>
           </div>
         </motion.div>
       )}

@@ -87,10 +87,6 @@ function IntroTeamColumn({
         isLoser ? "opacity-50" : ""
       }`}
     >
-      <div className="text-eyebrow text-paper/50">
-        {side === "left" ? "Team A" : "Team B"}
-      </div>
-
       <div className="relative">
         {isWinner && (
           <motion.div
@@ -124,9 +120,6 @@ function IntroTeamColumn({
       </div>
 
       <div className={side === "left" ? "text-left" : "text-right"}>
-        <div className="text-eyebrow text-paper/50 mb-1">
-          {team.livello > 0 ? `Testa di serie #${team.livello}` : "—"}
-        </div>
         <div
           className="cc-display text-paper"
           style={{ fontSize: "clamp(36px, 5.4vw, 96px)", lineHeight: 0.9 }}
@@ -234,11 +227,6 @@ function WinnerCelebration({
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.35, duration: 0.5 }}
       >
-        {winner.livello > 0 && (
-          <div className="text-eyebrow text-paper/50 mb-2">
-            Testa di serie #{winner.livello}
-          </div>
-        )}
         <div
           className="cc-display text-paper"
           style={{
@@ -268,7 +256,6 @@ function WinnerCelebration({
           transition={{ delay: 0.55, duration: 0.5 }}
           className="flex flex-col items-center"
         >
-          <div className="text-eyebrow text-paper/40 mb-1">Punteggio finale</div>
           <div
             className="text-stat tabular-nums"
             style={{
@@ -362,53 +349,7 @@ export function LiveMatchOverlay({ event, onClose }: LiveMatchOverlayProps) {
             style={{ background: "var(--color-yellow)" }}
           />
 
-          <div className="relative h-full flex flex-col justify-between max-w-[1600px] mx-auto px-6 md:px-12 py-8 md:py-12">
-            {/* Top chrome */}
-            <motion.div
-              initial={{ y: -30, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="flex items-center justify-between"
-            >
-              <div className="text-eyebrow text-paper/60 flex items-center gap-3 flex-wrap">
-                <span>Chanteclair · {event.genere}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                {event.tipo === "PARTITA_INIZIATA" && (
-                  <span className="relative flex h-2 w-2">
-                    <span
-                      className="absolute inline-flex h-full w-full rounded-full opacity-60"
-                      style={{
-                        background: "var(--color-yellow)",
-                        animation: "cc-live-pulse 1.4s ease-in-out infinite",
-                      }}
-                    />
-                    <span
-                      className="relative inline-flex rounded-full h-2 w-2"
-                      style={{ background: "var(--color-yellow)" }}
-                    />
-                  </span>
-                )}
-                <span
-                  className="text-eyebrow"
-                  style={{
-                    color:
-                      event.tipo === "PARTITA_INIZIATA"
-                        ? "var(--color-yellow)"
-                        : "var(--color-red)",
-                  }}
-                >
-                  {event.tipo === "PARTITA_INIZIATA" ? "in campo" : "concluso"}
-                </span>
-              </div>
-              <div className="text-eyebrow text-paper/60 hidden md:block">
-                {new Date().toLocaleTimeString("it-IT", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </div>
-            </motion.div>
-
+          <div className="relative h-full flex flex-col justify-center max-w-[1600px] mx-auto px-6 md:px-12 py-8 md:py-12">
             {/* Center content (intro vs reveal) */}
             <div className="flex-1 min-h-0 flex flex-col items-center justify-center text-center w-full overflow-hidden py-2">
               <AnimatePresence mode="wait">
@@ -430,12 +371,6 @@ export function LiveMatchOverlay({ event, onClose }: LiveMatchOverlayProps) {
                         }}
                         className="flex flex-col items-center mb-3 md:mb-5"
                       >
-                        <div
-                          className="text-eyebrow text-paper/50 mb-1 md:mb-2"
-                          style={{ letterSpacing: "0.5em" }}
-                        >
-                          ◆ campo
-                        </div>
                         <div
                           className="cc-display"
                           style={{
@@ -487,27 +422,18 @@ export function LiveMatchOverlay({ event, onClose }: LiveMatchOverlayProps) {
                         className="flex flex-col items-center gap-2"
                       >
                         {event.tipo === "PARTITA_INIZIATA" ? (
-                          <>
-                            <div className="text-eyebrow text-paper/40">vs</div>
-                            <div
-                              className="cc-display"
-                              style={{
-                                fontSize: "clamp(56px, 8vw, 140px)",
-                                lineHeight: 1,
-                                color: "var(--color-yellow)",
-                              }}
-                            >
-                              ×
-                            </div>
-                            <div className="text-eyebrow text-paper/40">
-                              match
-                            </div>
-                          </>
+                          <div
+                            className="cc-display"
+                            style={{
+                              fontSize: "clamp(56px, 8vw, 140px)",
+                              lineHeight: 1,
+                              color: "var(--color-yellow)",
+                            }}
+                          >
+                            ×
+                          </div>
                         ) : (
                           <>
-                            <div className="text-eyebrow text-paper/40">
-                              Risultato
-                            </div>
                             <div
                               className="text-stat tabular-nums"
                               style={{
@@ -517,9 +443,6 @@ export function LiveMatchOverlay({ event, onClose }: LiveMatchOverlayProps) {
                               }}
                             >
                               {event.punteggio}
-                            </div>
-                            <div className="text-eyebrow text-paper/40">
-                              finale
                             </div>
                           </>
                         )}
@@ -550,22 +473,6 @@ export function LiveMatchOverlay({ event, onClose }: LiveMatchOverlayProps) {
               </AnimatePresence>
             </div>
 
-            {/* Bottom chrome */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1.5 }}
-              className="flex items-center justify-between text-eyebrow text-paper/40"
-            >
-              <span>tocca per chiudere</span>
-              <span className="hidden md:inline">
-                chiusura automatica ·{" "}
-                {event.tipo === "PARTITA_FINITA"
-                  ? `${TOTAL_DURATION_FINITA_MS / 1000}s`
-                  : `${TOTAL_DURATION_INIZIATA_MS / 1000}s`}
-              </span>
-              <span>match #{event.matchId.slice(-6)}</span>
-            </motion.div>
           </div>
 
           {/* Sponsor strip — centered during intro, bottom-right during winner reveal */}
@@ -587,48 +494,40 @@ export function LiveMatchOverlay({ event, onClose }: LiveMatchOverlayProps) {
                     }}
                     className={
                       isCorner
-                        ? "absolute z-20 bottom-16 right-6 md:right-10 flex items-center gap-2 py-1.5 px-2.5 rounded-sm border border-paper/15 bg-paper/[0.05] backdrop-blur-sm"
-                        : "absolute z-20 left-1/2 -translate-x-1/2 bottom-20 md:bottom-24 flex items-center gap-2.5 md:gap-3 py-2 px-3.5 rounded-sm border border-paper/15 bg-paper/[0.04] backdrop-blur-sm"
+                        ? "absolute z-20 bottom-10 right-6 md:right-10 flex items-center gap-3 py-3 px-4 rounded-sm border border-paper/15 bg-paper/[0.05] backdrop-blur-sm"
+                        : "absolute z-20 left-1/2 -translate-x-1/2 bottom-12 md:bottom-16 flex items-center gap-4 md:gap-5 py-4 px-5 rounded-sm border border-paper/15 bg-paper/[0.04] backdrop-blur-sm"
                     }
-                    style={{ maxWidth: "min(560px, 90%)" }}
+                    style={{ maxWidth: "min(720px, 92%)" }}
                   >
-                    <span
-                      className="cc-mono uppercase tracking-[0.28em] text-paper/55 shrink-0"
-                      style={{
-                        fontSize: isCorner
-                          ? "clamp(8px, 0.65vw, 10px)"
-                          : "clamp(9px, 0.75vw, 11px)",
-                      }}
-                    >
-                      Partita offerta da
-                    </span>
                     {event.sponsor!.logoUrl && (
                       <Image
                         src={event.sponsor!.logoUrl}
-                        alt={event.sponsor!.nome}
-                        width={256}
-                        height={256}
-                        className="object-contain bg-paper/10 rounded-sm p-0.5 shrink-0"
+                        alt={event.sponsor!.nome ?? "sponsor"}
+                        width={512}
+                        height={512}
+                        className="object-contain bg-paper/10 rounded-sm p-1 shrink-0"
                         style={{
                           height: isCorner
-                            ? "clamp(20px, 2vw, 26px)"
-                            : "clamp(26px, 2.6vw, 34px)",
+                            ? "clamp(48px, 5vw, 80px)"
+                            : "clamp(72px, 8vw, 128px)",
                           width: "auto",
                         }}
                       />
                     )}
-                    <span
-                      className="cc-display text-paper truncate"
-                      style={{
-                        fontSize: isCorner
-                          ? "clamp(13px, 1.1vw, 18px)"
-                          : "clamp(16px, 1.6vw, 24px)",
-                        lineHeight: 1,
-                        letterSpacing: "0.02em",
-                      }}
-                    >
-                      {event.sponsor!.nome}
-                    </span>
+                    {event.sponsor!.nome && (
+                      <span
+                        className="cc-display text-paper truncate"
+                        style={{
+                          fontSize: isCorner
+                            ? "clamp(16px, 1.4vw, 24px)"
+                            : "clamp(22px, 2.2vw, 36px)",
+                          lineHeight: 1,
+                          letterSpacing: "0.02em",
+                        }}
+                      >
+                        {event.sponsor!.nome}
+                      </span>
+                    )}
                   </motion.div>
                 );
               })()}

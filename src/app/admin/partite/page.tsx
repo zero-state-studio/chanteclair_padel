@@ -351,7 +351,7 @@ function PartitaCard({
                 />
               )}
               <span className="text-cream/85 text-sm font-semibold truncate">
-                {match.sponsor.nome}
+                {match.sponsor.nome ?? "—"}
               </span>
             </div>
           ) : (
@@ -852,7 +852,7 @@ export default function PartitePage() {
                   <option value="">— Rimuovi sponsor —</option>
                   {sponsors.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.nome}
+                      {s.nome ?? `(solo logo) ${s.id.slice(-4)}`}
                     </option>
                   ))}
                 </select>

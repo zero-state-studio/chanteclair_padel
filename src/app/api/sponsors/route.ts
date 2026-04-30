@@ -17,16 +17,20 @@ export async function POST(request: NextRequest) {
   if (unauthorized) return unauthorized;
   const formData = await request.formData();
 
-  const nome = (formData.get("nome") as string | null)?.trim();
+  const nome = (formData.get("nome") as string | null)?.trim() || null;
   const logo = formData.get("logo") as File | null;
+  const hasLogo = !!(logo && logo.size > 0);
 
-  if (!nome) {
-    return NextResponse.json({ error: "nome è richiesto" }, { status: 400 });
+  if (!nome && !hasLogo) {
+    return NextResponse.json(
+      { error: "fornisci almeno nome o logo" },
+      { status: 400 }
+    );
   }
 
   const sponsor = await prisma.sponsor.create({ data: { nome } });
 
-  if (logo && logo.size > 0) {
+  if (hasLogo) {
     try {
       const logoUrl = await saveSponsorLogo(logo, sponsor.id);
       const updated = await prisma.sponsor.update({

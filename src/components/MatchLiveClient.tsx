@@ -239,13 +239,11 @@ export function MatchLiveClient({
         />
       </div>
 
-      <div className="flex items-center justify-between text-eyebrow text-paper/40">
-        <span>match #{match.id.slice(-6)}</span>
-        {match.bracketTipo && <span>{match.bracketTipo}</span>}
-        <span>
-          R{match.round} · P{match.posizione}
-        </span>
-      </div>
+      {match.bracketTipo && (
+        <div className="flex items-center justify-center text-eyebrow text-paper/40">
+          <span>{match.bracketTipo}</span>
+        </div>
+      )}
 
       {match.sponsor && (
         <SponsorStrip sponsor={match.sponsor} showcase={showcaseSponsor} />
@@ -674,7 +672,7 @@ function SponsorStrip({
   sponsor,
   showcase,
 }: {
-  sponsor: { id: string; nome: string; logoUrl: string | null };
+  sponsor: { id: string; nome: string | null; logoUrl: string | null };
   showcase: boolean;
 }) {
   return (
@@ -687,50 +685,43 @@ function SponsorStrip({
         transition={{ duration: 0.45, ease: [0.22, 0.9, 0.34, 1] }}
         className={
           showcase
-            ? "fixed left-1/2 -translate-x-1/2 bottom-8 md:bottom-14 z-30 flex items-center gap-3 md:gap-4 py-3 px-5 rounded-sm border border-paper/20 bg-night-deep/85 backdrop-blur-sm"
-            : "fixed bottom-4 right-4 md:bottom-6 md:right-6 z-30 flex items-center gap-2 py-1.5 px-3 rounded-sm border border-paper/10 bg-night-deep/70 backdrop-blur-sm"
+            ? "fixed left-1/2 -translate-x-1/2 bottom-8 md:bottom-14 z-30 flex items-center gap-4 md:gap-5 py-4 px-6 rounded-sm border border-paper/20 bg-night-deep/85 backdrop-blur-sm"
+            : "fixed bottom-4 right-4 md:bottom-6 md:right-6 z-30 flex items-center gap-3 py-2.5 px-4 rounded-sm border border-paper/10 bg-night-deep/70 backdrop-blur-sm"
         }
         style={{
           boxShadow: showcase
             ? "0 0 0 1px var(--color-yellow), 0 0 60px rgba(236,210,74,0.25)"
             : "none",
-          maxWidth: "min(560px, calc(100vw - 2rem))",
+          maxWidth: "min(720px, calc(100vw - 2rem))",
         }}
       >
-        <span
-          className="cc-mono uppercase text-paper/55 shrink-0"
-          style={{
-            fontSize: showcase ? 11 : 9,
-            letterSpacing: "0.3em",
-          }}
-        >
-          Partita offerta da
-        </span>
         {sponsor.logoUrl && (
           <Image
             src={sponsor.logoUrl}
-            alt={sponsor.nome}
-            width={256}
-            height={256}
-            className="object-contain bg-paper/10 rounded-sm p-0.5 shrink-0"
+            alt={sponsor.nome ?? "sponsor"}
+            width={512}
+            height={512}
+            className="object-contain bg-paper/10 rounded-sm p-1 shrink-0"
             style={{
-              height: showcase ? "clamp(36px, 4vw, 52px)" : 22,
+              height: showcase ? "clamp(72px, 7vw, 110px)" : 56,
               width: "auto",
             }}
           />
         )}
-        <span
-          className="cc-display text-paper truncate"
-          style={{
-            fontSize: showcase
-              ? "clamp(18px, 2vw, 28px)"
-              : "clamp(12px, 1.1vw, 16px)",
-            lineHeight: 1,
-            letterSpacing: "0.02em",
-          }}
-        >
-          {sponsor.nome}
-        </span>
+        {sponsor.nome && (
+          <span
+            className="cc-display text-paper truncate"
+            style={{
+              fontSize: showcase
+                ? "clamp(22px, 2.2vw, 34px)"
+                : "clamp(14px, 1.3vw, 18px)",
+              lineHeight: 1,
+              letterSpacing: "0.02em",
+            }}
+          >
+            {sponsor.nome}
+          </span>
+        )}
       </motion.div>
     </AnimatePresence>
   );
