@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
-import { X } from "lucide-react";
 import type {
   GroupTeamWithStats,
   GroupWithTeams,
@@ -13,11 +12,12 @@ import type {
 
 type Phase = "players" | "grid" | "merge" | "groups" | "done";
 
-const PLAYER_DURATION_MS = 4000; // durata animazione singolo giocatore
+const PLAYER_DURATION_MS = 3300; // durata animazione singolo giocatore
 const GRID_HOLD_MS = 2500;
 const MERGE_DURATION_MS = 5000;
 const GROUPS_REVEAL_MS = 900;
-const TEAMS_FLY_TOTAL_MS = 4500;
+const TEAMS_FLY_TOTAL_MS = 9000;
+const TEAMS_FLY_CARD_DURATION_S = 1.2;
 const FINAL_HOLD_MS = 7000;
 const GATHER_MS = 2400;
 const FADE_OUT_MS = 3000;
@@ -272,16 +272,11 @@ export function GironiAnimation({
       <button
         type="button"
         onClick={skip}
-        className="absolute top-4 right-4 z-50 cc-mono text-paper/70 hover:text-paper bg-court-deep/70 border border-paper/15 rounded-md px-3 py-1.5 flex items-center gap-2 text-[11px] uppercase tracking-wider"
-      >
-        <X className="h-3.5 w-3.5" /> Salta
-      </button>
+        aria-label="Chiudi animazione"
+        className="absolute inset-0 z-40 cursor-pointer bg-transparent"
+      />
 
-      <div className="absolute top-4 left-4 z-50 cc-mono text-[11px] text-paper/50 uppercase tracking-wider">
-        Sorteggio · {torneo.nome}
-      </div>
-
-      <div className="relative z-10 h-full w-full">
+      <div className="relative z-10 h-full w-full pointer-events-none">
         <AnimatePresence mode="wait">
           {phase === "players" && currentPlayer && (
             <PlayersScrollPhase
@@ -432,11 +427,8 @@ function FlatGridPhase({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4 }}
-      className="absolute inset-0 flex flex-col p-4 md:p-8 pt-14 md:pt-16"
+      className="absolute inset-0 flex flex-col p-4 md:p-8 pt-6 md:pt-10"
     >
-      <div className="cc-mono text-[10px] tracking-[0.4em] uppercase text-paper/40 mb-2 md:mb-3 text-center shrink-0">
-        — giocatori
-      </div>
       <div className="relative flex-1 min-h-0">
         <div
           className="absolute inset-0 grid gap-2 md:gap-3"
@@ -669,8 +661,8 @@ function GroupsRevealPhase({
     const map = new Map<string, number>();
     const baseDelay = GROUPS_REVEAL_MS / 1000;
     const stagger = Math.min(
-      0.35,
-      Math.max(0.12, TEAMS_FLY_TOTAL_MS / 1000 / Math.max(1, teamFlyOrder.length))
+      0.6,
+      Math.max(0.22, TEAMS_FLY_TOTAL_MS / 1000 / Math.max(1, teamFlyOrder.length))
     );
     teamFlyOrder.forEach((entry, i) => {
       map.set(entry.team.team.id, baseDelay + i * stagger);
@@ -686,9 +678,6 @@ function GroupsRevealPhase({
       transition={{ duration: 0.4 }}
       className="absolute inset-0 p-4 md:p-8 flex flex-col"
     >
-      <div className="cc-mono text-[10px] tracking-[0.4em] uppercase text-paper/50 mb-3 text-center">
-        — gironi
-      </div>
       <div
         className="grid gap-3 md:gap-5 flex-1 min-h-0"
         style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
@@ -779,7 +768,7 @@ function TeamFlyCard({
       initial={offscreenInit(dir)}
       animate={{ x: 0, y: 0, rotate: 0, opacity: 1 }}
       transition={{
-        duration: 0.7,
+        duration: TEAMS_FLY_CARD_DURATION_S,
         delay,
         ease: [0.22, 0.9, 0.34, 1],
       }}

@@ -26,7 +26,10 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const data: Record<string, unknown> = {};
 
   const nome = formData.get("nome");
-  if (typeof nome === "string" && nome.trim()) data.nome = nome.trim();
+  if (typeof nome === "string") {
+    const trimmed = nome.trim();
+    data.nome = trimmed === "" ? null : trimmed;
+  }
 
   const logo = formData.get("logo") as File | null;
   if (logo && logo.size > 0) {

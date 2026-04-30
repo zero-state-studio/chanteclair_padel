@@ -24,7 +24,7 @@ export interface TeamWithPlayers {
 
 export interface SponsorLite {
   id: string;
-  nome: string;
+  nome: string | null;
   logoUrl: string | null;
 }
 

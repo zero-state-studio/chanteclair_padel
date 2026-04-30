@@ -354,7 +354,7 @@ export default async function HomePage() {
   );
 }
 
-type SponsorLite = { id: string; nome: string; logoUrl: string | null };
+type SponsorLite = { id: string; nome: string | null; logoUrl: string | null };
 
 function Marquee({
   text,
@@ -377,14 +377,14 @@ function Marquee({
               {s.logoUrl && (
                 <Image
                   src={s.logoUrl}
-                  alt={s.nome}
+                  alt={s.nome ?? "sponsor"}
                   width={256}
                   height={256}
                   className="object-contain"
                   style={{ height: 32, width: "auto" }}
                 />
               )}
-              <span>{s.nome}</span>
+              {s.nome && <span>{s.nome}</span>}
             </span>
           ))}
         </>

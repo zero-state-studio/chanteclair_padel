@@ -24,7 +24,7 @@ import { toast } from "sonner";
 
 type Sponsor = {
   id: string;
-  nome: string;
+  nome: string | null;
   logoUrl: string | null;
 };
 
@@ -97,7 +97,7 @@ export default function SponsorPage() {
   const filteredSponsors = useMemo(() => {
     if (!filter.trim()) return sponsors;
     const q = normalize(filter.trim());
-    return sponsors.filter((s) => normalize(s.nome).includes(q));
+    return sponsors.filter((s) => normalize(s.nome ?? "").includes(q));
   }, [sponsors, filter]);
 
   const loadSponsors = useCallback(async () => {
@@ -168,7 +168,7 @@ export default function SponsorPage() {
 
   const openEdit = (s: Sponsor) => {
     setEditing(s);
-    setForm({ nome: s.nome });
+    setForm({ nome: s.nome ?? "" });
     setLogo(null);
     setLogoPreview(s.logoUrl);
     setDialogOpen(true);
@@ -187,14 +187,16 @@ export default function SponsorPage() {
 
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!form.nome.trim()) {
-      toast.error("Nome obbligatorio");
+    const nomeTrim = form.nome.trim();
+    const hasLogo = !!logo || !!editing?.logoUrl;
+    if (!nomeTrim && !hasLogo) {
+      toast.error("Fornisci nome o logo");
       return;
     }
     setSubmitting(true);
     try {
       const fd = new FormData();
-      fd.append("nome", form.nome.trim());
+      fd.append("nome", nomeTrim);
       if (logo) fd.append("logo", logo);
 
       const url = editing ? `/api/sponsors/${editing.id}` : "/api/sponsors";
@@ -215,7 +217,7 @@ export default function SponsorPage() {
   };
 
   const handleDelete = async (s: Sponsor) => {
-    if (!confirm(`Eliminare ${s.nome}? Operazione non reversibile.`)) return;
+    if (!confirm(`Eliminare ${s.nome ?? "sponsor"}? Operazione non reversibile.`)) return;
     const res = await fetch(`/api/sponsors/${s.id}`, { method: "DELETE" });
     if (res.ok) {
       toast.success("Sponsor eliminato");
@@ -260,13 +262,13 @@ export default function SponsorPage() {
           </DialogHeader>
           <form onSubmit={submit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="nome">Nome *</Label>
+              <Label htmlFor="nome">Nome</Label>
               <Input
                 id="nome"
                 value={form.nome}
                 onChange={(e) => setForm({ ...form, nome: e.target.value })}
+                placeholder="Opzionale se carichi un logo"
                 className="bg-cream/5 border-cream/15 text-cream"
-                required
               />
             </div>
             <div className="space-y-2">
@@ -429,7 +431,7 @@ export default function SponsorPage() {
                   checked={selected.has(s.id)}
                   onChange={() => toggleOne(s.id)}
                   className="h-5 w-5 accent-court-line cursor-pointer shrink-0"
-                  aria-label={`Seleziona ${s.nome}`}
+                  aria-label={`Seleziona ${s.nome ?? "sponsor"}`}
                 />
                 {s.logoUrl ? (
                   <Image
@@ -445,7 +447,9 @@ export default function SponsorPage() {
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-cream truncate">{s.nome}</p>
+                  <p className="font-semibold text-cream truncate">
+                    {s.nome ?? <span className="text-cream/40 italic">— solo logo —</span>}
+                  </p>
                 </div>
                 <div className="flex flex-col gap-1 shrink-0">
                   <Button
@@ -540,7 +544,7 @@ export default function SponsorPage() {
                       checked={selected.has(s.id)}
                       onChange={() => toggleOne(s.id)}
                       className="h-4 w-4 accent-court-line cursor-pointer"
-                      aria-label={`Seleziona ${s.nome}`}
+                      aria-label={`Seleziona ${s.nome ?? "sponsor"}`}
                     />
                   </TableCell>
                   <TableCell>
@@ -558,7 +562,9 @@ export default function SponsorPage() {
                       </div>
                     )}
                   </TableCell>
-                  <TableCell>{s.nome}</TableCell>
+                  <TableCell>
+                    {s.nome ?? <span className="text-cream/40 italic">— solo logo —</span>}
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="inline-flex gap-2">
                       <Button
