@@ -100,6 +100,8 @@ export interface MatchLiveEvent {
   genere: Genere;
   sponsor?: SponsorLite | null;
   field?: FieldLite | null;
+  bracket?: BracketTipo | null;
+  isFinal?: boolean;
 }
 
 export interface SponsorShowcaseEvent {

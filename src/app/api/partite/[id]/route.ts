@@ -146,6 +146,11 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       include: matchInclude,
     });
 
+    const bracket = (updated.bracketTipo ?? null) as
+      | "GOLD"
+      | "SILVER"
+      | "BRONZE"
+      | null;
     const event: LiveEvent = {
       tipo: "PARTITA_INIZIATA",
       matchId: updated.id,
@@ -154,6 +159,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       genere: updated.tournament.genere as Genere,
       sponsor: updated.sponsor ?? null,
       field: updated.field ?? null,
+      bracket,
+      isFinal: bracket !== null && updated.round === 1,
     };
     await publishLiveEvent(event);
 
@@ -279,6 +286,11 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       await promoteWinner(updated);
     }
 
+    const finitaBracket = (updated.bracketTipo ?? null) as
+      | "GOLD"
+      | "SILVER"
+      | "BRONZE"
+      | null;
     const event: LiveEvent = {
       tipo: "PARTITA_FINITA",
       matchId: updated.id,
@@ -289,6 +301,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       genere: updated.tournament.genere as Genere,
       sponsor: updated.sponsor ?? null,
       field: updated.field ?? null,
+      bracket: finitaBracket,
+      isFinal: finitaBracket !== null && updated.round === 1,
     };
     await publishLiveEvent(event);
 

@@ -10,6 +10,8 @@ import { RoundLabels } from "@/components/RoundLabels";
 import { LiveMatchOverlay } from "@/components/LiveMatchOverlay";
 import { SponsorShowcaseOverlay } from "@/components/SponsorShowcaseOverlay";
 import { GironiAnimation } from "@/components/GironiAnimation";
+import { FinalPresentation } from "@/components/FinalPresentation";
+import { FinalVictory } from "@/components/FinalVictory";
 import { useRealtime } from "@/hooks/useRealtime";
 import type {
   TournamentWithMatches,
@@ -350,7 +352,30 @@ export function TabelloneClient({
         </div>
       )}
 
-      <LiveMatchOverlay event={currentEvent} onClose={dismissCurrentEvent} />
+      {currentEvent?.tipo === "PARTITA_INIZIATA" &&
+      currentEvent.isFinal &&
+      currentEvent.bracket ? (
+        <FinalPresentation
+          team1={currentEvent.team1}
+          team2={currentEvent.team2}
+          bracket={currentEvent.bracket}
+          onClose={dismissCurrentEvent}
+        />
+      ) : currentEvent?.tipo === "PARTITA_FINITA" &&
+        currentEvent.isFinal &&
+        currentEvent.bracket &&
+        currentEvent.winner ? (
+        <FinalVictory
+          team1={currentEvent.team1}
+          team2={currentEvent.team2}
+          winner={currentEvent.winner}
+          punteggio={currentEvent.punteggio}
+          bracket={currentEvent.bracket}
+          onClose={dismissCurrentEvent}
+        />
+      ) : (
+        <LiveMatchOverlay event={currentEvent} onClose={dismissCurrentEvent} />
+      )}
 
       <SponsorShowcaseOverlay
         sponsors={showcaseSponsors}
