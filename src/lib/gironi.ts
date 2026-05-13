@@ -277,3 +277,30 @@ export function computeStandings(
 
   return sorted.map((e, i) => ({ ...e, posizione: i + 1 }));
 }
+
+export type StandingForCategory = {
+  groupPosizione: number;
+  teamId: string;
+  posizioneFinale: number;
+};
+
+export type CategorieAssignment = {
+  GOLD: string[];
+  SILVER: string[];
+  BRONZE: string[];
+};
+
+export function assegnaCategorie(
+  standings: StandingForCategory[]
+): CategorieAssignment {
+  const sorted = [...standings].sort(
+    (a, b) => a.groupPosizione - b.groupPosizione
+  );
+  const result: CategorieAssignment = { GOLD: [], SILVER: [], BRONZE: [] };
+  for (const s of sorted) {
+    if (s.posizioneFinale === 1) result.GOLD.push(s.teamId);
+    else if (s.posizioneFinale === 2) result.SILVER.push(s.teamId);
+    else if (s.posizioneFinale === 3) result.BRONZE.push(s.teamId);
+  }
+  return result;
+}

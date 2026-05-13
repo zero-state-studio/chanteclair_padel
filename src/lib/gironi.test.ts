@@ -137,3 +137,33 @@ describe("generaMatchGironi1", () => {
     expect(nullVsNull).toHaveLength(0);
   });
 });
+
+import { assegnaCategorie } from "./gironi";
+
+describe("assegnaCategorie", () => {
+  it("groups by posizioneFinale into GOLD/SILVER/BRONZE", () => {
+    const standings = [
+      { groupPosizione: 0, teamId: "tA1", posizioneFinale: 1 },
+      { groupPosizione: 0, teamId: "tA2", posizioneFinale: 2 },
+      { groupPosizione: 0, teamId: "tA3", posizioneFinale: 3 },
+      { groupPosizione: 1, teamId: "tB1", posizioneFinale: 1 },
+      { groupPosizione: 1, teamId: "tB2", posizioneFinale: 2 },
+      { groupPosizione: 1, teamId: "tB3", posizioneFinale: 3 },
+    ];
+    const result = assegnaCategorie(standings);
+    expect(result.GOLD).toEqual(["tA1", "tB1"]);
+    expect(result.SILVER).toEqual(["tA2", "tB2"]);
+    expect(result.BRONZE).toEqual(["tA3", "tB3"]);
+  });
+
+  it("ignores standings beyond position 3", () => {
+    const standings = [
+      { groupPosizione: 0, teamId: "t1", posizioneFinale: 1 },
+      { groupPosizione: 0, teamId: "t4", posizioneFinale: 4 },
+    ];
+    const result = assegnaCategorie(standings);
+    expect(result.GOLD).toEqual(["t1"]);
+    expect(result.SILVER).toEqual([]);
+    expect(result.BRONZE).toEqual([]);
+  });
+});
