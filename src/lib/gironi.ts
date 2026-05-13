@@ -3,7 +3,9 @@ import type { Team } from "@prisma/client";
 export type GroupDraft = {
   nome: string;
   posizione: number;
-  teams: { teamId: string; seed: number | null }[];
+  fase: number;
+  bracketTipo: "GOLD" | "SILVER" | "BRONZE" | null;
+  teams: { teamId: string | null; seed: number | null }[];
 };
 
 export type GroupMatchDraft = {
@@ -27,6 +29,42 @@ const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 export function nomeGirone(posizione: number): string {
   if (posizione < 26) return ALPHABET[posizione];
   return `${ALPHABET[Math.floor(posizione / 26) - 1]}${ALPHABET[posizione % 26]}`;
+}
+
+const NUM_GIRONI_FASE_1 = 12;
+const SIZE_GIRONE = 3;
+const CAPACITA_TOTALE = NUM_GIRONI_FASE_1 * SIZE_GIRONE; // 36
+
+export function distribuisciGironi1(squadre: Team[]): GroupDraft[] {
+  if (squadre.length < 2) {
+    throw new Error("Servono almeno 2 squadre");
+  }
+  if (squadre.length > CAPACITA_TOTALE) {
+    throw new Error(`Massimo ${CAPACITA_TOTALE} squadre supportate in fase 1`);
+  }
+
+  const mescolate = shuffle(squadre);
+  const slots: (Team | null)[] = new Array(CAPACITA_TOTALE).fill(null);
+  mescolate.forEach((t, i) => {
+    slots[i] = t;
+  });
+
+  const gironi: GroupDraft[] = [];
+  for (let g = 0; g < NUM_GIRONI_FASE_1; g++) {
+    const teamSlots: { teamId: string | null; seed: number | null }[] = [];
+    for (let s = 0; s < SIZE_GIRONE; s++) {
+      const team = slots[g * SIZE_GIRONE + s];
+      teamSlots.push({ teamId: team?.id ?? null, seed: null });
+    }
+    gironi.push({
+      nome: nomeGirone(g),
+      posizione: g,
+      fase: 1,
+      bracketTipo: null,
+      teams: teamSlots,
+    });
+  }
+  return gironi;
 }
 
 /**
@@ -67,6 +105,8 @@ export function distribuisciGironi(squadre: Team[]): GroupDraft[] {
   const gironi: GroupDraft[] = sizes.map((_, i) => ({
     nome: nomeGirone(i),
     posizione: i,
+    fase: 1,
+    bracketTipo: null,
     teams: [],
   }));
 
@@ -120,8 +160,8 @@ export function generaMatchGironi(gironi: GroupDraft[]): GroupMatchDraft[] {
         matches.push({
           groupPosizione: g.posizione,
           posizione: pos++,
-          team1Id: teams[i].teamId,
-          team2Id: teams[j].teamId,
+          team1Id: teams[i].teamId as string,
+          team2Id: teams[j].teamId as string,
         });
       }
     }
