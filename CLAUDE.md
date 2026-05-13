@@ -38,7 +38,15 @@ NextAuth v5 with single hardcoded admin from `ADMIN_EMAIL` / `ADMIN_PASSWORD` en
 
 ## Tournament data model
 
-Players → Teams (player1+player2, gender, level) → enter Tournaments. Tournament has two phases: `GIRONI` (round-robin via `Group` + `GroupTeam`) then bracket (`Match.bracketTipo`). `Match.stato` lifecycle: `ATTESA` → `IN_CORSO` → `TERMINATA`. Italian field names throughout schema (`nome`, `cognome`, `genere`, `punteggio`, etc.) — keep this convention in new code and APIs.
+Players → Teams → enter Tournaments (one tournament per `genere`, max 36 teams). `Tournament.fase` lifecycle: `BOZZA` → `GIRONI_1` → `GIRONI_2` → `FINALI` → `COMPLETATO`.
+
+- **GIRONI_1**: 12 random groups of 3 (`Group.fase = 1`, `bracketTipo = null`). Missing slots auto-walkover 6-0.
+- **GIRONI_2**: 12 groups of 3 (`Group.fase = 2`, `bracketTipo ∈ {GOLD, SILVER, BRONZE}`). 1st place of each phase-1 group goes to GOLD, 2nd → SILVER, 3rd → BRONZE; 4 groups per category, random.
+- **FINALI**: 4 matches per category — 2 semifinals (`round = 2`), final (`round = 1, posizione = 0`), 3rd-place playoff (`round = 1, posizione = 1`). Semifinal winner → finale; semifinal loser → 3rd-place playoff. Pairing is random per category.
+
+Group-stage matches: `groupId` set, `round = 0`. Final-stage matches: `bracketTipo` set, `groupId = null`. `Match.stato` lifecycle: `ATTESA` → `IN_CORSO` → `COMPLETATA`. Tie-break in `computeStandings`: punti → scontro diretto (only if exact 2-team tie) → diff games → game vinti.
+
+Italian field names throughout schema (`nome`, `cognome`, `genere`, `punteggio`, etc.) — keep this convention.
 
 ## Routing layout
 
