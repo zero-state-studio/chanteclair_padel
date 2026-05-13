@@ -278,6 +278,43 @@ export function computeStandings(
   return sorted.map((e, i) => ({ ...e, posizione: i + 1 }));
 }
 
+const NUM_GIRONI_FASE_2_PER_CATEGORIA = 4;
+const SIZE_GIRONE_FASE_2 = 3;
+const CAPACITA_FASE_2 = NUM_GIRONI_FASE_2_PER_CATEGORIA * SIZE_GIRONE_FASE_2; // 12
+
+export function distribuisciGironi2(
+  squadre: Team[],
+  bracketTipo: "GOLD" | "SILVER" | "BRONZE",
+  posizioneOffset: number
+): GroupDraft[] {
+  if (squadre.length > CAPACITA_FASE_2) {
+    throw new Error(`Massimo ${CAPACITA_FASE_2} squadre per categoria fase 2`);
+  }
+
+  const mescolate = shuffle(squadre);
+  const slots: (Team | null)[] = new Array(CAPACITA_FASE_2).fill(null);
+  mescolate.forEach((t, i) => {
+    slots[i] = t;
+  });
+
+  const gironi: GroupDraft[] = [];
+  for (let g = 0; g < NUM_GIRONI_FASE_2_PER_CATEGORIA; g++) {
+    const teamSlots: { teamId: string | null; seed: number | null }[] = [];
+    for (let s = 0; s < SIZE_GIRONE_FASE_2; s++) {
+      const team = slots[g * SIZE_GIRONE_FASE_2 + s];
+      teamSlots.push({ teamId: team?.id ?? null, seed: null });
+    }
+    gironi.push({
+      nome: `${bracketTipo[0]}${g + 1}`,
+      posizione: posizioneOffset + g,
+      fase: 2,
+      bracketTipo,
+      teams: teamSlots,
+    });
+  }
+  return gironi;
+}
+
 export type StandingForCategory = {
   groupPosizione: number;
   teamId: string;

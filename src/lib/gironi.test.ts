@@ -138,7 +138,7 @@ describe("generaMatchGironi1", () => {
   });
 });
 
-import { assegnaCategorie } from "./gironi";
+import { assegnaCategorie, distribuisciGironi2 } from "./gironi";
 
 describe("assegnaCategorie", () => {
   it("groups by posizioneFinale into GOLD/SILVER/BRONZE", () => {
@@ -165,5 +165,41 @@ describe("assegnaCategorie", () => {
     expect(result.GOLD).toEqual(["t1"]);
     expect(result.SILVER).toEqual([]);
     expect(result.BRONZE).toEqual([]);
+  });
+});
+
+describe("distribuisciGironi2", () => {
+  it("creates 4 groups of 3 for full category (12 teams)", () => {
+    const teams = Array.from({ length: 12 }, (_, i) => mkTeam(`g${i}`));
+    const gironi = distribuisciGironi2(teams, "GOLD", 0);
+    expect(gironi).toHaveLength(4);
+    for (const g of gironi) {
+      expect(g.teams).toHaveLength(3);
+      expect(g.bracketTipo).toBe("GOLD");
+      expect(g.fase).toBe(2);
+    }
+  });
+
+  it("group names start at posizione offset", () => {
+    const teams = Array.from({ length: 12 }, (_, i) => mkTeam(`g${i}`));
+    const gironi = distribuisciGironi2(teams, "SILVER", 4);
+    expect(gironi.map((g) => g.posizione)).toEqual([4, 5, 6, 7]);
+  });
+
+  it("with fewer than 12 teams, pads with null slots", () => {
+    const teams = Array.from({ length: 9 }, (_, i) => mkTeam(`g${i}`));
+    const gironi = distribuisciGironi2(teams, "GOLD", 0);
+    expect(gironi).toHaveLength(4);
+    const allSlots = gironi.flatMap((g) => g.teams);
+    expect(allSlots.filter((s) => s.teamId === null)).toHaveLength(3);
+  });
+
+  it("each real team appears once", () => {
+    const teams = Array.from({ length: 12 }, (_, i) => mkTeam(`g${i}`));
+    const gironi = distribuisciGironi2(teams, "BRONZE", 8);
+    const ids = gironi
+      .flatMap((g) => g.teams.map((t) => t.teamId))
+      .filter((x): x is string => x !== null);
+    expect(new Set(ids).size).toBe(12);
   });
 });
