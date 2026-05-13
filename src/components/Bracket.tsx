@@ -166,53 +166,70 @@ export function Bracket({
           const isLiveCol = liveRound === round;
 
           if (isFinaleCol) {
+            const finale = matches.find((m) => m.posizione === 0);
+            const terzo = matches.find((m) => m.posizione === 1);
             return (
               <div
                 key={round}
                 data-round={round}
-                className="flex items-center justify-center"
+                className="flex flex-col items-stretch justify-center gap-6"
               >
-                <div
-                  style={{
-                    padding: 4,
-                    background: `linear-gradient(135deg, ${accent}, var(--color-yellow))`,
-                    width: "100%",
-                  }}
-                >
+                {finale && (
                   <div
                     style={{
-                      background: "oklch(0.20 0.04 255)",
-                      padding: 14,
+                      padding: 4,
+                      background: `linear-gradient(135deg, ${accent}, var(--color-yellow))`,
                     }}
                   >
-                    <div
-                      className="cc-mono text-center mb-1.5"
-                      style={{ fontSize: 11, color: "var(--color-yellow)" }}
-                    >
-                      ★ FINALE
-                    </div>
-                    {matches[0] && (
+                    <div style={{ background: "oklch(0.20 0.04 255)", padding: 14 }}>
+                      <div
+                        className="cc-mono text-center mb-1.5"
+                        style={{ fontSize: 11, color: "var(--color-yellow)" }}
+                      >
+                        ★ FINALE
+                      </div>
                       <BracketMatch
-                        match={matches[0]}
+                        match={finale}
                         size={matchSize}
                         accent={accent}
-                        focused={focused === buildCode(matches[0])}
+                        focused={focused === buildCode(finale)}
                         onFocus={onFocus}
-                        code={buildCode(matches[0])}
+                        code={buildCode(finale)}
                       />
-                    )}
-                    <div
-                      className="cc-display text-center mt-2"
-                      style={{
-                        fontSize: 16,
-                        color: "var(--color-yellow)",
-                        letterSpacing: "0.05em",
-                      }}
-                    >
-                      Trofeo Chanteclair
+                      <div
+                        className="cc-display text-center mt-2"
+                        style={{ fontSize: 16, color: "var(--color-yellow)", letterSpacing: "0.05em" }}
+                      >
+                        Trofeo Chanteclair
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
+                {terzo && (
+                  <div
+                    style={{
+                      padding: 3,
+                      background: "oklch(0.45 0.06 60)",
+                    }}
+                  >
+                    <div style={{ background: "oklch(0.20 0.04 255)", padding: 10 }}>
+                      <div
+                        className="cc-mono text-center mb-1"
+                        style={{ fontSize: 10, color: "oklch(0.75 0.08 60)" }}
+                      >
+                        3°/4° POSTO
+                      </div>
+                      <BracketMatch
+                        match={terzo}
+                        size={matchSize}
+                        accent={"oklch(0.65 0.08 30)"}
+                        focused={focused === buildCode(terzo)}
+                        onFocus={onFocus}
+                        code={buildCode(terzo)}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             );
           }
