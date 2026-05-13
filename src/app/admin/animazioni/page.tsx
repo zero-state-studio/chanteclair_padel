@@ -8,17 +8,35 @@ import { toast } from "sonner";
 import { GironiAnimation } from "@/components/GironiAnimation";
 import { LiveMatchOverlay } from "@/components/LiveMatchOverlay";
 import { SponsorShowcaseOverlay } from "@/components/SponsorShowcaseOverlay";
+import { FinalPresentation } from "@/components/FinalPresentation";
+import { FinalVictory } from "@/components/FinalVictory";
 import { GENERE_COLOR, GENERE_LABEL, genereChipStyle } from "@/lib/genere-style";
 import type {
+  BracketTipo,
   FieldLite,
   Genere,
   MatchLiveEvent,
   MatchWithTeams,
   SponsorLite,
+  TeamWithPlayers,
   TournamentWithMatches,
 } from "@/types";
 
 type LiveKind = "PARTITA_INIZIATA" | "PARTITA_FINITA";
+
+const BRACKETS: BracketTipo[] = ["GOLD", "SILVER", "BRONZE"];
+
+const BRACKET_LABEL: Record<BracketTipo, string> = {
+  GOLD: "Gold",
+  SILVER: "Silver",
+  BRONZE: "Bronze",
+};
+
+const BRACKET_ACCENT: Record<BracketTipo, string> = {
+  GOLD: "var(--color-yellow)",
+  SILVER: "oklch(0.85 0.02 255)",
+  BRONZE: "oklch(0.65 0.08 30)",
+};
 
 export default function AnimazioniPage() {
   const [tornei, setTornei] = useState<TournamentWithMatches[]>([]);
@@ -38,24 +56,49 @@ export default function AnimazioniPage() {
   const [livePunteggio, setLivePunteggio] = useState<string>("6-3 6-4");
   const [showcaseSel, setShowcaseSel] = useState<Set<string>>(new Set());
 
+  const [finalBracket, setFinalBracket] = useState<BracketTipo>("GOLD");
+  const [allTeams, setAllTeams] = useState<TeamWithPlayers[]>([]);
+  const [finalKind, setFinalKind] = useState<"INIZIO" | "FINE">("INIZIO");
+  const [finalWinnerSide, setFinalWinnerSide] = useState<"team1" | "team2">(
+    "team1"
+  );
+  const [finalScore, setFinalScore] = useState<string>("6-3 6-4");
+
   const [activeGironi, setActiveGironi] =
     useState<TournamentWithMatches | null>(null);
   const [activeLive, setActiveLive] = useState<MatchLiveEvent | null>(null);
   const [activeShowcase, setActiveShowcase] = useState<SponsorLite[] | null>(
     null
   );
+  const [activeFinal, setActiveFinal] = useState<{
+    team1: TeamWithPlayers;
+    team2: TeamWithPlayers;
+    bracket: BracketTipo;
+  } | null>(null);
+  const [activeVictory, setActiveVictory] = useState<{
+    team1: TeamWithPlayers;
+    team2: TeamWithPlayers;
+    winner: TeamWithPlayers;
+    bracket: BracketTipo;
+    punteggio: string;
+  } | null>(null);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [tRes, sRes, fRes] = await Promise.all([
+      const [tRes, sRes, fRes, mRes, fmRes] = await Promise.all([
         fetch("/api/tornei", { cache: "no-store" }),
         fetch("/api/sponsors", { cache: "no-store" }),
         fetch("/api/campi", { cache: "no-store" }),
+        fetch("/api/squadre?genere=MASCHILE", { cache: "no-store" }),
+        fetch("/api/squadre?genere=FEMMINILE", { cache: "no-store" }),
       ]);
       if (tRes.ok) setTornei((await tRes.json()) as TournamentWithMatches[]);
       if (sRes.ok) setSponsors((await sRes.json()) as SponsorLite[]);
       if (fRes.ok) setFields((await fRes.json()) as FieldLite[]);
+      const m = mRes.ok ? ((await mRes.json()) as TeamWithPlayers[]) : [];
+      const f = fmRes.ok ? ((await fmRes.json()) as TeamWithPlayers[]) : [];
+      setAllTeams([...m, ...f]);
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
@@ -166,6 +209,28 @@ export default function AnimazioniPage() {
       else next.add(id);
       return next;
     });
+
+  const launchFinal = () => {
+    if (allTeams.length < 2) {
+      toast.error("Servono almeno 2 squadre in archivio");
+      return;
+    }
+    const shuffled = [...allTeams].sort(() => Math.random() - 0.5);
+    const t1 = shuffled[0];
+    const t2 = shuffled[1];
+    if (finalKind === "INIZIO") {
+      setActiveFinal({ team1: t1, team2: t2, bracket: finalBracket });
+    } else {
+      const winner = finalWinnerSide === "team1" ? t1 : t2;
+      setActiveVictory({
+        team1: t1,
+        team2: t2,
+        winner,
+        bracket: finalBracket,
+        punteggio: finalScore || "6-0 6-0",
+      });
+    }
+  };
 
   return (
     <div className="mx-auto max-w-[1400px] px-4 md:px-12 py-6 md:py-12 space-y-8 md:space-y-12">
@@ -485,6 +550,115 @@ export default function AnimazioniPage() {
         )}
       </section>
 
+      {/* Finale tabellone */}
+      <section className="rounded-sm border border-line bg-court-deep p-5 md:p-8">
+        <div className="text-eyebrow text-court-line mb-2">— finale</div>
+        <h2 className="font-display text-2xl md:text-3xl mb-2 text-cream">
+          Animazioni finale
+        </h2>
+        <p className="text-cream/60 text-sm mb-5">
+          Inizio: ingresso, esplosione, faceoff. Fine: vincitore distrugge
+          avversario, CAMPIONI, confetti. Anteprima con 2 squadre random
+          dall&apos;archivio ({allTeams.length}).
+        </p>
+
+        <div className="flex gap-2 mb-4">
+          {(["INIZIO", "FINE"] as const).map((k) => {
+            const active = finalKind === k;
+            return (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setFinalKind(k)}
+                className={`px-4 py-2 rounded-sm border text-sm cc-mono uppercase tracking-wider ${
+                  active
+                    ? "bg-court-line text-court border-court-line"
+                    : "bg-transparent border-cream/20 text-cream/70 hover:bg-cream/5"
+                }`}
+              >
+                {k === "INIZIO" ? "Inizio" : "Fine"}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="space-y-2 mb-5">
+          <Label>Bracket</Label>
+          <div className="flex gap-2">
+            {BRACKETS.map((b) => {
+              const active = finalBracket === b;
+              return (
+                <button
+                  key={b}
+                  type="button"
+                  onClick={() => setFinalBracket(b)}
+                  className={`flex-1 px-3 py-2 rounded-sm border text-sm cc-mono uppercase tracking-wider transition-colors ${
+                    active
+                      ? "text-court border-current"
+                      : "bg-transparent border-cream/15 text-cream/70 hover:bg-cream/5"
+                  }`}
+                  style={
+                    active
+                      ? {
+                          backgroundColor: BRACKET_ACCENT[b],
+                          borderColor: BRACKET_ACCENT[b],
+                        }
+                      : undefined
+                  }
+                >
+                  {BRACKET_LABEL[b]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {finalKind === "FINE" && (
+          <div className="grid md:grid-cols-2 gap-4 mb-5">
+            <div className="space-y-2">
+              <Label>Vincitore</Label>
+              <div className="flex gap-2">
+                {(["team1", "team2"] as const).map((s) => {
+                  const active = finalWinnerSide === s;
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setFinalWinnerSide(s)}
+                      className={`flex-1 px-3 py-2 rounded-sm border text-sm ${
+                        active
+                          ? "bg-court-line/10 border-court-line text-cream"
+                          : "bg-transparent border-cream/15 text-cream/70 hover:bg-cream/5"
+                      }`}
+                    >
+                      {s === "team1" ? "Team A (sx)" : "Team B (dx)"}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="final-score">Punteggio</Label>
+              <input
+                id="final-score"
+                value={finalScore}
+                onChange={(e) => setFinalScore(e.target.value)}
+                placeholder="6-3 6-4"
+                className="w-full bg-cream/5 border border-cream/15 text-cream rounded-md h-11 px-3"
+              />
+            </div>
+          </div>
+        )}
+
+        <Button
+          onClick={launchFinal}
+          disabled={allTeams.length < 2}
+          className="bg-court-line text-court hover:bg-[#e7ff75] h-11"
+        >
+          Lancia {finalKind === "INIZIO" ? "presentazione" : "verdetto"} (random)
+        </Button>
+      </section>
+
       {activeGironi && (
         <GironiAnimation
           torneo={activeGironi}
@@ -502,6 +676,26 @@ export default function AnimazioniPage() {
         sponsors={activeShowcase}
         onClose={() => setActiveShowcase(null)}
       />
+
+      {activeFinal && (
+        <FinalPresentation
+          team1={activeFinal.team1}
+          team2={activeFinal.team2}
+          bracket={activeFinal.bracket}
+          onClose={() => setActiveFinal(null)}
+        />
+      )}
+
+      {activeVictory && (
+        <FinalVictory
+          team1={activeVictory.team1}
+          team2={activeVictory.team2}
+          winner={activeVictory.winner}
+          punteggio={activeVictory.punteggio}
+          bracket={activeVictory.bracket}
+          onClose={() => setActiveVictory(null)}
+        />
+      )}
     </div>
   );
 }

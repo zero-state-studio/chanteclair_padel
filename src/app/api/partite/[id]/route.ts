@@ -146,6 +146,11 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       include: matchInclude,
     });
 
+    const bracket = (updated.bracketTipo ?? null) as
+      | "GOLD"
+      | "SILVER"
+      | "BRONZE"
+      | null;
     const event: LiveEvent = {
       tipo: "PARTITA_INIZIATA",
       matchId: updated.id,
@@ -154,6 +159,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       genere: updated.tournament.genere as Genere,
       sponsor: updated.sponsor ?? null,
       field: updated.field ?? null,
+      bracket,
+      isFinal: bracket !== null && updated.round === 1,
     };
     await publishLiveEvent(event);
 
@@ -277,8 +284,16 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       await updateGroupStats(updated.groupId);
     } else {
       await promoteWinner(updated);
+      await promoteLoser(updated);
     }
 
+    await checkTournamentCompletion(updated.tournamentId);
+
+    const finitaBracket = (updated.bracketTipo ?? null) as
+      | "GOLD"
+      | "SILVER"
+      | "BRONZE"
+      | null;
     const event: LiveEvent = {
       tipo: "PARTITA_FINITA",
       matchId: updated.id,
@@ -289,6 +304,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       genere: updated.tournament.genere as Genere,
       sponsor: updated.sponsor ?? null,
       field: updated.field ?? null,
+      bracket: finitaBracket,
+      isFinal: finitaBracket !== null && updated.round === 1,
     };
     await publishLiveEvent(event);
 
@@ -329,6 +346,15 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
         bracketTipo: updated.bracketTipo,
         round: updated.round,
         posizione: updated.posizione,
+        winnerId: wasWinnerId,
+      });
+      await unpromoteLoser({
+        tournamentId: updated.tournamentId,
+        bracketTipo: updated.bracketTipo,
+        round: updated.round,
+        posizione: updated.posizione,
+        team1Id: match.team1Id,
+        team2Id: match.team2Id,
         winnerId: wasWinnerId,
       });
     }
@@ -379,6 +405,8 @@ type MatchForPromotion = {
   groupId: string | null;
   round: number;
   posizione: number;
+  team1Id: string | null;
+  team2Id: string | null;
   winnerId: string | null;
 };
 
@@ -403,6 +431,99 @@ async function promoteWinner(match: MatchForPromotion) {
     where: { id: nextMatch.id },
     data: isTeam1 ? { team1Id: match.winnerId } : { team2Id: match.winnerId },
   });
+}
+
+async function promoteLoser(match: {
+  id: string;
+  tournamentId: string;
+  bracketTipo: string | null;
+  round: number;
+  posizione: number;
+  team1Id: string | null;
+  team2Id: string | null;
+  winnerId: string | null;
+}) {
+  // Only applies to semifinals (round 2) in our flow
+  if (match.round !== 2) return;
+  if (!match.winnerId || !match.team1Id || !match.team2Id) return;
+
+  const loserId =
+    match.team1Id === match.winnerId ? match.team2Id : match.team1Id;
+
+  // 3°/4° playoff lives at round 1, posizione 1
+  const playoff = await prisma.match.findFirst({
+    where: {
+      tournamentId: match.tournamentId,
+      bracketTipo: match.bracketTipo,
+      round: 1,
+      posizione: 1,
+    },
+  });
+  if (!playoff) return;
+
+  // Semi pos 0 → 3°/4° team1; semi pos 1 → 3°/4° team2
+  const isTeam1 = match.posizione % 2 === 0;
+  await prisma.match.update({
+    where: { id: playoff.id },
+    data: isTeam1 ? { team1Id: loserId } : { team2Id: loserId },
+  });
+}
+
+async function unpromoteLoser(match: {
+  tournamentId: string;
+  bracketTipo: string | null;
+  round: number;
+  posizione: number;
+  team1Id: string | null;
+  team2Id: string | null;
+  winnerId: string;
+}) {
+  if (match.round !== 2) return;
+  const loserId =
+    match.team1Id === match.winnerId ? match.team2Id : match.team1Id;
+  if (!loserId) return;
+
+  const playoff = await prisma.match.findFirst({
+    where: {
+      tournamentId: match.tournamentId,
+      bracketTipo: match.bracketTipo,
+      round: 1,
+      posizione: 1,
+    },
+  });
+  if (!playoff) return;
+
+  const isTeam1 = match.posizione % 2 === 0;
+  const slotMatches = isTeam1
+    ? playoff.team1Id === loserId
+    : playoff.team2Id === loserId;
+  if (!slotMatches) return;
+
+  await prisma.match.update({
+    where: { id: playoff.id },
+    data: isTeam1 ? { team1Id: null } : { team2Id: null },
+  });
+}
+
+async function checkTournamentCompletion(tournamentId: string) {
+  const torneo = await prisma.tournament.findUnique({
+    where: { id: tournamentId },
+    select: { fase: true },
+  });
+  if (!torneo || torneo.fase !== "FINALI") return;
+
+  const remaining = await prisma.match.count({
+    where: {
+      tournamentId,
+      stato: { not: "COMPLETATA" },
+    },
+  });
+  if (remaining === 0) {
+    await prisma.tournament.update({
+      where: { id: tournamentId },
+      data: { fase: "COMPLETATO" },
+    });
+  }
 }
 
 async function updateGroupStats(groupId: string) {

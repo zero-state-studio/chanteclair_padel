@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { calcolaSizesGironi } from "@/lib/gironi";
 import { GENERE_COLOR, genereChipStyle } from "@/lib/genere-style";
 import type { Genere, StatoTorneo, TournamentWithMatches } from "@/types";
 
@@ -133,15 +132,16 @@ export default function TorneoPage() {
       toast.error(`Servono almeno 2 squadre (${t.genere})`);
       return;
     }
-    const sizes = calcolaSizesGironi(numSquadre);
-    const da3 = sizes.filter((s) => s === 3).length;
-    const da2 = sizes.filter((s) => s === 2).length;
-    const haPartite = t.matches?.length > 0;
-
+    if (numSquadre > 36) {
+      toast.error(`Massimo 36 squadre supportate (${t.genere}, attuali: ${numSquadre})`);
+      return;
+    }
+    const haPartite = (t.matches?.length ?? 0) > 0;
+    const buchi = 36 - numSquadre;
     const msg = [
-      `Sorteggio gironi: ${sizes.length} gironi (${da3} da 3${
-        da2 > 0 ? `, ${da2} da 2` : ""
-      }).`,
+      `Sorteggio fase 1: 12 gironi da 3 squadre${
+        buchi > 0 ? ` (${buchi} slot vuoti, walkover automatici)` : ""
+      }.`,
       haPartite ? "ATTENZIONE: gironi e partite esistenti verranno cancellati." : "",
       "Confermi?",
     ]
@@ -157,7 +157,7 @@ export default function TorneoPage() {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error ?? "Errore sorteggio");
       }
-      toast.success("Sorteggio completato");
+      toast.success("Sorteggio fase 1 completato");
       await loadAll();
     } catch (err) {
       toast.error((err as Error).message);
@@ -166,22 +166,44 @@ export default function TorneoPage() {
     }
   };
 
-  const handleGeneraBracket = async (t: TorneoListItem) => {
+  const handleGeneraGironi2 = async (t: TorneoListItem) => {
     if (
       !confirm(
-        `Generare bracket GOLD/SILVER/BRONZE per "${t.nome}"? Le partite girone non potranno più essere modificate.`
+        `Generare gironi fase 2 (Gold/Silver/Bronze) per "${t.nome}"? Le partite fase 1 non saranno più modificabili.`
       )
     )
       return;
     try {
-      const res = await fetch(`/api/tornei/${t.id}/genera-bracket`, {
+      const res = await fetch(`/api/tornei/${t.id}/genera-gironi-2`, {
         method: "POST",
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error ?? "Errore");
       }
-      toast.success("Bracket generato");
+      toast.success("Gironi fase 2 generati");
+      await loadAll();
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
+
+  const handleGeneraFinali = async (t: TorneoListItem) => {
+    if (
+      !confirm(
+        `Generare semifinali + finali per "${t.nome}"?`
+      )
+    )
+      return;
+    try {
+      const res = await fetch(`/api/tornei/${t.id}/genera-finali`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? "Errore");
+      }
+      toast.success("Finali generate");
       await loadAll();
     } catch (err) {
       toast.error((err as Error).message);
@@ -327,11 +349,6 @@ export default function TorneoPage() {
             {tornei.map((t) => {
               const partite = t.matches?.length ?? 0;
               const squadreDisp = counts[t.genere as Genere];
-              const groupMatches = t.matches?.filter((m) => m.groupId !== null) ?? [];
-              const groupComplete =
-                t.fase === "GIRONI" &&
-                groupMatches.length > 0 &&
-                groupMatches.every((m) => m.stato === "COMPLETATA");
               const generaLabel =
                 t.genere === "MASCHILE" ? "Maschile" : t.genere === "FEMMINILE" ? "Femminile" : "Misto";
               const accent = GENERE_COLOR[t.genere as Genere];
@@ -404,15 +421,53 @@ export default function TorneoPage() {
                         </Button>
                       </>
                     )}
-                    {groupComplete && (
-                      <Button
-                        size="sm"
-                        onClick={() => handleGeneraBracket(t)}
-                        className="bg-court-line text-court hover:bg-[#e7ff75] h-10"
-                      >
-                        Genera Bracket
-                      </Button>
-                    )}
+                    {(() => {
+                      const phase1Matches = t.matches?.filter(
+                        (m) => m.groupId !== null && m.round === 0
+                      ) ?? [];
+                      const phase2GroupIds = new Set(
+                        t.groups?.filter((g) => g.fase === 2).map((g) => g.id) ?? []
+                      );
+                      const phase1GroupIds = new Set(
+                        t.groups?.filter((g) => g.fase === 1).map((g) => g.id) ?? []
+                      );
+                      const phase1Matches1 = phase1Matches.filter(
+                        (m) => phase1GroupIds.has(m.groupId!)
+                      );
+                      const phase2Matches = phase1Matches.filter(
+                        (m) => phase2GroupIds.has(m.groupId!)
+                      );
+                      const fase1Complete =
+                        t.fase === "GIRONI_1" &&
+                        phase1Matches1.length > 0 &&
+                        phase1Matches1.every((m) => m.stato === "COMPLETATA");
+                      const fase2Complete =
+                        t.fase === "GIRONI_2" &&
+                        phase2Matches.length > 0 &&
+                        phase2Matches.every((m) => m.stato === "COMPLETATA");
+                      return (
+                        <>
+                          {fase1Complete && (
+                            <Button
+                              size="sm"
+                              onClick={() => handleGeneraGironi2(t)}
+                              className="bg-court-line text-court hover:bg-[#e7ff75] h-10"
+                            >
+                              Genera Gironi 2
+                            </Button>
+                          )}
+                          {fase2Complete && (
+                            <Button
+                              size="sm"
+                              onClick={() => handleGeneraFinali(t)}
+                              className="bg-court-line text-court hover:bg-[#e7ff75] h-10"
+                            >
+                              Genera Finali
+                            </Button>
+                          )}
+                        </>
+                      );
+                    })()}
                     {partite > 0 ? (
                       <Link
                         href={`/admin/tabelloni?id=${t.id}`}

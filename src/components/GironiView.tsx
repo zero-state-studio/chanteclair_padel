@@ -77,8 +77,24 @@ export function GironiView({
               style={{ borderColor: "oklch(0.32 0.05 255)" }}
             >
               <div className="flex items-center justify-between mb-2 shrink-0">
-                <h3 className="cc-display text-base md:text-lg text-paper leading-tight">
+                <h3 className="cc-display text-base md:text-lg text-paper leading-tight flex items-center gap-2">
                   Girone {g.nome}
+                  {g.bracketTipo && (
+                    <span
+                      className="cc-mono text-[9px] px-1.5 py-0.5 rounded"
+                      style={{
+                        background:
+                          g.bracketTipo === "GOLD"
+                            ? "var(--color-yellow)"
+                            : g.bracketTipo === "SILVER"
+                            ? "oklch(0.85 0.02 255)"
+                            : "oklch(0.65 0.08 30)",
+                        color: "var(--color-night-deep)",
+                      }}
+                    >
+                      {g.bracketTipo}
+                    </span>
+                  )}
                 </h3>
                 <span
                   className="cc-mono text-[9px]"

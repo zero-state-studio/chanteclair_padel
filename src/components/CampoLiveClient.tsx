@@ -7,6 +7,8 @@ import { useRealtime } from "@/hooks/useRealtime";
 import { LiveMatchOverlay } from "@/components/LiveMatchOverlay";
 import { MatchLiveClient } from "@/components/MatchLiveClient";
 import { SponsorShowcaseOverlay } from "@/components/SponsorShowcaseOverlay";
+import { FinalPresentation } from "@/components/FinalPresentation";
+import { FinalVictory } from "@/components/FinalVictory";
 import type {
   FieldLite,
   Genere,
@@ -112,10 +114,33 @@ export function CampoLiveClient({ field, matchIniziale, sponsors }: Props) {
         <CampoIdle field={field} sponsors={sponsors} />
       )}
 
-      <LiveMatchOverlay
-        event={overlayEvent}
-        onClose={() => setOverlayEvent(null)}
-      />
+      {overlayEvent?.tipo === "PARTITA_INIZIATA" &&
+      overlayEvent.isFinal &&
+      overlayEvent.bracket ? (
+        <FinalPresentation
+          team1={overlayEvent.team1}
+          team2={overlayEvent.team2}
+          bracket={overlayEvent.bracket}
+          onClose={() => setOverlayEvent(null)}
+        />
+      ) : overlayEvent?.tipo === "PARTITA_FINITA" &&
+        overlayEvent.isFinal &&
+        overlayEvent.bracket &&
+        overlayEvent.winner ? (
+        <FinalVictory
+          team1={overlayEvent.team1}
+          team2={overlayEvent.team2}
+          winner={overlayEvent.winner}
+          punteggio={overlayEvent.punteggio}
+          bracket={overlayEvent.bracket}
+          onClose={() => setOverlayEvent(null)}
+        />
+      ) : (
+        <LiveMatchOverlay
+          event={overlayEvent}
+          onClose={() => setOverlayEvent(null)}
+        />
+      )}
 
       <SponsorShowcaseOverlay
         sponsors={showcaseSponsors}

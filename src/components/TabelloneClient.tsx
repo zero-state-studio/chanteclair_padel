@@ -10,6 +10,8 @@ import { RoundLabels } from "@/components/RoundLabels";
 import { LiveMatchOverlay } from "@/components/LiveMatchOverlay";
 import { SponsorShowcaseOverlay } from "@/components/SponsorShowcaseOverlay";
 import { GironiAnimation } from "@/components/GironiAnimation";
+import { FinalPresentation } from "@/components/FinalPresentation";
+import { FinalVictory } from "@/components/FinalVictory";
 import { useRealtime } from "@/hooks/useRealtime";
 import type {
   TournamentWithMatches,
@@ -58,8 +60,12 @@ export function TabelloneClient({
   const [focused, setFocused] = useState<string | null>(null);
   const [userMode, setUserMode] = useState<BracketViewMode | null>(null);
   const [activeBracket, setActiveBracket] = useState<BracketTipo>("GOLD");
-  const [activePhase, setActivePhase] = useState<"GIRONI" | "BRACKET">(
-    torneoIniziale.fase
+  const [activePhase, setActivePhase] = useState<"GIRONI_1" | "GIRONI_2" | "FINALI">(
+    torneoIniziale.fase === "BOZZA"
+      ? "GIRONI_1"
+      : torneoIniziale.fase === "COMPLETATO"
+      ? "FINALI"
+      : (torneoIniziale.fase as "GIRONI_1" | "GIRONI_2" | "FINALI")
   );
   const [autoCycle, setAutoCycle] = useState(false);
   const [animationTorneo, setAnimationTorneo] = useState<TournamentWithMatches | null>(
@@ -139,16 +145,19 @@ export function TabelloneClient({
 
   useRealtime(handleSSEEvent);
 
-  const hasGroups = torneo.groups.length > 0;
-  const hasBracket = torneo.fase === "BRACKET";
-  const isFaseGironi = activePhase === "GIRONI" || !hasBracket;
+  const hasFase1 = torneo.groups.some((g) => g.fase === 1);
+  const hasFase2 = torneo.groups.some((g) => g.fase === 2);
+  const hasFinali = torneo.matches.some((m) => m.bracketTipo !== null && m.groupId === null);
+  const isFaseGironi = activePhase === "GIRONI_1" || activePhase === "GIRONI_2";
 
   const bracketMatchesByTipo = useMemo(() => {
     const map = new Map<BracketTipo, typeof torneo.matches>();
     for (const tipo of BRACKETS) {
       map.set(
         tipo,
-        torneo.matches.filter((m) => m.bracketTipo === tipo)
+        torneo.matches.filter(
+          (m) => m.bracketTipo === tipo && m.groupId === null
+        )
       );
     }
     return map;
@@ -157,6 +166,14 @@ export function TabelloneClient({
   const bracketsConPartite = useMemo(
     () => BRACKETS.filter((t) => (bracketMatchesByTipo.get(t)?.length ?? 0) > 0),
     [bracketMatchesByTipo]
+  );
+
+  const bracketsConGironi2 = useMemo(
+    () =>
+      BRACKETS.filter((t) =>
+        torneo.groups.some((g) => g.fase === 2 && g.bracketTipo === t)
+      ),
+    [torneo.groups]
   );
 
   const torneoActiveBracket = useMemo<TournamentWithMatches>(
@@ -187,12 +204,14 @@ export function TabelloneClient({
   }, [liveRound]);
 
   useEffect(() => {
-    setActivePhase(torneo.fase);
+    if (torneo.fase === "BOZZA") setActivePhase("GIRONI_1");
+    else if (torneo.fase === "COMPLETATO") setActivePhase("FINALI");
+    else setActivePhase(torneo.fase as "GIRONI_1" | "GIRONI_2" | "FINALI");
   }, [torneo.fase]);
 
   useEffect(() => {
     if (!autoCycle) return;
-    if (isFaseGironi) return;
+    if (activePhase !== "FINALI") return;
     if (bracketsConPartite.length < 2) return;
     const id = setInterval(() => {
       setActiveBracket((curr) => {
@@ -202,7 +221,7 @@ export function TabelloneClient({
       });
     }, 20000);
     return () => clearInterval(id);
-  }, [autoCycle, isFaseGironi, bracketsConPartite]);
+  }, [autoCycle, activePhase, bracketsConPartite]);
 
   const roundsSummary = useMemo(() => {
     const map = new Map<number, number>();
@@ -239,26 +258,28 @@ export function TabelloneClient({
         accent={accent}
       />
 
-      {(hasBracket && hasGroups) || !isFaseGironi ? (
+      {hasFase1 || hasFase2 || hasFinali ? (
         <div
           className="relative z-[3] flex flex-wrap items-center gap-3 px-4 md:px-8 py-2 border-b"
           style={{ borderColor: "oklch(0.3 0.04 255)" }}
         >
-          {hasBracket && hasGroups && (
+          {(hasFase1 || hasFase2 || hasFinali) && (
             <PhaseToggle
               active={activePhase}
               onChange={setActivePhase}
+              available={{ fase1: hasFase1, fase2: hasFase2, finali: hasFinali }}
               accent={accent}
             />
           )}
-          {!isFaseGironi && bracketsConPartite.length > 1 && (
-            <BracketTabs
-              brackets={bracketsConPartite}
-              active={activeBracket}
-              onChange={setActiveBracket}
-            />
-          )}
-          {!isFaseGironi && (
+          {activePhase !== "GIRONI_1" &&
+            (activePhase === "FINALI" ? bracketsConPartite.length > 1 : bracketsConGironi2.length > 1) && (
+              <BracketTabs
+                brackets={activePhase === "FINALI" ? bracketsConPartite : bracketsConGironi2}
+                active={activeBracket}
+                onChange={setActiveBracket}
+              />
+            )}
+          {activePhase === "FINALI" && (
             <div className="ml-auto flex items-center gap-3 flex-wrap">
               {bracketsConPartite.length > 1 && (
                 <AutoToggle
@@ -277,7 +298,15 @@ export function TabelloneClient({
       ) : null}
 
       {isFaseGironi ? (
-        <GironiView groups={torneo.groups} matches={torneo.matches} accent={accent} />
+        <GironiView
+          groups={
+            activePhase === "GIRONI_1"
+              ? torneo.groups.filter((g) => g.fase === 1)
+              : torneo.groups.filter((g) => g.fase === 2 && g.bracketTipo === activeBracket)
+          }
+          matches={torneo.matches}
+          accent={accent}
+        />
       ) : (
         <div
           className="relative isolate overflow-hidden"
@@ -350,7 +379,30 @@ export function TabelloneClient({
         </div>
       )}
 
-      <LiveMatchOverlay event={currentEvent} onClose={dismissCurrentEvent} />
+      {currentEvent?.tipo === "PARTITA_INIZIATA" &&
+      currentEvent.isFinal &&
+      currentEvent.bracket ? (
+        <FinalPresentation
+          team1={currentEvent.team1}
+          team2={currentEvent.team2}
+          bracket={currentEvent.bracket}
+          onClose={dismissCurrentEvent}
+        />
+      ) : currentEvent?.tipo === "PARTITA_FINITA" &&
+        currentEvent.isFinal &&
+        currentEvent.bracket &&
+        currentEvent.winner ? (
+        <FinalVictory
+          team1={currentEvent.team1}
+          team2={currentEvent.team2}
+          winner={currentEvent.winner}
+          punteggio={currentEvent.punteggio}
+          bracket={currentEvent.bracket}
+          onClose={dismissCurrentEvent}
+        />
+      ) : (
+        <LiveMatchOverlay event={currentEvent} onClose={dismissCurrentEvent} />
+      )}
 
       <SponsorShowcaseOverlay
         sponsors={showcaseSponsors}
@@ -492,15 +544,18 @@ function AutoToggle({
 function PhaseToggle({
   active,
   onChange,
+  available,
   accent,
 }: {
-  active: "GIRONI" | "BRACKET";
-  onChange: (p: "GIRONI" | "BRACKET") => void;
+  active: "GIRONI_1" | "GIRONI_2" | "FINALI";
+  onChange: (p: "GIRONI_1" | "GIRONI_2" | "FINALI") => void;
+  available: { fase1: boolean; fase2: boolean; finali: boolean };
   accent: string;
 }) {
-  const phases: { value: "GIRONI" | "BRACKET"; label: string }[] = [
-    { value: "GIRONI", label: "Gironi" },
-    { value: "BRACKET", label: "Bracket" },
+  const phases: { value: "GIRONI_1" | "GIRONI_2" | "FINALI"; label: string; enabled: boolean }[] = [
+    { value: "GIRONI_1", label: "Gironi 1", enabled: available.fase1 },
+    { value: "GIRONI_2", label: "Gironi 2", enabled: available.fase2 },
+    { value: "FINALI", label: "Finali", enabled: available.finali },
   ];
   return (
     <div className="flex items-center gap-2">
@@ -508,16 +563,14 @@ function PhaseToggle({
         <button
           key={p.value}
           type="button"
+          disabled={!p.enabled}
           onClick={() => onChange(p.value)}
-          className="cc-mono uppercase transition-colors"
+          className="cc-mono uppercase transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           style={{
             fontSize: 11,
             padding: "6px 16px",
             background: active === p.value ? accent : "oklch(0.24 0.05 255)",
-            color:
-              active === p.value
-                ? "var(--color-night-deep)"
-                : "var(--color-paper)",
+            color: active === p.value ? "var(--color-night-deep)" : "var(--color-paper)",
             border: `1px solid ${accent}`,
           }}
         >
