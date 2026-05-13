@@ -287,6 +287,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       await promoteLoser(updated);
     }
 
+    await checkTournamentCompletion(updated.tournamentId);
+
     const finitaBracket = (updated.bracketTipo ?? null) as
       | "GOLD"
       | "SILVER"
@@ -501,6 +503,27 @@ async function unpromoteLoser(match: {
     where: { id: playoff.id },
     data: isTeam1 ? { team1Id: null } : { team2Id: null },
   });
+}
+
+async function checkTournamentCompletion(tournamentId: string) {
+  const torneo = await prisma.tournament.findUnique({
+    where: { id: tournamentId },
+    select: { fase: true },
+  });
+  if (!torneo || torneo.fase !== "FINALI") return;
+
+  const remaining = await prisma.match.count({
+    where: {
+      tournamentId,
+      stato: { not: "COMPLETATA" },
+    },
+  });
+  if (remaining === 0) {
+    await prisma.tournament.update({
+      where: { id: tournamentId },
+      data: { fase: "COMPLETATO" },
+    });
+  }
 }
 
 async function updateGroupStats(groupId: string) {
