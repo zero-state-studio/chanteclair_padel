@@ -66,7 +66,8 @@ model Tournament {
   nome      String
   genere    String
   stato     String   @default("BOZZA")
-  fase      String   @default("GIRONI")
+  // fase values: BOZZA | GIRONI_1 | GIRONI_2 | FINALI | COMPLETATO
+  fase      String   @default("BOZZA")
   anno      Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -83,6 +84,10 @@ model Group {
   tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   nome         String
   posizione    Int
+  // fase: 1 = primo girone (sorteggio iniziale), 2 = secondo girone per categoria
+  fase         Int        @default(1)
+  // bracketTipo: null per fase 1; GOLD/SILVER/BRONZE per fase 2
+  bracketTipo  String?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
@@ -90,6 +95,7 @@ model Group {
   matches    Match[]
 
   @@index([tournamentId])
+  @@index([tournamentId, fase, bracketTipo])
 }
 
 model GroupTeam {

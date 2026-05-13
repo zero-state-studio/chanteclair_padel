@@ -1,7 +1,7 @@
 export type Genere = "MASCHILE" | "FEMMINILE" | "MISTO";
 export type StatoTorneo = "BOZZA" | "ATTIVO" | "CONCLUSO";
 export type StatoPartita = "ATTESA" | "IN_CORSO" | "COMPLETATA";
-export type FaseTorneo = "GIRONI" | "BRACKET";
+export type FaseTorneo = "BOZZA" | "GIRONI_1" | "GIRONI_2" | "FINALI" | "COMPLETATO";
 export type BracketTipo = "GOLD" | "SILVER" | "BRONZE";
 
 export interface PlayerWithMatches {
@@ -76,6 +76,8 @@ export interface GroupWithTeams {
   tournamentId: string;
   nome: string;
   posizione: number;
+  fase: number;
+  bracketTipo: BracketTipo | null;
   groupTeams: GroupTeamWithStats[];
 }
 
