@@ -284,6 +284,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       await updateGroupStats(updated.groupId);
     } else {
       await promoteWinner(updated);
+      await promoteLoser(updated);
     }
 
     const finitaBracket = (updated.bracketTipo ?? null) as
@@ -345,6 +346,15 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
         posizione: updated.posizione,
         winnerId: wasWinnerId,
       });
+      await unpromoteLoser({
+        tournamentId: updated.tournamentId,
+        bracketTipo: updated.bracketTipo,
+        round: updated.round,
+        posizione: updated.posizione,
+        team1Id: match.team1Id,
+        team2Id: match.team2Id,
+        winnerId: wasWinnerId,
+      });
     }
 
     return NextResponse.json(updated);
@@ -393,6 +403,8 @@ type MatchForPromotion = {
   groupId: string | null;
   round: number;
   posizione: number;
+  team1Id: string | null;
+  team2Id: string | null;
   winnerId: string | null;
 };
 
@@ -416,6 +428,78 @@ async function promoteWinner(match: MatchForPromotion) {
   await prisma.match.update({
     where: { id: nextMatch.id },
     data: isTeam1 ? { team1Id: match.winnerId } : { team2Id: match.winnerId },
+  });
+}
+
+async function promoteLoser(match: {
+  id: string;
+  tournamentId: string;
+  bracketTipo: string | null;
+  round: number;
+  posizione: number;
+  team1Id: string | null;
+  team2Id: string | null;
+  winnerId: string | null;
+}) {
+  // Only applies to semifinals (round 2) in our flow
+  if (match.round !== 2) return;
+  if (!match.winnerId || !match.team1Id || !match.team2Id) return;
+
+  const loserId =
+    match.team1Id === match.winnerId ? match.team2Id : match.team1Id;
+
+  // 3°/4° playoff lives at round 1, posizione 1
+  const playoff = await prisma.match.findFirst({
+    where: {
+      tournamentId: match.tournamentId,
+      bracketTipo: match.bracketTipo,
+      round: 1,
+      posizione: 1,
+    },
+  });
+  if (!playoff) return;
+
+  // Semi pos 0 → 3°/4° team1; semi pos 1 → 3°/4° team2
+  const isTeam1 = match.posizione % 2 === 0;
+  await prisma.match.update({
+    where: { id: playoff.id },
+    data: isTeam1 ? { team1Id: loserId } : { team2Id: loserId },
+  });
+}
+
+async function unpromoteLoser(match: {
+  tournamentId: string;
+  bracketTipo: string | null;
+  round: number;
+  posizione: number;
+  team1Id: string | null;
+  team2Id: string | null;
+  winnerId: string;
+}) {
+  if (match.round !== 2) return;
+  const loserId =
+    match.team1Id === match.winnerId ? match.team2Id : match.team1Id;
+  if (!loserId) return;
+
+  const playoff = await prisma.match.findFirst({
+    where: {
+      tournamentId: match.tournamentId,
+      bracketTipo: match.bracketTipo,
+      round: 1,
+      posizione: 1,
+    },
+  });
+  if (!playoff) return;
+
+  const isTeam1 = match.posizione % 2 === 0;
+  const slotMatches = isTeam1
+    ? playoff.team1Id === loserId
+    : playoff.team2Id === loserId;
+  if (!slotMatches) return;
+
+  await prisma.match.update({
+    where: { id: playoff.id },
+    data: isTeam1 ? { team1Id: null } : { team2Id: null },
   });
 }
 
