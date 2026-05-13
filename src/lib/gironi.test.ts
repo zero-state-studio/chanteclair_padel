@@ -65,3 +65,75 @@ describe("distribuisciGironi1", () => {
     expect(() => distribuisciGironi1([mkTeam("a")])).toThrow(/almeno 2/i);
   });
 });
+
+import { generaMatchGironi1 } from "./gironi";
+
+describe("generaMatchGironi1", () => {
+  it("girone of 3 real teams produces 3 matches, all ATTESA", () => {
+    const gironi = [
+      {
+        nome: "A",
+        posizione: 0,
+        fase: 1,
+        bracketTipo: null,
+        teams: [
+          { teamId: "t1", seed: null },
+          { teamId: "t2", seed: null },
+          { teamId: "t3", seed: null },
+        ],
+      },
+    ];
+    const matches = generaMatchGironi1(gironi);
+    expect(matches).toHaveLength(3);
+    expect(matches.every((m) => m.walkover === false)).toBe(true);
+    expect(matches.every((m) => m.team1Id !== null && m.team2Id !== null)).toBe(true);
+  });
+
+  it("girone with 1 null slot produces 3 matches, 2 walkover", () => {
+    const gironi = [
+      {
+        nome: "A",
+        posizione: 0,
+        fase: 1,
+        bracketTipo: null,
+        teams: [
+          { teamId: "t1", seed: null },
+          { teamId: "t2", seed: null },
+          { teamId: null, seed: null },
+        ],
+      },
+    ];
+    const matches = generaMatchGironi1(gironi);
+    expect(matches).toHaveLength(3);
+    const walkovers = matches.filter((m) => m.walkover);
+    expect(walkovers).toHaveLength(2);
+    for (const w of walkovers) {
+      expect(w.winnerTeamId).not.toBeNull();
+      expect(w.set1Team1).toBeDefined();
+      expect(w.set1Team2).toBeDefined();
+    }
+  });
+
+  it("girone with 2 null slots: real team gets 2 walkover wins, null-vs-null skipped", () => {
+    const gironi = [
+      {
+        nome: "A",
+        posizione: 0,
+        fase: 1,
+        bracketTipo: null,
+        teams: [
+          { teamId: "t1", seed: null },
+          { teamId: null, seed: null },
+          { teamId: null, seed: null },
+        ],
+      },
+    ];
+    const matches = generaMatchGironi1(gironi);
+    const walkovers = matches.filter((m) => m.walkover);
+    expect(walkovers.length).toBeGreaterThanOrEqual(2);
+    const nullVsNull = matches.filter(
+      (m) => m.team1Id === null && m.team2Id === null
+    );
+    expect(nullVsNull).toHaveLength(0);
+  });
+});

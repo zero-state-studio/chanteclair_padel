@@ -11,8 +11,12 @@ export type GroupDraft = {
 export type GroupMatchDraft = {
   groupPosizione: number;
   posizione: number;
-  team1Id: string;
-  team2Id: string;
+  team1Id: string | null;
+  team2Id: string | null;
+  walkover: boolean;
+  winnerTeamId: string | null;
+  set1Team1: number | null;
+  set1Team2: number | null;
 };
 
 function shuffle<T>(arr: T[]): T[] {
@@ -162,6 +166,52 @@ export function generaMatchGironi(gironi: GroupDraft[]): GroupMatchDraft[] {
           posizione: pos++,
           team1Id: teams[i].teamId as string,
           team2Id: teams[j].teamId as string,
+          walkover: false,
+          winnerTeamId: null,
+          set1Team1: null,
+          set1Team2: null,
+        });
+      }
+    }
+  }
+  return matches;
+}
+
+export function generaMatchGironi1(gironi: GroupDraft[]): GroupMatchDraft[] {
+  const matches: GroupMatchDraft[] = [];
+  for (const g of gironi) {
+    let pos = 0;
+    for (let i = 0; i < g.teams.length; i++) {
+      for (let j = i + 1; j < g.teams.length; j++) {
+        const t1 = g.teams[i].teamId;
+        const t2 = g.teams[j].teamId;
+        if (t1 === null && t2 === null) continue; // skip ghost vs ghost
+
+        let winner: string | null = null;
+        let s1: number | null = null;
+        let s2: number | null = null;
+        let walkover = false;
+        if (t1 !== null && t2 === null) {
+          walkover = true;
+          winner = t1;
+          s1 = 6;
+          s2 = 0;
+        } else if (t2 !== null && t1 === null) {
+          walkover = true;
+          winner = t2;
+          s1 = 0;
+          s2 = 6;
+        }
+
+        matches.push({
+          groupPosizione: g.posizione,
+          posizione: pos++,
+          team1Id: t1,
+          team2Id: t2,
+          walkover,
+          winnerTeamId: winner,
+          set1Team1: s1,
+          set1Team2: s2,
         });
       }
     }
