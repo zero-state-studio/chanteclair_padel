@@ -535,11 +535,6 @@ function TeamRow({
         >
           / {team.player2.cognome}
         </div>
-        {team.livello > 0 && (
-          <div className="text-eyebrow text-paper/40 mt-1">
-            seed #{team.livello}
-          </div>
-        )}
       </div>
 
       <div className="flex items-end gap-4 md:gap-6 shrink-0">

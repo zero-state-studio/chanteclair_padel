@@ -454,9 +454,6 @@ export default function SquadrePage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="font-body font-semibold text-cream truncate">{s.nome}</p>
-                  <p className="text-eyebrow text-cream/50 mt-1">
-                    {s.livello > 0 ? `Testa di serie #${s.livello}` : "non tds"}
-                  </p>
                 </div>
               </div>
               <div className="flex gap-2 shrink-0 border-t sm:border-t-0 border-line pt-3 sm:pt-0 -mx-1 sm:mx-0">

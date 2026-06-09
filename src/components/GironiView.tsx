@@ -145,17 +145,6 @@ export function GironiView({
                         </td>
                         <td className="text-paper">
                           {gt.team.nome}
-                          {gt.seed != null && (
-                            <span
-                              className="ml-1.5 cc-mono"
-                              style={{
-                                fontSize: 9,
-                                color: accent,
-                              }}
-                            >
-                              [{gt.seed}]
-                            </span>
-                          )}
                         </td>
                         <td className="text-center text-paper/80 cc-mono text-xs">
                           {s.matchGiocate}
