@@ -308,7 +308,7 @@ export default function SquadrePage() {
         body: JSON.stringify({
           player1Id: form.player1Id,
           player2Id: form.player2Id,
-          livello: parseInt(form.livello, 10) || 0,
+          livello: Math.min(3, Math.max(0, parseInt(form.livello, 10) || 0)),
           genere: form.genere,
         }),
       });
@@ -555,6 +555,7 @@ export default function SquadrePage() {
                 id="livello"
                 type="number"
                 min={0}
+                max={3}
                 value={form.livello}
                 onChange={(e) => setForm({ ...form, livello: e.target.value })}
                 className="bg-cream/5 border-cream/15 text-cream"
