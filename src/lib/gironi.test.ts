@@ -66,6 +66,80 @@ describe("distribuisciGironi1", () => {
   });
 });
 
+describe("distribuisciGironi1 — teste di serie per fasce", () => {
+  function balancedTeams(): Team[] {
+    const teams: Team[] = [];
+    for (let f = 1; f <= 3; f++) {
+      for (let i = 0; i < 12; i++) teams.push(mkTeam(`f${f}-${i}`, f));
+    }
+    return teams; // 36 squadre, 12 per fascia
+  }
+
+  it("36 bilanciato: ogni girone ha una squadra per fascia {1,2,3}, nessun warning", () => {
+    const { gironi, warnings } = distribuisciGironi1(balancedTeams());
+    expect(warnings).toEqual([]);
+    for (const g of gironi) {
+      const seeds = g.teams.map((t) => t.seed).sort();
+      expect(seeds).toEqual([1, 2, 3]);
+    }
+  });
+
+  it("propaga il seed dalla fascia (Team.livello)", () => {
+    const { gironi } = distribuisciGironi1(balancedTeams());
+    const allSlots = gironi.flatMap((g) => g.teams);
+    expect(allSlots.filter((s) => s.seed === 1)).toHaveLength(12);
+    expect(allSlots.filter((s) => s.seed === 2)).toHaveLength(12);
+    expect(allSlots.filter((s) => s.seed === 3)).toHaveLength(12);
+  });
+
+  it("sbilanciato (12/9/12): best-effort + warning sulla fascia 2", () => {
+    const teams: Team[] = [];
+    for (let i = 0; i < 12; i++) teams.push(mkTeam(`a${i}`, 1));
+    for (let i = 0; i < 9; i++) teams.push(mkTeam(`b${i}`, 2));
+    for (let i = 0; i < 12; i++) teams.push(mkTeam(`c${i}`, 3));
+    const { gironi, warnings } = distribuisciGironi1(teams);
+    expect(gironi).toHaveLength(12);
+    expect(warnings).toContain("Fascia 2: 9 squadre (attese 12)");
+    const ids = gironi
+      .flatMap((g) => g.teams.map((t) => t.teamId))
+      .filter((x): x is string => x !== null);
+    expect(new Set(ids).size).toBe(33);
+  });
+
+  it("squadre con tds=0: finiscono nel pool extra con seed null + warning", () => {
+    const teams: Team[] = [];
+    for (let i = 0; i < 12; i++) teams.push(mkTeam(`a${i}`, 1));
+    for (let i = 0; i < 12; i++) teams.push(mkTeam(`b${i}`, 2));
+    for (let i = 0; i < 8; i++) teams.push(mkTeam(`c${i}`, 3));
+    for (let i = 0; i < 4; i++) teams.push(mkTeam(`z${i}`, 0));
+    const { gironi, warnings } = distribuisciGironi1(teams);
+    expect(warnings).toContain(
+      "4 squadre senza testa di serie valida distribuite casualmente"
+    );
+    const allSlots = gironi.flatMap((g) => g.teams);
+    const placedZeroSeed = allSlots.filter(
+      (s) => s.teamId?.startsWith("z") && s.seed === null
+    );
+    expect(placedZeroSeed).toHaveLength(4);
+  });
+
+  it("overflow (15 in fascia 1): primi 12 per fascia, 3 nel pool, warning", () => {
+    const teams: Team[] = [];
+    for (let i = 0; i < 15; i++) teams.push(mkTeam(`a${i}`, 1));
+    for (let i = 0; i < 12; i++) teams.push(mkTeam(`b${i}`, 2));
+    for (let i = 0; i < 9; i++) teams.push(mkTeam(`c${i}`, 3));
+    const { gironi, warnings } = distribuisciGironi1(teams);
+    expect(warnings).toContain("Fascia 1: 15 squadre (attese 12)");
+    expect(gironi).toHaveLength(12);
+    const ids = gironi
+      .flatMap((g) => g.teams.map((t) => t.teamId))
+      .filter((x): x is string => x !== null);
+    expect(new Set(ids).size).toBe(36);
+    const allSlots = gironi.flatMap((g) => g.teams);
+    expect(allSlots.filter((s) => s.seed === 1)).toHaveLength(15);
+  });
+});
+
 import { generaMatchGironi1 } from "./gironi";
 
 describe("generaMatchGironi1", () => {
