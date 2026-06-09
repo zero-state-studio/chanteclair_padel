@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { computeStandings } from "@/lib/gironi";
 import { generaFinali } from "@/lib/bracket";
 import { requireAdmin } from "@/lib/api-auth";
+import { publishLiveEvent } from "@/lib/realtime";
+import type { FinaliAnimationEvent, Genere } from "@/types";
 
 type RouteContext = { params: Promise<{ id: string }> };
 type Categoria = "GOLD" | "SILVER" | "BRONZE";
@@ -135,6 +137,17 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
       },
       { maxWait: 10000, timeout: 30000 }
     );
+
+    const event: FinaliAnimationEvent = {
+      tipo: "FINALI_ANIMATION",
+      genere: torneo.genere as Genere,
+      tournamentId: torneo.id,
+    };
+    try {
+      await publishLiveEvent(event);
+    } catch (err) {
+      console.warn("[genera-finali] broadcast fallito:", (err as Error).message);
+    }
 
     return NextResponse.json(result);
   } catch (err) {

@@ -157,7 +157,14 @@ export default function TorneoPage() {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error ?? "Errore sorteggio");
       }
+      const data = await res.json().catch(() => ({}));
       toast.success("Sorteggio fase 1 completato");
+      const warnings: string[] = Array.isArray(data?.warnings)
+        ? data.warnings
+        : [];
+      for (const w of warnings) {
+        toast.warning(w);
+      }
       await loadAll();
     } catch (err) {
       toast.error((err as Error).message);

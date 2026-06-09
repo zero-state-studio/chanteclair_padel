@@ -10,6 +10,7 @@ import { RoundLabels } from "@/components/RoundLabels";
 import { LiveMatchOverlay } from "@/components/LiveMatchOverlay";
 import { SponsorShowcaseOverlay } from "@/components/SponsorShowcaseOverlay";
 import { GironiAnimation } from "@/components/GironiAnimation";
+import { FinaliAnimation } from "@/components/FinaliAnimation";
 import { FinalPresentation } from "@/components/FinalPresentation";
 import { FinalVictory } from "@/components/FinalVictory";
 import { useRealtime } from "@/hooks/useRealtime";
@@ -27,6 +28,7 @@ interface TabelloneClientProps {
   genere: Genere;
   enableGironiAnimation?: boolean;
   autoStartAnimationOnMount?: boolean;
+  autoStartFinaliAnimationOnMount?: boolean;
 }
 
 const BRACKETS: BracketTipo[] = ["GOLD", "SILVER", "BRONZE"];
@@ -48,6 +50,7 @@ export function TabelloneClient({
   genere,
   enableGironiAnimation = true,
   autoStartAnimationOnMount = false,
+  autoStartFinaliAnimationOnMount = false,
 }: TabelloneClientProps) {
   const [torneo, setTorneo] = useState(torneoIniziale);
   const [eventQueue, setEventQueue] = useState<MatchLiveEvent[]>([]);
@@ -71,6 +74,10 @@ export function TabelloneClient({
   const [animationTorneo, setAnimationTorneo] = useState<TournamentWithMatches | null>(
     autoStartAnimationOnMount && enableGironiAnimation ? torneoIniziale : null
   );
+  const [finaliAnimationTorneo, setFinaliAnimationTorneo] =
+    useState<TournamentWithMatches | null>(
+      autoStartFinaliAnimationOnMount ? torneoIniziale : null
+    );
 
   const accent = genere === "MASCHILE" ? "var(--color-blue)" : "var(--color-pink)";
 
@@ -93,6 +100,24 @@ export function TabelloneClient({
             const data = (await res.json()) as TournamentWithMatches;
             if (data.groups.length === 0) return;
             setAnimationTorneo(data);
+          } catch {
+            // ignora
+          }
+        })();
+        return;
+      }
+
+      if (event.tipo === "FINALI_ANIMATION") {
+        if (event.genere !== genere) return;
+        (async () => {
+          try {
+            const res = await fetch(`/api/tornei/${event.tournamentId}`, {
+              cache: "no-store",
+            });
+            if (!res.ok) return;
+            const data = (await res.json()) as TournamentWithMatches;
+            setTorneo(data);
+            setFinaliAnimationTorneo(data);
           } catch {
             // ignora
           }
@@ -414,6 +439,13 @@ export function TabelloneClient({
           torneo={animationTorneo}
           accent={accent}
           onClose={() => setAnimationTorneo(null)}
+        />
+      )}
+
+      {finaliAnimationTorneo && (
+        <FinaliAnimation
+          torneo={finaliAnimationTorneo}
+          onClose={() => setFinaliAnimationTorneo(null)}
         />
       )}
 

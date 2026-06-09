@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { GironiAnimation } from "@/components/GironiAnimation";
+import { FinaliAnimation } from "@/components/FinaliAnimation";
 import { LiveMatchOverlay } from "@/components/LiveMatchOverlay";
 import { SponsorShowcaseOverlay } from "@/components/SponsorShowcaseOverlay";
 import { FinalPresentation } from "@/components/FinalPresentation";
@@ -82,6 +83,9 @@ export default function AnimazioniPage() {
     bracket: BracketTipo;
     punteggio: string;
   } | null>(null);
+  const [activeFinaliDemo, setActiveFinaliDemo] =
+    useState<TournamentWithMatches | null>(null);
+  const [finaliGenere, setFinaliGenere] = useState<Genere>("MASCHILE");
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -209,6 +213,58 @@ export default function AnimazioniPage() {
       else next.add(id);
       return next;
     });
+
+  const launchFinaliDemo = () => {
+    const pool = allTeams.filter((t) => t.genere === finaliGenere);
+    if (pool.length < 12) {
+      toast.error(
+        `Servono almeno 12 squadre ${GENERE_LABEL[finaliGenere]} in archivio (trovate ${pool.length})`
+      );
+      return;
+    }
+    const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, 12);
+    const tournamentId = `demo-finali-${Date.now()}`;
+    const matches: MatchWithTeams[] = [];
+    (["GOLD", "SILVER", "BRONZE"] as const).forEach((bracket, bi) => {
+      const four = shuffled.slice(bi * 4, bi * 4 + 4);
+      for (let i = 0; i < 2; i++) {
+        matches.push({
+          id: `${tournamentId}-${bracket}-semi-${i}`,
+          tournamentId,
+          groupId: null,
+          bracketTipo: bracket,
+          round: 2,
+          posizione: i,
+          team1: four[i * 2],
+          team2: four[i * 2 + 1],
+          winner: null,
+          punteggio: null,
+          set1Team1: null,
+          set1Team2: null,
+          tieBreakTeam1: null,
+          tieBreakTeam2: null,
+          stato: "ATTESA",
+          iniziataAt: null,
+          finitaAt: null,
+          sponsorId: null,
+          sponsor: null,
+          fieldId: null,
+          field: null,
+        });
+      }
+    });
+    const demo: TournamentWithMatches = {
+      id: tournamentId,
+      nome: "Demo Finali",
+      genere: finaliGenere,
+      stato: "ATTIVO",
+      fase: "FINALI",
+      anno: new Date().getFullYear(),
+      matches,
+      groups: [],
+    };
+    setActiveFinaliDemo(demo);
+  };
 
   const launchFinal = () => {
     if (allTeams.length < 2) {
@@ -550,6 +606,50 @@ export default function AnimazioniPage() {
         )}
       </section>
 
+      {/* Sorteggio semifinali */}
+      <section className="rounded-sm border border-line bg-court-deep p-5 md:p-8">
+        <div className="text-eyebrow text-court-line mb-2">— semifinali</div>
+        <h2 className="font-display text-2xl md:text-3xl mb-2 text-cream">
+          Animazione sorteggio semifinali
+        </h2>
+        <p className="text-cream/60 text-sm mb-5">
+          Cicla GOLD → SILVER → BRONZE: 4 squadre per categoria in cerchio, poi
+          accoppiate nelle 2 semifinali. Usa 12 squadre random dall&apos;archivio.
+        </p>
+
+        <div className="space-y-2 mb-5">
+          <Label>Genere</Label>
+          <div className="flex gap-2">
+            {(["MASCHILE", "FEMMINILE"] as const).map((g) => {
+              const active = finaliGenere === g;
+              const pool = allTeams.filter((t) => t.genere === g).length;
+              return (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => setFinaliGenere(g)}
+                  className={`flex-1 px-3 py-2 rounded-sm border text-sm cc-mono uppercase tracking-wider transition-colors ${
+                    active
+                      ? "bg-court-line/10 border-court-line text-cream"
+                      : "bg-transparent border-cream/15 text-cream/70 hover:bg-cream/5"
+                  }`}
+                >
+                  {GENERE_LABEL[g]} ({pool})
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <Button
+          onClick={launchFinaliDemo}
+          disabled={allTeams.filter((t) => t.genere === finaliGenere).length < 12}
+          className="bg-court-line text-court hover:bg-[#e7ff75] h-11"
+        >
+          Lancia animazione semifinali
+        </Button>
+      </section>
+
       {/* Finale tabellone */}
       <section className="rounded-sm border border-line bg-court-deep p-5 md:p-8">
         <div className="text-eyebrow text-court-line mb-2">— finale</div>
@@ -694,6 +794,13 @@ export default function AnimazioniPage() {
           punteggio={activeVictory.punteggio}
           bracket={activeVictory.bracket}
           onClose={() => setActiveVictory(null)}
+        />
+      )}
+
+      {activeFinaliDemo && (
+        <FinaliAnimation
+          torneo={activeFinaliDemo}
+          onClose={() => setActiveFinaliDemo(null)}
         />
       )}
     </div>

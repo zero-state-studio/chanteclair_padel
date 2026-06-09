@@ -45,7 +45,7 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  const gironi = distribuisciGironi1(squadre);
+  const { gironi, warnings } = distribuisciGironi1(squadre);
   const matchDrafts = generaMatchGironi1(gironi);
 
   try {
@@ -118,7 +118,7 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
       { maxWait: 15000, timeout: 60000 }
     );
 
-    return NextResponse.json(result);
+    return NextResponse.json({ ...result, warnings });
   } catch (err) {
     const e = err as Error & { code?: string; meta?: unknown };
     console.error("[sorteggio] error", {
