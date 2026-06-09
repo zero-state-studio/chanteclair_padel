@@ -20,6 +20,7 @@ export function TabelloneShell({
     torneoIniziale
   );
   const [animVersion, setAnimVersion] = useState(0);
+  const [finaliAnimVersion, setFinaliAnimVersion] = useState(0);
 
   const fetchTorneo = useCallback(
     async (id: string): Promise<TournamentWithMatches | null> => {
@@ -51,6 +52,17 @@ export function TabelloneShell({
           if (t) {
             setTorneo(t);
             setAnimVersion((v) => v + 1);
+          }
+        })();
+        return;
+      }
+      if (event.tipo === "FINALI_ANIMATION") {
+        if (event.genere !== genere) return;
+        (async () => {
+          const t = await fetchTorneo(event.tournamentId);
+          if (t) {
+            setTorneo(t);
+            setFinaliAnimVersion((v) => v + 1);
           }
         })();
         return;
@@ -92,10 +104,11 @@ export function TabelloneShell({
 
   return (
     <TabelloneClient
-      key={`tc-${torneo.id}-${animVersion}`}
+      key={`tc-${torneo.id}-${animVersion}-${finaliAnimVersion}`}
       torneoIniziale={torneo}
       genere={genere}
       autoStartAnimationOnMount={animVersion > 0}
+      autoStartFinaliAnimationOnMount={finaliAnimVersion > 0}
     />
   );
 }

@@ -7,7 +7,8 @@
       "Bash(git -C /Users/gianlucaricaldone/Progetti/chanteclair_padel log --oneline)",
       "Bash(git *)",
       "Bash(grep -v \"^$\")",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(npx tsx *)"
     ]
   },
   "enabledPlugins": {

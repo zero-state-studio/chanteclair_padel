@@ -59,6 +59,10 @@ export function CampoLiveClient({ field, matchIniziale, sponsors }: Props) {
         return;
       }
 
+      if (event.tipo === "FINALI_ANIMATION") {
+        return;
+      }
+
       if (event.tipo === "TORNEO_INIZIATO") {
         return;
       }

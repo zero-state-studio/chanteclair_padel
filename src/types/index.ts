@@ -123,8 +123,15 @@ export interface TorneoInizatoEvent {
   tournamentId: string;
 }
 
+export interface FinaliAnimationEvent {
+  tipo: "FINALI_ANIMATION";
+  genere: Genere;
+  tournamentId: string;
+}
+
 export type LiveEvent =
   | MatchLiveEvent
   | SponsorShowcaseEvent
   | GironiAnimationEvent
-  | TorneoInizatoEvent;
+  | TorneoInizatoEvent
+  | FinaliAnimationEvent;
