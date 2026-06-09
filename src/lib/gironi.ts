@@ -39,7 +39,34 @@ const NUM_GIRONI_FASE_1 = 12;
 const SIZE_GIRONE = 3;
 const CAPACITA_TOTALE = NUM_GIRONI_FASE_1 * SIZE_GIRONE; // 36
 
-export function distribuisciGironi1(squadre: Team[]): GroupDraft[] {
+export type Gironi1Result = {
+  gironi: GroupDraft[];
+  warnings: string[];
+};
+
+function buildGironi1Warnings(
+  n1: number,
+  n2: number,
+  n3: number,
+  nExtra: number
+): string[] {
+  const warnings: string[] = [];
+  [n1, n2, n3].forEach((count, i) => {
+    if (count !== NUM_GIRONI_FASE_1) {
+      warnings.push(
+        `Fascia ${i + 1}: ${count} squadre (attese ${NUM_GIRONI_FASE_1})`
+      );
+    }
+  });
+  if (nExtra > 0) {
+    warnings.push(
+      `${nExtra} squadre senza testa di serie valida distribuite casualmente`
+    );
+  }
+  return warnings;
+}
+
+export function distribuisciGironi1(squadre: Team[]): Gironi1Result {
   if (squadre.length < 2) {
     throw new Error("Servono almeno 2 squadre");
   }
@@ -47,19 +74,50 @@ export function distribuisciGironi1(squadre: Team[]): GroupDraft[] {
     throw new Error(`Massimo ${CAPACITA_TOTALE} squadre supportate in fase 1`);
   }
 
-  const mescolate = shuffle(squadre);
-  const slots: (Team | null)[] = new Array(CAPACITA_TOTALE).fill(null);
-  mescolate.forEach((t, i) => {
-    slots[i] = t;
+  // Pot per fascia (Team.livello). 0 o >3 finiscono nel pool extra.
+  const pot1 = shuffle(squadre.filter((t) => t.livello === 1));
+  const pot2 = shuffle(squadre.filter((t) => t.livello === 2));
+  const pot3 = shuffle(squadre.filter((t) => t.livello === 3));
+  const extra = shuffle(squadre.filter((t) => t.livello < 1 || t.livello > 3));
+
+  // slots[girone][posizione]
+  const slots: (Team | null)[][] = Array.from(
+    { length: NUM_GIRONI_FASE_1 },
+    () => new Array<Team | null>(SIZE_GIRONE).fill(null)
+  );
+
+  // Una squadra per fascia per girone (i primi 12 di ciascun pot).
+  // L'eccedenza oltre 12 confluisce nel pool di riempimento.
+  const fillPool: Team[] = [];
+  [pot1, pot2, pot3].forEach((pot, fasciaIdx) => {
+    pot.forEach((team, i) => {
+      if (i < NUM_GIRONI_FASE_1) {
+        slots[i][fasciaIdx] = team;
+      } else {
+        fillPool.push(team);
+      }
+    });
   });
+  fillPool.push(...extra);
+  const shuffledPool = shuffle(fillPool);
+
+  // Riempi gli slot rimasti vuoti, girone per girone.
+  let poolIdx = 0;
+  for (let g = 0; g < NUM_GIRONI_FASE_1; g++) {
+    for (let s = 0; s < SIZE_GIRONE; s++) {
+      if (slots[g][s] === null && poolIdx < shuffledPool.length) {
+        slots[g][s] = shuffledPool[poolIdx++];
+      }
+    }
+  }
 
   const gironi: GroupDraft[] = [];
   for (let g = 0; g < NUM_GIRONI_FASE_1; g++) {
-    const teamSlots: { teamId: string | null; seed: number | null }[] = [];
-    for (let s = 0; s < SIZE_GIRONE; s++) {
-      const team = slots[g * SIZE_GIRONE + s];
-      teamSlots.push({ teamId: team?.id ?? null, seed: null });
-    }
+    const teamSlots = slots[g].map((team) => ({
+      teamId: team?.id ?? null,
+      seed:
+        team && team.livello >= 1 && team.livello <= 3 ? team.livello : null,
+    }));
     gironi.push({
       nome: nomeGirone(g),
       posizione: g,
@@ -68,7 +126,14 @@ export function distribuisciGironi1(squadre: Team[]): GroupDraft[] {
       teams: teamSlots,
     });
   }
-  return gironi;
+
+  const warnings = buildGironi1Warnings(
+    pot1.length,
+    pot2.length,
+    pot3.length,
+    extra.length
+  );
+  return { gironi, warnings };
 }
 
 export function generaMatchGironi1(gironi: GroupDraft[]): GroupMatchDraft[] {
